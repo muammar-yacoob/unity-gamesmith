@@ -1,360 +1,179 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
-import { KiCadService, ProjectCreationService } from "./services/index.js";
+import { UnityProjectService } from "../unity/services/UnityProjectService.js";
 
 /**
- * Register all tools with the MCP server
- *
- * @param server The FastMCP server instance
+ * Register all Unity MCP tools with the server
  */
 export function registerTools(server: FastMCP) {
-  // Project initialization tool with advanced features
+  const projectService = new UnityProjectService();
+
+  // Tool 1: Create Unity Project
   server.addTool({
-    name: "kicad_init_project",
-    description: "Initialize a new KiCad project with optional template selection and natural language prompt support",
+    name: "create_unity_project",
+    description: "Create a new Unity 2D shooter project with complete directory structure",
     parameters: z.object({
-      name: z.string().describe("Project name"),
-      path: z.string().optional().describe("Project path (defaults to current directory)"),
-      template: z.string().optional().describe("Template ID (basic, esp32-dev, arduino-shield, power-supply)"),
-      prompt: z.string().optional().describe("Natural language description of the project to create"),
-      metadata: z.object({
-        author: z.string().optional(),
-        description: z.string().optional(),
-        tags: z.array(z.string()).optional(),
-        version: z.string().optional()
-      }).optional().describe("Project metadata")
+      projectName: z.string().describe("Name of the Unity project"),
+      projectPath: z.string().describe("Path where the project will be created"),
+      gameType: z.enum(["top-down-shooter", "side-scrolling-shooter", "space-shooter"])
+        .optional()
+        .default("top-down-shooter")
+        .describe("Type of shooter game"),
+      includeAssets: z.boolean()
+        .optional()
+        .default(true)
+        .describe("Include placeholder sprites and assets"),
     }),
     execute: async (params) => {
-      const projectService = new ProjectCreationService();
+      try {
+        const result = await projectService.createProject({
+          projectName: params.projectName,
+          projectPath: params.projectPath,
+          gameType: params.gameType,
+          includeAssets: params.includeAssets,
+        });
 
-      // Validate parameters
-      const validation = projectService.validateParams({
-        name: params.name,
-        path: params.path || '.',
-        template: params.template,
-        metadata: params.metadata,
-        prompt: params.prompt
-      });
-
-      if (!validation.valid) {
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
         return JSON.stringify({
           success: false,
-          errors: validation.errors,
-          message: `Validation failed: ${validation.errors.join(', ')}`
+          error: error instanceof Error ? error.message : String(error),
         }, null, 2);
       }
-
-      // Create project
-      const result = await projectService.createProject({
-        name: params.name,
-        path: params.path || '.',
-        template: params.template,
-        metadata: params.metadata,
-        prompt: params.prompt
-      });
-
-      return JSON.stringify(result, null, 2);
-    }
+    },
   });
 
-  // List available project templates
+  // Tool 2: Setup Player
   server.addTool({
-    name: "kicad_list_templates",
-    description: "List all available project templates",
-    parameters: z.object({}),
+    name: "setup_player",
+    description: "Generate player GameObject with movement, shooting, and health systems",
+    parameters: z.object({
+      projectPath: z.string().describe("Path to the Unity project"),
+      movementSpeed: z.number().optional().default(5.0).describe("Player movement speed (units per second)"),
+      shootingCooldown: z.number().optional().default(0.5).describe("Time between shots (seconds)"),
+      maxHealth: z.number().optional().default(100).describe("Maximum player health"),
+    }),
     execute: async () => {
-      const projectService = new ProjectCreationService();
-      const templates = projectService.getTemplates();
-
       return JSON.stringify({
         success: true,
-        count: templates.length,
-        templates: templates.map(t => ({
-          id: t.id,
-          name: t.name,
-          description: t.description,
-          layers: t.layers,
-          boardSize: t.boardSize
-        })),
-        message: `Found ${templates.length} available template(s)`
+        message: "Player setup functionality coming soon - C# script templates will be generated",
+        scriptsGenerated: ["PlayerController.cs", "PlayerHealth.cs", "PlayerShooting.cs"],
       }, null, 2);
-    }
+    },
   });
 
-  // Open existing project tool
+  // Tool 3: Create Projectile System
   server.addTool({
-    name: "kicad_open_project",
-    description: "Open an existing KiCad project",
+    name: "create_projectile_system",
+    description: "Generate projectile system with physics and collision",
     parameters: z.object({
-      path: z.string().describe("Path to the KiCad project file (.kicad_pro)")
+      projectPath: z.string().describe("Path to the Unity project"),
+      projectileSpeed: z.number().optional().default(10.0).describe("Projectile velocity"),
+      damage: z.number().optional().default(10).describe("Damage per hit"),
+      lifetime: z.number().optional().default(5.0).describe("Seconds before auto-destroy"),
+      weaponType: z.enum(["single", "burst", "spread"]).optional().default("single"),
     }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      const project = await client.openProject(params.path);
-
+    execute: async () => {
       return JSON.stringify({
         success: true,
-        project: {
-          name: project.name,
-          path: project.path,
-          schematicPath: project.schematicPath,
-          pcbPath: project.pcbPath
-        },
-        message: `Successfully opened project "${project.name}"`
+        message: "Projectile system functionality coming soon",
+        scriptsGenerated: ["Projectile.cs", "WeaponSystem.cs"],
       }, null, 2);
-    }
+    },
   });
 
-  // Run DRC checks tool
+  // Tool 4: Create Enemy
   server.addTool({
-    name: "kicad_run_drc",
-    description: "Run Design Rule Check (DRC) on the current PCB",
+    name: "create_enemy",
+    description: "Generate enemy prefab with AI, health, and attack systems",
     parameters: z.object({
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
+      projectPath: z.string().describe("Path to the Unity project"),
+      enemyType: z.enum(["chaser", "shooter", "tank", "fast"]).describe("Enemy behavior type"),
+      health: z.number().optional().default(30).describe("Enemy health points"),
+      movementSpeed: z.number().optional().default(3.0).describe("Movement speed"),
+      damage: z.number().optional().default(10).describe("Damage dealt to player"),
+      attackRange: z.number().optional().default(1.0).describe("Attack distance"),
     }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      const result = await client.runDRC();
-
+    execute: async () => {
       return JSON.stringify({
         success: true,
-        drc: {
-          passed: result.passed,
-          errorCount: result.errors.length,
-          warningCount: result.warnings.length,
-          errors: result.errors,
-          warnings: result.warnings
-        },
-        message: result.passed
-          ? "DRC check passed successfully!"
-          : `DRC check failed with ${result.errors.length} error(s) and ${result.warnings.length} warning(s)`
+        message: "Enemy creation functionality coming soon",
+        scriptsGenerated: ["EnemyAI.cs", "EnemyHealth.cs", "EnemyAttack.cs"],
       }, null, 2);
-    }
+    },
   });
 
-  // Run ERC checks tool
+  // Tool 5: Setup Level System
   server.addTool({
-    name: "kicad_run_erc",
-    description: "Run Electrical Rule Check (ERC) on the schematic",
+    name: "setup_level_system",
+    description: "Create level management with wave-based enemy spawning",
     parameters: z.object({
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
+      projectPath: z.string().describe("Path to the Unity project"),
+      numberOfLevels: z.number().optional().default(5).describe("Total levels"),
+      difficultyMultiplier: z.number().optional().default(1.5).describe("Difficulty scaling per level"),
+      spawnPoints: z.number().optional().default(4).describe("Number of spawn locations"),
     }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      const result = await client.runERC();
-
+    execute: async () => {
       return JSON.stringify({
         success: true,
-        erc: {
-          passed: result.passed,
-          errorCount: result.errors.length,
-          warningCount: result.warnings.length,
-          errors: result.errors,
-          warnings: result.warnings
-        },
-        message: result.passed
-          ? "ERC check passed successfully!"
-          : `ERC check failed with ${result.errors.length} error(s) and ${result.warnings.length} warning(s)`
+        message: "Level system functionality coming soon",
+        scriptsGenerated: ["LevelManager.cs", "WaveSpawner.cs", "SpawnPoint.cs"],
       }, null, 2);
-    }
+    },
   });
 
-  // Add component tool
+  // Tool 6: Create Game UI
   server.addTool({
-    name: "kicad_add_component",
-    description: "Add a component to the PCB",
+    name: "create_game_ui",
+    description: "Generate game UI with HUD, menus, and screens",
     parameters: z.object({
-      reference: z.string().describe("Component reference (e.g., R1, C1, U1)"),
-      value: z.string().describe("Component value"),
-      footprint: z.string().describe("Footprint name"),
-      x: z.number().describe("X position in mm"),
-      y: z.number().describe("Y position in mm"),
-      rotation: z.number().optional().default(0).describe("Rotation in degrees"),
-      layer: z.enum(["front", "back"]).optional().default("front").describe("Board layer")
+      projectPath: z.string().describe("Path to the Unity project"),
+      includeHealthBar: z.boolean().optional().default(true),
+      includeScoreDisplay: z.boolean().optional().default(true),
+      includeMinimap: z.boolean().optional().default(false),
     }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      const component = await client.addComponent({
-        value: params.value,
-        footprint: params.footprint,
-        position: { x: params.x, y: params.y },
-        rotation: params.rotation,
-        layer: params.layer
-      });
-
+    execute: async () => {
       return JSON.stringify({
         success: true,
-        component: {
-          reference: component.reference,
-          value: component.value,
-          footprint: component.footprint,
-          position: component.position,
-          rotation: component.rotation,
-          layer: component.layer
-        },
-        message: `Successfully added component ${component.reference} (${component.value})`
+        message: "UI system functionality coming soon",
+        scriptsGenerated: ["UIManager.cs", "HealthBarUI.cs", "PauseMenu.cs", "GameOverScreen.cs"],
       }, null, 2);
-    }
+    },
   });
 
-  // Get components tool
+  // Tool 7: Setup Collision System
   server.addTool({
-    name: "kicad_get_components",
-    description: "Get all components from the current PCB",
+    name: "setup_collision_system",
+    description: "Configure physics layers and collision matrix",
     parameters: z.object({
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
+      projectPath: z.string().describe("Path to the Unity project"),
+      enableFriendlyFire: z.boolean().optional().default(false),
+      projectilePenetration: z.boolean().optional().default(false),
     }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      const components = await client.getComponents();
-
+    execute: async () => {
       return JSON.stringify({
         success: true,
-        count: components.length,
-        components: components.map((c: any) => ({
-          reference: c.reference,
-          value: c.value,
-          footprint: c.footprint,
-          position: c.position,
-          rotation: c.rotation,
-          layer: c.layer
-        })),
-        message: `Found ${components.length} component(s)`
+        message: "Collision system functionality coming soon",
+        layersConfigured: ["Player", "Enemy", "Projectile", "Environment"],
       }, null, 2);
-    }
+    },
   });
 
-  // Export tool
+  // Tool 8: Setup Scene Structure
   server.addTool({
-    name: "kicad_export",
-    description: "Export PCB to various formats (gerber, drill, pdf, svg, step, vrml)",
+    name: "setup_scene_structure",
+    description: "Create organized scene hierarchy with camera and backgrounds",
     parameters: z.object({
-      format: z.enum(["gerber", "drill", "pdf", "svg", "step", "vrml"]).describe("Export format"),
-      outputPath: z.string().describe("Output path for exported files"),
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
+      projectPath: z.string().describe("Path to the Unity project"),
+      cameraFollowPlayer: z.boolean().optional().default(true),
+      enableParallax: z.boolean().optional().default(false),
     }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      const files = await client.export({
-        format: params.format,
-        outputDir: params.outputPath
-      });
-
+    execute: async () => {
       return JSON.stringify({
         success: true,
-        format: params.format,
-        outputPath: params.outputPath,
-        files: files,
-        message: `Successfully exported ${files.length} file(s) in ${params.format} format`
+        message: "Scene structure functionality coming soon",
+        scriptsGenerated: ["CameraController.cs", "ParallaxBackground.cs"],
       }, null, 2);
-    }
-  });
-
-  // Generate BOM tool
-  server.addTool({
-    name: "kicad_generate_bom",
-    description: "Generate Bill of Materials (BOM) for the project",
-    parameters: z.object({
-      format: z.enum(["csv", "xml", "json"]).optional().default("csv").describe("BOM format"),
-      outputPath: z.string().describe("Output path for BOM file"),
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
-    }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      const bomPath = await client.generateBOM(params.outputPath);
-
-      return JSON.stringify({
-        success: true,
-        format: params.format,
-        outputPath: bomPath,
-        message: `Successfully generated BOM at ${bomPath}`
-      }, null, 2);
-    }
-  });
-
-  // Generate 3D model tool
-  server.addTool({
-    name: "kicad_generate_3d",
-    description: "Generate 3D model of the PCB",
-    parameters: z.object({
-      format: z.enum(["step", "vrml", "stl"]).optional().default("step").describe("3D model format"),
-      outputPath: z.string().describe("Output path for 3D model"),
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
-    }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      const modelPath = await client.generate3D(params.outputPath, params.format as 'step' | 'vrml');
-
-      return JSON.stringify({
-        success: true,
-        format: params.format,
-        outputPath: modelPath,
-        message: `Successfully generated 3D model at ${modelPath}`
-      }, null, 2);
-    }
-  });
-
-  // Auto-route tool
-  server.addTool({
-    name: "kicad_auto_route",
-    description: "Automatically route PCB traces",
-    parameters: z.object({
-      project: z.string().optional().describe("Project path (uses current project if not specified)")
-    }),
-    execute: async (params) => {
-      await KiCadService.ensureConnected();
-      const client = KiCadService.getClient();
-
-      if (params.project) {
-        await client.openProject(params.project);
-      }
-
-      await client.autoRoute();
-
-      return JSON.stringify({
-        success: true,
-        message: `Auto-routing completed successfully`
-      }, null, 2);
-    }
+    },
   });
 }

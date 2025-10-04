@@ -8,8 +8,8 @@ async function startServer() {
   try {
     // Create a new FastMCP server instance
     const server = new FastMCP({
-      name: "MCP Server",
-      version: "1.0.0"
+      name: "Unity MCP Server",
+      version: "0.1.0"
     });
 
     // Register all resources, tools, and prompts
@@ -18,8 +18,8 @@ async function startServer() {
     registerPrompts(server);
     
     // Log server information
-    console.error(`MCP Server initialized`);
-    console.error("Server is ready to handle requests");
+    console.error(`Unity MCP Server initialized`);
+    console.error("Server is ready to automate Unity game development");
     
     return server;
   } catch (error) {

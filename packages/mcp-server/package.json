@@ -1,7 +1,7 @@
 {
-  "name": "@spark-apps/mcp-server",
+  "name": "@spark-apps/unity-mcp-server",
   "version": "0.1.0",
-  "description": "MCP server implementation for KiCad automation",
+  "description": "MCP server implementation for Unity game development automation",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,13 +19,17 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@spark-apps/kicad-client": "workspace:*",
     "cors": "^2.8.5",
     "fastmcp": "^1.21.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "fs-extra": "^11.2.0",
+    "handlebars": "^4.7.8",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
-    "@types/node": "^20.17.24"
+    "@types/node": "^20.17.24",
+    "@types/fs-extra": "^11.0.4",
+    "@types/js-yaml": "^4.0.9"
   }
 }
