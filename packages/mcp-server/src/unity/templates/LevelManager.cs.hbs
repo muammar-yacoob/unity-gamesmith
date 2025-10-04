@@ -1,0 +1,104 @@
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+
+/// <summary>
+/// Manages game levels and progression
+/// </summary>
+public class LevelManager : MonoBehaviour
+{
+    [Header("Level Settings")]
+    [SerializeField] private int totalLevels = {{numberOfLevels}};
+    [SerializeField] private float difficultyMultiplier = {{difficultyMultiplier}}f;
+
+    [Header("Current State")]
+    private int currentLevel = 1;
+    private bool levelActive = false;
+
+    [Header("Events")]
+    public UnityEvent<int> OnLevelStart;
+    public UnityEvent<int> OnLevelComplete;
+    public UnityEvent OnGameComplete;
+    public UnityEvent OnGameOver;
+
+    [Header("References")]
+    private WaveSpawner waveSpawner;
+
+    private void Awake()
+    {
+        waveSpawner = GetComponent<WaveSpawner>();
+        if (waveSpawner == null)
+        {
+            Debug.LogError("LevelManager: WaveSpawner component not found!");
+        }
+    }
+
+    private void Start()
+    {
+        StartLevel();
+    }
+
+    public void StartLevel()
+    {
+        if (currentLevel > totalLevels)
+        {
+            CompleteGame();
+            return;
+        }
+
+        levelActive = true;
+        OnLevelStart?.Invoke(currentLevel);
+
+        // Configure wave spawner for current level
+        if (waveSpawner != null)
+        {
+            float levelDifficulty = Mathf.Pow(difficultyMultiplier, currentLevel - 1);
+            waveSpawner.StartWaves(currentLevel, levelDifficulty);
+        }
+    }
+
+    public void CompleteLevel()
+    {
+        if (!levelActive) return;
+
+        levelActive = false;
+        OnLevelComplete?.Invoke(currentLevel);
+
+        currentLevel++;
+
+        // Auto-start next level after delay
+        Invoke(nameof(StartLevel), 3f);
+    }
+
+    public void FailLevel()
+    {
+        levelActive = false;
+        OnGameOver?.Invoke();
+
+        // TODO: Show game over screen
+        // Invoke(nameof(RestartLevel), 3f);
+    }
+
+    public void RestartLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    private void CompleteGame()
+    {
+        OnGameComplete?.Invoke();
+        Debug.Log("Congratulations! All levels completed!");
+        // TODO: Show victory screen
+    }
+
+    public void OnAllWavesComplete()
+    {
+        // Called by WaveSpawner when all waves are done
+        CompleteLevel();
+    }
+
+    public int GetCurrentLevel() => currentLevel;
+    public int GetTotalLevels() => totalLevels;
+    public float GetDifficultyMultiplier() => difficultyMultiplier;
+    public bool IsLevelActive() => levelActive;
+}

@@ -4,6 +4,7 @@ import { UnityProjectService } from "../unity/services/UnityProjectService.js";
 import { PlayerService } from "../unity/services/PlayerService.js";
 import { ProjectileService } from "../unity/services/ProjectileService.js";
 import { EnemyService } from "../unity/services/EnemyService.js";
+import { LevelService } from "../unity/services/LevelService.js";
 
 /**
  * Register all Unity MCP tools with the server
@@ -13,6 +14,7 @@ export function registerTools(server: FastMCP) {
   const playerService = new PlayerService();
   const projectileService = new ProjectileService();
   const enemyService = new EnemyService();
+  const levelService = new LevelService();
 
   // Tool 1: Create Unity Project
   server.addTool({
@@ -150,16 +152,26 @@ export function registerTools(server: FastMCP) {
     description: "Create level management with wave-based enemy spawning",
     parameters: z.object({
       projectPath: z.string().describe("Path to the Unity project"),
-      numberOfLevels: z.number().optional().default(5).describe("Total levels"),
-      difficultyMultiplier: z.number().optional().default(1.5).describe("Difficulty scaling per level"),
-      spawnPoints: z.number().optional().default(4).describe("Number of spawn locations"),
+      numberOfLevels: z.number().optional().default(5).describe("Total number of levels in the game"),
+      difficultyMultiplier: z.number().optional().default(1.5).describe("Difficulty scaling multiplier per level"),
+      spawnPoints: z.number().optional().default(4).describe("Number of spawn point prefabs to create"),
     }),
-    execute: async () => {
-      return JSON.stringify({
-        success: true,
-        message: "Level system functionality coming soon",
-        scriptsGenerated: ["LevelManager.cs", "WaveSpawner.cs", "SpawnPoint.cs"],
-      }, null, 2);
+    execute: async (params) => {
+      try {
+        const result = await levelService.setupLevelSystem({
+          projectPath: params.projectPath,
+          numberOfLevels: params.numberOfLevels,
+          difficultyMultiplier: params.difficultyMultiplier,
+          spawnPoints: params.spawnPoints,
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        }, null, 2);
+      }
     },
   });
 
