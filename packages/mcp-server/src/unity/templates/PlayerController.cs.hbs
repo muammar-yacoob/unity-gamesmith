@@ -1,0 +1,35 @@
+using UnityEngine;
+
+/// <summary>
+/// Controls player movement and input handling
+/// </summary>
+public class PlayerController : MonoBehaviour
+{
+    [Header("Movement Settings")]
+    [SerializeField] private float movementSpeed = {{movementSpeed}}f;
+
+    [Header("Components")]
+    private Rigidbody2D rb;
+    private Vector2 movementInput;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
+    private void Update()
+    {
+        // Get input
+        movementInput.x = Input.GetAxisRaw("Horizontal");
+        movementInput.y = Input.GetAxisRaw("Vertical");
+
+        // Normalize diagonal movement
+        movementInput.Normalize();
+    }
+
+    private void FixedUpdate()
+    {
+        // Apply movement
+        rb.velocity = movementInput * movementSpeed;
+    }
+}

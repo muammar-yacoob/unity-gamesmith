@@ -1,12 +1,14 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
 import { UnityProjectService } from "../unity/services/UnityProjectService.js";
+import { PlayerService } from "../unity/services/PlayerService.js";
 
 /**
  * Register all Unity MCP tools with the server
  */
 export function registerTools(server: FastMCP) {
   const projectService = new UnityProjectService();
+  const playerService = new PlayerService();
 
   // Tool 1: Create Unity Project
   server.addTool({
@@ -53,12 +55,22 @@ export function registerTools(server: FastMCP) {
       shootingCooldown: z.number().optional().default(0.5).describe("Time between shots (seconds)"),
       maxHealth: z.number().optional().default(100).describe("Maximum player health"),
     }),
-    execute: async () => {
-      return JSON.stringify({
-        success: true,
-        message: "Player setup functionality coming soon - C# script templates will be generated",
-        scriptsGenerated: ["PlayerController.cs", "PlayerHealth.cs", "PlayerShooting.cs"],
-      }, null, 2);
+    execute: async (params) => {
+      try {
+        const result = await playerService.setupPlayer({
+          projectPath: params.projectPath,
+          movementSpeed: params.movementSpeed,
+          shootingCooldown: params.shootingCooldown,
+          maxHealth: params.maxHealth,
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        }, null, 2);
+      }
     },
   });
 

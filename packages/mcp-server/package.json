@@ -9,7 +9,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/unity && cp -r src/unity/templates dist/unity/",
     "dev": "tsc --watch",
     "start": "bun dist/index.js",
     "clean": "rm -rf dist",

@@ -1,0 +1,51 @@
+using UnityEngine;
+
+/// <summary>
+/// Handles player shooting mechanics
+/// </summary>
+public class PlayerShooting : MonoBehaviour
+{
+    [Header("Shooting Settings")]
+    [SerializeField] private GameObject projectilePrefab;
+    [SerializeField] private Transform firePoint;
+    [SerializeField] private float shootingCooldown = {{shootingCooldown}}f;
+
+    private float lastShootTime;
+
+    private void Update()
+    {
+        // Check for shoot input
+        if (Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space))
+        {
+            TryShoot();
+        }
+    }
+
+    private void TryShoot()
+    {
+        if (Time.time >= lastShootTime + shootingCooldown)
+        {
+            Shoot();
+            lastShootTime = Time.time;
+        }
+    }
+
+    private void Shoot()
+    {
+        if (projectilePrefab == null || firePoint == null)
+        {
+            Debug.LogWarning("PlayerShooting: Missing projectile prefab or fire point!");
+            return;
+        }
+
+        // Instantiate projectile at fire point
+        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+
+        // Optional: Add velocity to projectile here if needed
+        Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = firePoint.up * 10f; // Adjust projectile speed as needed
+        }
+    }
+}
