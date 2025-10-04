@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**KiCad MCP** is a Model Context Protocol (MCP) server designed to automate KiCad PCB design tasks through natural language and API endpoints. Built on FastMCP, it provides LLM-driven automation for PCB design, DRC cleanup, BOM generation, 3D rendering, and cost analysis.
+**Unity MCP** is a Model Context Protocol (MCP) server designed to automate Unity game development through natural language and API endpoints. Built on FastMCP, it provides LLM-driven automation for creating 2D shooter games with player movement, enemy systems, level progression, and complete game mechanics.
 
 The goal is to enable commands like:
 
-- "Generate a 4-layer PCB for an ESP32 dev board with USB-C power"
-- "Fix all unconnected nets and rebalance copper fills"
-- "Render a realistic 3D model with silkscreen and component textures"
-- "Estimate production cost for 100 units via JLCPCB"
+- "Create a 2D top-down shooter with player movement and enemies"
+- "Add a shooting mechanic with projectiles and collision detection"
+- "Set up a 5-level progression system with increasing difficulty"
+- "Create enemy AI that follows and attacks the player"
 
 ## Development Commands
 

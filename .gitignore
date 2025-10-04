@@ -65,8 +65,9 @@ dev-debug.log
 *.sw?
 # OS specific
 
+/.taskmaster
+/.claude
+
 # Task files
 # tasks.json
 # tasks/ 
-/.taskmaster
-/.claude

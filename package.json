@@ -1,7 +1,7 @@
 {
-  "name": "@spark-apps/kicad-mcp",
+  "name": "@spark-apps/unity-mcp",
   "version": "0.1.0",
-  "description": "Model Context Protocol (MCP) server for automated KiCad PCB design",
+  "description": "Model Context Protocol (MCP) server for automated Unity game development and 2D shooter creation",
   "type": "module",
   "private": false,
   "workspaces": [
@@ -22,20 +22,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/muammar-yacoob/kicad-mcp.git"
+    "url": "git+https://github.com/muammar-yacoob/unity-mcp.git"
   },
   "publishConfig": {
     "access": "public"
   },
   "keywords": [
-    "kicad",
-    "pcb",
+    "unity",
+    "game-development",
     "mcp",
     "model-context-protocol",
     "automation",
-    "eda",
-    "circuit-design",
-    "pcb-automation"
+    "2d-shooter",
+    "game-engine",
+    "unity-automation"
   ],
   "author": "Muammar Yacoob <https://github.com/muammar-yacoob>",
   "license": "MIT",
@@ -58,7 +58,7 @@
     "eslint-visitor-keys": "^4.2.1"
   },
   "bugs": {
-    "url": "https://github.com/muammar-yacoob/kicad-mcp/issues"
+    "url": "https://github.com/muammar-yacoob/unity-mcp/issues"
   },
-  "homepage": "https://github.com/muammar-yacoob/kicad-mcp#readme"
+  "homepage": "https://github.com/muammar-yacoob/unity-mcp#readme"
 }
