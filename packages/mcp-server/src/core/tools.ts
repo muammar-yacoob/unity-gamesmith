@@ -2,6 +2,7 @@ import { FastMCP } from "fastmcp";
 import { z } from "zod";
 import { UnityProjectService } from "../unity/services/UnityProjectService.js";
 import { PlayerService } from "../unity/services/PlayerService.js";
+import { ProjectileService } from "../unity/services/ProjectileService.js";
 
 /**
  * Register all Unity MCP tools with the server
@@ -9,6 +10,7 @@ import { PlayerService } from "../unity/services/PlayerService.js";
 export function registerTools(server: FastMCP) {
   const projectService = new UnityProjectService();
   const playerService = new PlayerService();
+  const projectileService = new ProjectileService();
 
   // Tool 1: Create Unity Project
   server.addTool({
@@ -80,17 +82,28 @@ export function registerTools(server: FastMCP) {
     description: "Generate projectile system with physics and collision",
     parameters: z.object({
       projectPath: z.string().describe("Path to the Unity project"),
-      projectileSpeed: z.number().optional().default(10.0).describe("Projectile velocity"),
+      speed: z.number().optional().default(10.0).describe("Projectile velocity (units per second)"),
       damage: z.number().optional().default(10).describe("Damage per hit"),
-      lifetime: z.number().optional().default(5.0).describe("Seconds before auto-destroy"),
-      weaponType: z.enum(["single", "burst", "spread"]).optional().default("single"),
+      lifetime: z.number().optional().default(3.0).describe("Seconds before auto-destroy"),
+      destroyOnHit: z.boolean().optional().default(true).describe("Destroy projectile on collision"),
     }),
-    execute: async () => {
-      return JSON.stringify({
-        success: true,
-        message: "Projectile system functionality coming soon",
-        scriptsGenerated: ["Projectile.cs", "WeaponSystem.cs"],
-      }, null, 2);
+    execute: async (params) => {
+      try {
+        const result = await projectileService.setupProjectile({
+          projectPath: params.projectPath,
+          speed: params.speed,
+          damage: params.damage,
+          lifetime: params.lifetime,
+          destroyOnHit: params.destroyOnHit,
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        }, null, 2);
+      }
     },
   });
 
