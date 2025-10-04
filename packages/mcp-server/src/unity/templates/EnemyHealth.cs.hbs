@@ -1,0 +1,66 @@
+using UnityEngine;
+using UnityEngine.Events;
+
+/// <summary>
+/// Manages enemy health and death
+/// </summary>
+public class EnemyHealth : MonoBehaviour
+{
+    [Header("Health Settings")]
+    [SerializeField] private int maxHealth = {{maxHealth}};
+    private int currentHealth;
+
+    [Header("Death Settings")]
+    [SerializeField] private float destroyDelay = 0.5f;
+
+    [Header("Events")]
+    public UnityEvent<int> OnHealthChanged;
+    public UnityEvent OnDeath;
+
+    private bool isDead = false;
+
+    private void Start()
+    {
+        currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(currentHealth);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (isDead) return;
+
+        currentHealth -= damage;
+        currentHealth = Mathf.Max(currentHealth, 0);
+
+        OnHealthChanged?.Invoke(currentHealth);
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        if (isDead) return;
+        isDead = true;
+
+        OnDeath?.Invoke();
+
+        // Disable AI and attack components
+        var ai = GetComponent<EnemyAI>();
+        if (ai != null) ai.enabled = false;
+
+        var attack = GetComponent<EnemyAttack>();
+        if (attack != null) attack.enabled = false;
+
+        // TODO: Play death animation/effects
+
+        // Destroy after delay
+        Destroy(gameObject, destroyDelay);
+    }
+
+    public int GetCurrentHealth() => currentHealth;
+    public int GetMaxHealth() => maxHealth;
+    public bool IsDead() => isDead;
+}

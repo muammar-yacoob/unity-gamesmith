@@ -1,0 +1,105 @@
+using UnityEngine;
+
+/// <summary>
+/// Handles enemy attack behavior
+/// Supports both contact damage and projectile shooting
+/// </summary>
+public class EnemyAttack : MonoBehaviour
+{
+    [Header("Attack Settings")]
+    [SerializeField] private int damage = {{damage}};
+    [SerializeField] private float attackRange = {{attackRange}}f;
+    [SerializeField] private float attackCooldown = 1.5f;
+
+    [Header("Projectile Settings (for shooter types)")]
+    [SerializeField] private GameObject projectilePrefab;
+    [SerializeField] private Transform firePoint;
+    [SerializeField] private bool canShoot = false;
+
+    [Header("Contact Damage Settings")]
+    [SerializeField] private bool dealContactDamage = true;
+    [SerializeField] private float contactDamageCooldown = 1f;
+
+    private Transform player;
+    private EnemyHealth health;
+    private float lastAttackTime;
+    private float lastContactDamageTime;
+
+    private void Awake()
+    {
+        health = GetComponent<EnemyHealth>();
+    }
+
+    private void Start()
+    {
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+        }
+    }
+
+    private void Update()
+    {
+        if (player == null || health == null || health.IsDead())
+        {
+            return;
+        }
+
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+
+        // Projectile attack
+        if (canShoot && distanceToPlayer <= attackRange && Time.time >= lastAttackTime + attackCooldown)
+        {
+            ShootAtPlayer();
+            lastAttackTime = Time.time;
+        }
+    }
+
+    private void ShootAtPlayer()
+    {
+        if (projectilePrefab == null || firePoint == null)
+        {
+            Debug.LogWarning("EnemyAttack: Missing projectile prefab or fire point!");
+            return;
+        }
+
+        // Calculate direction to player
+        Vector2 direction = (player.position - firePoint.position).normalized;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+
+        // Instantiate and fire projectile
+        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, Quaternion.Euler(0, 0, angle));
+        Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = direction * 8f;
+        }
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (!dealContactDamage || health.IsDead())
+        {
+            return;
+        }
+
+        // Deal contact damage to player
+        if (collision.gameObject.CompareTag("Player") && Time.time >= lastContactDamageTime + contactDamageCooldown)
+        {
+            PlayerHealth playerHealth = collision.gameObject.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage);
+                lastContactDamageTime = Time.time;
+            }
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        // Visualize attack range
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+}

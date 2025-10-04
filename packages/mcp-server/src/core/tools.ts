@@ -3,6 +3,7 @@ import { z } from "zod";
 import { UnityProjectService } from "../unity/services/UnityProjectService.js";
 import { PlayerService } from "../unity/services/PlayerService.js";
 import { ProjectileService } from "../unity/services/ProjectileService.js";
+import { EnemyService } from "../unity/services/EnemyService.js";
 
 /**
  * Register all Unity MCP tools with the server
@@ -11,6 +12,7 @@ export function registerTools(server: FastMCP) {
   const projectService = new UnityProjectService();
   const playerService = new PlayerService();
   const projectileService = new ProjectileService();
+  const enemyService = new EnemyService();
 
   // Tool 1: Create Unity Project
   server.addTool({
@@ -115,16 +117,30 @@ export function registerTools(server: FastMCP) {
       projectPath: z.string().describe("Path to the Unity project"),
       enemyType: z.enum(["chaser", "shooter", "tank", "fast"]).describe("Enemy behavior type"),
       health: z.number().optional().default(30).describe("Enemy health points"),
-      movementSpeed: z.number().optional().default(3.0).describe("Movement speed"),
+      movementSpeed: z.number().optional().default(3.0).describe("Movement speed (units per second)"),
       damage: z.number().optional().default(10).describe("Damage dealt to player"),
-      attackRange: z.number().optional().default(1.0).describe("Attack distance"),
+      attackRange: z.number().optional().default(1.0).describe("Attack distance (units)"),
+      detectionRange: z.number().optional().default(10.0).describe("Player detection range (units)"),
     }),
-    execute: async () => {
-      return JSON.stringify({
-        success: true,
-        message: "Enemy creation functionality coming soon",
-        scriptsGenerated: ["EnemyAI.cs", "EnemyHealth.cs", "EnemyAttack.cs"],
-      }, null, 2);
+    execute: async (params) => {
+      try {
+        const result = await enemyService.setupEnemy({
+          projectPath: params.projectPath,
+          enemyType: params.enemyType,
+          health: params.health,
+          movementSpeed: params.movementSpeed,
+          damage: params.damage,
+          attackRange: params.attackRange,
+          detectionRange: params.detectionRange,
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        }, null, 2);
+      }
     },
   });
 

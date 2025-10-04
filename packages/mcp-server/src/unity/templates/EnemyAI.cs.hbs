@@ -1,0 +1,140 @@
+using UnityEngine;
+
+/// <summary>
+/// Enemy AI behavior controller
+/// Supports multiple behavior types: chaser, shooter, tank, fast
+/// </summary>
+public class EnemyAI : MonoBehaviour
+{
+    public enum BehaviorType
+    {
+        Chaser,   // Moves directly toward player
+        Shooter,  // Maintains distance and shoots
+        Tank,     // Slow but durable, charges player
+        Fast      // Quick movement, hit-and-run tactics
+    }
+
+    [Header("AI Settings")]
+    [SerializeField] private BehaviorType behaviorType = BehaviorType.{{behaviorType}};
+    [SerializeField] private float movementSpeed = {{movementSpeed}}f;
+    [SerializeField] private float detectionRange = {{detectionRange}}f;
+
+    [Header("Behavior-Specific Settings")]
+    [SerializeField] private float shooterPreferredDistance = 5f;
+    [SerializeField] private float fastDashCooldown = 2f;
+
+    [Header("Components")]
+    private Rigidbody2D rb;
+    private Transform player;
+    private EnemyHealth health;
+
+    private float lastDashTime;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        health = GetComponent<EnemyHealth>();
+    }
+
+    private void Start()
+    {
+        // Find player
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (player == null || health == null || health.IsDead())
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+
+        // Only act if player is within detection range
+        if (distanceToPlayer > detectionRange)
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+
+        // Execute behavior based on type
+        switch (behaviorType)
+        {
+            case BehaviorType.Chaser:
+                ChaserBehavior();
+                break;
+            case BehaviorType.Shooter:
+                ShooterBehavior(distanceToPlayer);
+                break;
+            case BehaviorType.Tank:
+                TankBehavior();
+                break;
+            case BehaviorType.Fast:
+                FastBehavior();
+                break;
+        }
+    }
+
+    private void ChaserBehavior()
+    {
+        Vector2 direction = (player.position - transform.position).normalized;
+        rb.velocity = direction * movementSpeed;
+    }
+
+    private void ShooterBehavior(float distanceToPlayer)
+    {
+        Vector2 direction = (player.position - transform.position).normalized;
+
+        if (distanceToPlayer > shooterPreferredDistance)
+        {
+            // Move toward player
+            rb.velocity = direction * movementSpeed * 0.7f;
+        }
+        else if (distanceToPlayer < shooterPreferredDistance * 0.8f)
+        {
+            // Move away from player
+            rb.velocity = -direction * movementSpeed * 0.5f;
+        }
+        else
+        {
+            // Maintain distance
+            rb.velocity = Vector2.zero;
+        }
+    }
+
+    private void TankBehavior()
+    {
+        // Similar to chaser but slower (speed modifier in inspector)
+        Vector2 direction = (player.position - transform.position).normalized;
+        rb.velocity = direction * movementSpeed;
+    }
+
+    private void FastBehavior()
+    {
+        Vector2 direction = (player.position - transform.position).normalized;
+
+        // Dash toward player periodically
+        if (Time.time >= lastDashTime + fastDashCooldown)
+        {
+            rb.velocity = direction * movementSpeed * 2f;
+            lastDashTime = Time.time;
+        }
+        else
+        {
+            rb.velocity = direction * movementSpeed * 0.5f;
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        // Visualize detection range
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
+    }
+}
