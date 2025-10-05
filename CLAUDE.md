@@ -162,7 +162,7 @@ import { registerTools } from '../core/tools.ts'; // Wrong
 - This means TypeScript follows Node.js ESM rules: relative imports must include extensions
 - Output directory is `dist/` (source maps and declarations generated)
 
-<!-- KiCad integration content removed as the project now focuses exclusively on Unity MCP. -->
+<!-- unity integration content removed as the project now focuses exclusively on Unity MCP. -->
 
 ## MCP Client Configuration
 

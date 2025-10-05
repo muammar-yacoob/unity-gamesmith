@@ -1,3 +1,3 @@
 // Export all services
 export * from './greeting-service.js';
-// KiCad-related services removed
+// unity-related services removed

@@ -8,6 +8,8 @@
 [![Report Bug](https://img.shields.io/badge/Report-Bug-red?style=flat-square)](https://github.com/muammar-yacoob/unity-mcp/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/muammar-yacoob/unity-mcp?style=social)](https://github.com/muammar-yacoob/unity-mcp)
 
+[discord-link]: https://discord.gg/5skXfKRytR
+
 ## ✨ What It Does
 
 Control the Unity game engine through natural language using AI coding assistants like Claude Desktop. This Model Context Protocol (MCP) server enables you to rapidly prototype, build, and manage Unity projects by simply describing your game ideas.
@@ -133,61 +135,20 @@ npm install -g @spark-apps/unity-mcp
 
 > "Add a robot character with WASD movement and jump"
 
-**Features:**
-- Automatic search for rigged, animated characters on Sketchfab
-- WASD movement with camera-relative controls
-- Jump mechanic with gravity
-- Cinemachine camera follow system
-- Animator integration (Speed, IsGrounded, Jump parameters)
-- Comprehensive setup documentation
-
-**Note:** Requires Cinemachine package (installed via Unity Package Manager). Optional Sketchfab API token for downloading models directly.
-
 </details>
+---
 
-## 🔧 Using with Unity
+## 🌱 Support & Contributions
 
-### Workflow Integration
+⭐ **Star the repo** & I power up like Mario 🍄  
+☕ **Devs run on coffee** - [Buy me one?][coffee-link]  
+💰 **Crypto tips welcome** - [Tip in crypto](https://tip.md/muammar-yacoob)  
+🤝 **Contributions are welcome** - [🍴 Fork][fork-link], improve, PR!  
+🎥 **Need help?** <img src="https://img.icons8.com/color/20/youtube-play.png" alt="YouTube" width="20" height="20" style="vertical-align: middle;"> [Setup Tutorial][vid-link] • <img src="https://img.icons8.com/color/20/discord--v2.png" alt="Discord" width="20" height="20" style="vertical-align: middle;"> [Join Discord][discord-link]
 
-1. **Install Unity** (2022.3 LTS or later)
-2. **Open your AI Assistant** (e.g., Claude Desktop, Cursor)
-3. **Ask your AI Assistant to create your game** using natural language prompts
-4. **Open the generated project** in Unity Editor
-5. **Test and iterate** with your AI Assistant's help
+## 💖 Sponsor
+Your support helps maintain and improve the tool. please consider [sponsoring the project][stars-link]. 
 
-### Supported Unity Versions
-
-- **Unity 2022.3 LTS** (recommended)
-- **Unity 2023.x** (supported)
-- **Unity 6** (supported)
-
-## 🐛 Troubleshooting
-
-### MCP Server Not Showing in Your AI Assistant
-
-1. Verify Node.js is installed: `node --version`
-2. Check configuration file path is correct
-3. Ensure JSON syntax is valid (use a JSON validator)
-4. Restart your AI Assistant completely
-5. Check AI Assistant logs (if available)
-
-### Need Help?
-
-- 📖 [Documentation](https://github.com/muammar-yacoob/unity-mcp)
-- 🐛 [Report Bug](https://github.com/muammar-yacoob/unity-mcp/issues)
-- 💬 [Discussions](https://github.com/muammar-yacoob/unity-mcp/discussions)
-
-## 📝 License
-
-MIT © [Muammar Yacoob](https://github.com/muammar-yacoob)
-
-## 🌟 Support
-
-If you find this MCP server helpful:
-
-- ⭐ Star the repository
-- 💖 [Sponsor the project](https://github.com/sponsors/muammar-yacoob)
-- 🐛 Report bugs and suggest features
 
 ---
 

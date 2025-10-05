@@ -1,5 +1,5 @@
 import { FastMCP } from "fastmcp";
-// KiCadService removed
+// unityService removed
 
 /**
  * Register all resources with the MCP server
@@ -7,5 +7,5 @@ import { FastMCP } from "fastmcp";
  * @param server The FastMCP server instance
  */
 export function registerResources(server: FastMCP) {
-  // All KiCad-related resources removed as the project now focuses exclusively on Unity MCP.
+  // All unity-related resources removed as the project now focuses exclusively on Unity MCP.
 }
