@@ -42,11 +42,11 @@
   "author": "Muammar Yacoob <https://github.com/muammar-yacoob>",
   "license": "MIT",
   "scripts": {
-    "build": "tsc && mkdir -p dist/unity && cp -r src/unity/templates dist/unity/",
-    "dev": "tsc --watch",
+    "build": "bunx tsc && mkdir -p dist/unity && cp -r src/unity/templates dist/unity/",
+    "dev": "bunx tsc --watch",
     "start": "bun dist/index.js",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit",
+    "type-check": "bunx tsc --noEmit",
     "lint": "biome lint src",
     "format": "biome format --write src",
     "test": "bun test"
@@ -60,9 +60,6 @@
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/node": "^20.17.24",
-    "@types/fs-extra": "^11.0.4",
-    "@types/js-yaml": "^4.0.9"
+    "@types/node": "^20.17.24"
   }
 }

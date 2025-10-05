@@ -52,11 +52,7 @@
     "bun": ">=1.0.0"
   },
   "packageManager": "bun@1.1.0",
-  "main": "eslint.config.js",
-  "dependencies": {
-    "eslint-scope": "^8.4.0",
-    "eslint-visitor-keys": "^4.2.1"
-  },
+  
   "bugs": {
     "url": "https://github.com/muammar-yacoob/unity-mcp/issues"
   },
