@@ -162,22 +162,7 @@ import { registerTools } from '../core/tools.ts'; // Wrong
 - This means TypeScript follows Node.js ESM rules: relative imports must include extensions
 - Output directory is `dist/` (source maps and declarations generated)
 
-## KiCad Integration (Planned)
-
-This MCP is intended to interface with:
-
-- **KiCad CLI** for PCB operations (project creation, DRC/ERC checks, exports)
-- **Python KiCad scripting bridge** for advanced automation
-- **FreeCAD** for 3D rendering
-- **External APIs:** OctoPart, JLCPCB, PCBWay for BOM/cost data
-
-The current codebase has placeholder tools (`hello_world`, `goodbye`). Actual KiCad integration will require:
-
-- Tools for project creation, DRC/ERC checks, 3D export, BOM generation, routing, batch operations
-- Resources for accessing KiCad project files, schematics, PCB layouts, and metadata
-- Prompts for guiding LLM-based PCB design tasks
-
-See `kicad_mcp_prd.md` for full product requirements.
+<!-- KiCad integration content removed as the project now focuses exclusively on Unity MCP. -->
 
 ## MCP Client Configuration
 
