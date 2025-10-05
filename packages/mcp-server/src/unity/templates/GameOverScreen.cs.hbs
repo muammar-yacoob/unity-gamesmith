@@ -1,0 +1,63 @@
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+
+/// <summary>
+/// Game over screen with restart and quit options
+/// </summary>
+public class GameOverScreen : MonoBehaviour
+{
+    [Header("UI Components")]
+    [SerializeField] private Text finalScoreText;
+    [SerializeField] private Text gameOverMessageText;
+
+    [Header("Messages")]
+    [SerializeField] private string gameOverMessage = "Game Over";
+
+    private void OnEnable()
+    {
+        // Update UI when screen is shown
+        UpdateFinalScore();
+    }
+
+    private void UpdateFinalScore()
+    {
+        UIManager uiManager = FindObjectOfType<UIManager>();
+        if (uiManager != null && finalScoreText != null)
+        {
+            // Get score from UI manager
+            // finalScoreText.text = "Final Score: " + uiManager.GetScore();
+            finalScoreText.text = "Game Over";
+        }
+
+        if (gameOverMessageText != null)
+        {
+            gameOverMessageText.text = gameOverMessage;
+        }
+    }
+
+    public void OnRestartButton()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public void OnMainMenuButton()
+    {
+        Time.timeScale = 1f;
+        // TODO: Load main menu scene
+        // SceneManager.LoadScene("MainMenu");
+        Debug.Log("Main menu not implemented yet");
+    }
+
+    public void OnQuitButton()
+    {
+        Time.timeScale = 1f;
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+}

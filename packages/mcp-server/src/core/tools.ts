@@ -5,6 +5,7 @@ import { PlayerService } from "../unity/services/PlayerService.js";
 import { ProjectileService } from "../unity/services/ProjectileService.js";
 import { EnemyService } from "../unity/services/EnemyService.js";
 import { LevelService } from "../unity/services/LevelService.js";
+import { UIService } from "../unity/services/UIService.js";
 
 /**
  * Register all Unity MCP tools with the server
@@ -15,6 +16,7 @@ export function registerTools(server: FastMCP) {
   const projectileService = new ProjectileService();
   const enemyService = new EnemyService();
   const levelService = new LevelService();
+  const uiService = new UIService();
 
   // Tool 1: Create Unity Project
   server.addTool({
@@ -181,16 +183,26 @@ export function registerTools(server: FastMCP) {
     description: "Generate game UI with HUD, menus, and screens",
     parameters: z.object({
       projectPath: z.string().describe("Path to the Unity project"),
-      includeHealthBar: z.boolean().optional().default(true),
-      includeScoreDisplay: z.boolean().optional().default(true),
-      includeMinimap: z.boolean().optional().default(false),
+      includeHealthBar: z.boolean().optional().default(true).describe("Include health bar in HUD"),
+      includeScoreDisplay: z.boolean().optional().default(true).describe("Include score display in HUD"),
+      includeMinimap: z.boolean().optional().default(false).describe("Include minimap (future feature)"),
     }),
-    execute: async () => {
-      return JSON.stringify({
-        success: true,
-        message: "UI system functionality coming soon",
-        scriptsGenerated: ["UIManager.cs", "HealthBarUI.cs", "PauseMenu.cs", "GameOverScreen.cs"],
-      }, null, 2);
+    execute: async (params) => {
+      try {
+        const result = await uiService.setupUI({
+          projectPath: params.projectPath,
+          includeHealthBar: params.includeHealthBar,
+          includeScoreDisplay: params.includeScoreDisplay,
+          includeMinimap: params.includeMinimap,
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        }, null, 2);
+      }
     },
   });
 

@@ -1,0 +1,178 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// Central UI management system
+/// Coordinates all UI panels and screens
+/// </summary>
+public class UIManager : MonoBehaviour
+{
+    [Header("UI Panels")]
+    [SerializeField] private GameObject hudPanel;
+    [SerializeField] private GameObject pauseMenu;
+    [SerializeField] private GameObject gameOverScreen;
+
+    [Header("HUD Elements")]
+    [SerializeField] private HealthBarUI healthBar;
+    [SerializeField] private Text scoreText;
+    [SerializeField] private Text waveText;
+
+    [Header("Settings")]
+    [SerializeField] private bool showHealthBar = {{includeHealthBar}};
+    [SerializeField] private bool showScore = {{includeScoreDisplay}};
+
+    private bool isPaused = false;
+    private int currentScore = 0;
+
+    private void Start()
+    {
+        // Initialize UI state
+        ShowHUD();
+        HidePauseMenu();
+        HideGameOverScreen();
+
+        // Subscribe to player health changes
+        PlayerHealth playerHealth = FindObjectOfType<PlayerHealth>();
+        if (playerHealth != null && healthBar != null && showHealthBar)
+        {
+            playerHealth.OnHealthChanged.AddListener(UpdateHealthBar);
+            healthBar.Initialize(playerHealth.GetMaxHealth());
+        }
+
+        // Subscribe to level events
+        LevelManager levelManager = FindObjectOfType<LevelManager>();
+        if (levelManager != null)
+        {
+            levelManager.OnLevelStart.AddListener(OnLevelStart);
+            levelManager.OnGameOver.AddListener(ShowGameOverScreen);
+        }
+
+        // Subscribe to wave events
+        WaveSpawner waveSpawner = FindObjectOfType<WaveSpawner>();
+        if (waveSpawner != null)
+        {
+            waveSpawner.OnWaveStart.AddListener(OnWaveStart);
+        }
+    }
+
+    private void Update()
+    {
+        // Handle pause input
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (isPaused)
+            {
+                Resume();
+            }
+            else
+            {
+                Pause();
+            }
+        }
+    }
+
+    public void ShowHUD()
+    {
+        if (hudPanel != null)
+        {
+            hudPanel.SetActive(true);
+        }
+    }
+
+    public void HideHUD()
+    {
+        if (hudPanel != null)
+        {
+            hudPanel.SetActive(false);
+        }
+    }
+
+    public void Pause()
+    {
+        isPaused = true;
+        Time.timeScale = 0f;
+        ShowPauseMenu();
+    }
+
+    public void Resume()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+        HidePauseMenu();
+    }
+
+    public void ShowPauseMenu()
+    {
+        if (pauseMenu != null)
+        {
+            pauseMenu.SetActive(true);
+        }
+    }
+
+    public void HidePauseMenu()
+    {
+        if (pauseMenu != null)
+        {
+            pauseMenu.SetActive(false);
+        }
+    }
+
+    public void ShowGameOverScreen()
+    {
+        HideHUD();
+        if (gameOverScreen != null)
+        {
+            gameOverScreen.SetActive(true);
+        }
+    }
+
+    public void HideGameOverScreen()
+    {
+        if (gameOverScreen != null)
+        {
+            gameOverScreen.SetActive(false);
+        }
+    }
+
+    public void UpdateHealthBar(int health)
+    {
+        if (healthBar != null && showHealthBar)
+        {
+            healthBar.UpdateHealth(health);
+        }
+    }
+
+    public void UpdateScore(int score)
+    {
+        currentScore = score;
+        if (scoreText != null && showScore)
+        {
+            scoreText.text = "Score: " + currentScore.ToString();
+        }
+    }
+
+    public void AddScore(int points)
+    {
+        UpdateScore(currentScore + points);
+    }
+
+    private void OnLevelStart(int level)
+    {
+        if (waveText != null)
+        {
+            waveText.text = "Level " + level.ToString();
+        }
+    }
+
+    private void OnWaveStart(int wave)
+    {
+        if (waveText != null)
+        {
+            LevelManager levelManager = FindObjectOfType<LevelManager>();
+            int level = levelManager != null ? levelManager.GetCurrentLevel() : 1;
+            waveText.text = "Level " + level + " - Wave " + wave;
+        }
+    }
+
+    public bool IsPaused() => isPaused;
+}
