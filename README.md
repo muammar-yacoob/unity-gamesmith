@@ -20,6 +20,8 @@ Control Unity game engine through natural language via Claude Desktop:
 | 📊 Level System           | Build progressive level systems with difficulty scaling  |
 | 🎨 Scene Management       | Create and configure game scenes programmatically        |
 | 🔧 Component Setup        | Add and configure Unity components via natural language  |
+| 🎭 3D Character Import    | Search and import rigged 3D models from Sketchfab       |
+| 📹 Cinemachine Camera     | Automatic camera follow system for 3D characters         |
 
 ## 🚀 Quick Setup
 
@@ -63,12 +65,15 @@ npm install -g @spark-apps/unity-mcp
 
 |                                                                            | Tool           | Description                                              |
 | -------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- |
-| ![🎮](https://img.shields.io/badge/🎮-Project_Init-blue?style=flat-square) | **create_project**       | Create new Unity 2D shooter projects          |
+| ![🎮](https://img.shields.io/badge/🎮-Project_Init-blue?style=flat-square) | **create_unity_project**       | Create new Unity 2D shooter projects          |
 | ![🏃](https://img.shields.io/badge/🏃-Player-green?style=flat-square)   | **setup_player**        | Create player with movement and shooting |
+| ![🔫](https://img.shields.io/badge/🔫-Projectiles-teal?style=flat-square)          | **create_projectile_system**        | Add weapons and projectile systems     |
 | ![👾](https://img.shields.io/badge/👾-Enemies-orange?style=flat-square) | **create_enemy** | Generate enemy prefabs with AI behavior                       |
-| ![📊](https://img.shields.io/badge/📊-Levels-purple?style=flat-square)     | **setup_level**     | Create progressive level systems    |
-| ![🔫](https://img.shields.io/badge/🔫-Weapons-teal?style=flat-square)          | **add_weapon**        | Add weapons and projectile systems     |
-| ![🎯](https://img.shields.io/badge/🎯-Collision-indigo?style=flat-square)   | **setup_collision**     | Configure collision and physics      |
+| ![📊](https://img.shields.io/badge/📊-Levels-purple?style=flat-square)     | **setup_level_system**     | Create progressive level systems    |
+| ![🎨](https://img.shields.io/badge/🎨-UI-pink?style=flat-square)     | **create_game_ui**     | Build HUD, menus, and game screens    |
+| ![🎯](https://img.shields.io/badge/🎯-Collision-indigo?style=flat-square)   | **setup_collision_system**     | Configure collision and physics      |
+| ![🎭](https://img.shields.io/badge/🎭-3D_Character-red?style=flat-square)   | **import_3d_character**     | Import rigged 3D models from Sketchfab      |
+| ![🎬](https://img.shields.io/badge/🎬-Scene-yellow?style=flat-square)   | **setup_scene_structure**     | Create organized scene hierarchy      |
 
 ## 💬 Example Commands in Claude Desktop
 
@@ -113,6 +118,29 @@ npm install -g @spark-apps/unity-mcp
 > "Add a level manager that spawns more enemies each level"
 
 > "Set up level transitions with victory screens"
+
+</details>
+
+<details>
+<summary><strong>🎭 3D Character Import (NEW!)</strong></summary>
+
+> "Import a 3D character from Sketchfab with walk animation"
+
+> "Search Sketchfab for a female character and set up controls"
+
+> "Create a 3D character controller with Cinemachine camera"
+
+> "Add a robot character with WASD movement and jump"
+
+**Features:**
+- Automatic search for rigged, animated characters on Sketchfab
+- WASD movement with camera-relative controls
+- Jump mechanic with gravity
+- Cinemachine camera follow system
+- Animator integration (Speed, IsGrounded, Jump parameters)
+- Comprehensive setup documentation
+
+**Note:** Requires Cinemachine package (installed via Unity Package Manager). Optional Sketchfab API token for downloading models directly.
 
 </details>
 
