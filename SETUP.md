@@ -6,8 +6,8 @@ Complete setup instructions for the KiCad Model Context Protocol server.
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/muammar-yacoob/kicad-mcp.git
-cd kicad-mcp
+git clone https://github.com/muammar-yacoob/unity-mcp.git
+cd unity-mcp
 pnpm install
 
 # 2. Install Python dependencies
@@ -65,8 +65,8 @@ pnpm build
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/muammar-yacoob/kicad-mcp.git
-cd kicad-mcp
+git clone https://github.com/muammar-yacoob/unity-mcp.git
+cd unity-mcp
 ```
 
 ### 2. Install Node Dependencies
@@ -122,10 +122,10 @@ Edit the config file and add:
 ```json
 {
   "mcpServers": {
-    "kicad-mcp": {
+    "unity-mcp": {
       "command": "node",
       "args": [
-        "/absolute/path/to/kicad-mcp/packages/mcp-server/dist/index.js"
+        "/absolute/path/to/unity-mcp/packages/mcp-server/dist/index.js"
       ],
       "env": {
         "NODE_ENV": "production"
@@ -135,7 +135,7 @@ Edit the config file and add:
 }
 ```
 
-**Important:** Replace `/absolute/path/to/kicad-mcp` with the actual absolute path to your cloned repository.
+**Important:** Replace `/absolute/path/to/unity-mcp` with the actual absolute path to your cloned repository.
 
 ### Restart Claude Desktop
 
@@ -296,13 +296,13 @@ pip install -r requirements.txt --upgrade
 
 ### Remove from Claude Desktop
 
-Edit `claude_desktop_config.json` and remove the `kicad-mcp` entry.
+Edit `claude_desktop_config.json` and remove the `unity-mcp` entry.
 
 ### Delete Files
 
 ```bash
 # Remove repository
-rm -rf /path/to/kicad-mcp
+rm -rf /path/to/unity-mcp
 
 # Uninstall Python package (optional)
 pip uninstall kiutils
@@ -312,9 +312,9 @@ pip uninstall kiutils
 
 - Read [USING_THE_MCP.md](docs/USING_THE_MCP.md) for usage examples
 - Check [README.md](README.md) for project overview
-- Report issues: https://github.com/muammar-yacoob/kicad-mcp/issues
+- Report issues: https://github.com/muammar-yacoob/unity-mcp/issues
 
 ## Support
 
-- GitHub Issues: https://github.com/muammar-yacoob/kicad-mcp/issues
-- Discussions: https://github.com/muammar-yacoob/kicad-mcp/discussions
+- GitHub Issues: https://github.com/muammar-yacoob/unity-mcp/issues
+- Discussions: https://github.com/muammar-yacoob/unity-mcp/discussions

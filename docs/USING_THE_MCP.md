@@ -228,5 +228,5 @@ A: Use the `kicad_generate_3d` tool. Requires KiCad CLI installed and in PATH.
 ## Getting Help
 
 - 📖 [Main README](../README.md)
-- 🐛 [Report Issues](https://github.com/muammar-yacoob/kicad-mcp/issues)
-- 💬 [Discussions](https://github.com/muammar-yacoob/kicad-mcp/discussions)
+- 🐛 [Report Issues](https://github.com/muammar-yacoob/unity-mcp/issues)
+- 💬 [Discussions](https://github.com/muammar-yacoob/unity-mcp/discussions)

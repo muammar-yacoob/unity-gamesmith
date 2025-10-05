@@ -188,7 +188,7 @@ See `kicad_mcp_prd.md` for full product requirements.
 ```json
 {
   "mcpServers": {
-    "kicad-mcp": {
+    "unity-mcp": {
       "command": "npm",
       "args": ["start"],
       "env": {
@@ -206,7 +206,7 @@ Add to `.cursor/mcp.json` (project-specific) or `~/.cursor/mcp.json` (global).
 ```json
 {
   "mcpServers": {
-    "kicad-mcp-http": {
+    "unity-mcp-http": {
       "url": "http://localhost:3001/sse"
     }
   }
