@@ -1,0 +1,125 @@
+using UnityEngine;
+
+/// <summary>
+/// 3D character controller with WASD movement and camera-relative controls
+/// Works with Cinemachine for smooth camera following
+/// </summary>
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(Animator))]
+public class CharacterController3D : MonoBehaviour
+{
+    [Header("Movement Settings")]
+    [SerializeField] private float moveSpeed = {{moveSpeed}}f;
+    [SerializeField] private float rotationSpeed = {{rotationSpeed}}f;
+    [SerializeField] private float gravity = -9.81f;
+    [SerializeField] private float jumpHeight = {{jumpHeight}}f;
+
+    [Header("References")]
+    [SerializeField] private Transform cameraTransform;
+
+    // Components
+    private CharacterController controller;
+    private Animator animator;
+
+    // Movement state
+    private Vector3 velocity;
+    private bool isGrounded;
+
+    // Animator parameters
+    private readonly int speedParam = Animator.StringToHash("Speed");
+    private readonly int isGroundedParam = Animator.StringToHash("IsGrounded");
+    private readonly int jumpParam = Animator.StringToHash("Jump");
+
+    private void Awake()
+    {
+        controller = GetComponent<CharacterController>();
+        animator = GetComponent<Animator>();
+
+        // Find main camera if not assigned
+        if (cameraTransform == null)
+        {
+            cameraTransform = Camera.main?.transform;
+        }
+    }
+
+    private void Update()
+    {
+        HandleMovement();
+        HandleGravity();
+        HandleAnimation();
+    }
+
+    private void HandleMovement()
+    {
+        // Check if grounded
+        isGrounded = controller.isGrounded;
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+
+        // Get input
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+
+        // Calculate camera-relative movement direction
+        Vector3 moveDirection = Vector3.zero;
+        if (cameraTransform != null)
+        {
+            Vector3 forward = cameraTransform.forward;
+            Vector3 right = cameraTransform.right;
+
+            // Project on horizontal plane
+            forward.y = 0f;
+            right.y = 0f;
+            forward.Normalize();
+            right.Normalize();
+
+            moveDirection = forward * vertical + right * horizontal;
+        }
+        else
+        {
+            // Fallback to world-space movement
+            moveDirection = new Vector3(horizontal, 0f, vertical);
+        }
+
+        // Move character
+        if (moveDirection.magnitude >= 0.1f)
+        {
+            controller.Move(moveDirection.normalized * moveSpeed * Time.deltaTime);
+
+            // Rotate character to face movement direction
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+
+        // Jump
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            animator.SetTrigger(jumpParam);
+        }
+    }
+
+    private void HandleGravity()
+    {
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+    }
+
+    private void HandleAnimation()
+    {
+        // Calculate movement speed for animation
+        Vector3 horizontalVelocity = controller.velocity;
+        horizontalVelocity.y = 0f;
+        float speed = horizontalVelocity.magnitude;
+
+        animator.SetFloat(speedParam, speed);
+        animator.SetBool(isGroundedParam, isGrounded);
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        // Handle collision events if needed
+    }
+}

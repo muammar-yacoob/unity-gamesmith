@@ -1,0 +1,86 @@
+using UnityEngine;
+#if UNITY_CINEMACHINE
+using Cinemachine;
+#endif
+
+/// <summary>
+/// Sets up Cinemachine virtual camera to follow the player character
+/// Automatically finds and configures Cinemachine components
+/// </summary>
+public class CinemachineSetup : MonoBehaviour
+{
+    [Header("Camera Settings")]
+    [SerializeField] private Transform followTarget;
+    [SerializeField] private Vector3 cameraOffset = new Vector3(0f, {{cameraHeight}}f, -{{cameraDistance}}f);
+    [SerializeField] private float followSpeed = {{followSpeed}}f;
+
+#if UNITY_CINEMACHINE
+    private CinemachineVirtualCamera virtualCamera;
+    private CinemachineTransposer transposer;
+
+    private void Start()
+    {
+        SetupVirtualCamera();
+    }
+
+    private void SetupVirtualCamera()
+    {
+        // Find or create virtual camera
+        virtualCamera = GetComponent<CinemachineVirtualCamera>();
+        if (virtualCamera == null)
+        {
+            virtualCamera = gameObject.AddComponent<CinemachineVirtualCamera>();
+        }
+
+        // Find follow target if not assigned
+        if (followTarget == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                followTarget = player.transform;
+            }
+        }
+
+        // Configure virtual camera
+        if (followTarget != null)
+        {
+            virtualCamera.Follow = followTarget;
+            virtualCamera.LookAt = followTarget;
+
+            // Set up transposer for smooth following
+            transposer = virtualCamera.GetCinemachineComponent<CinemachineTransposer>();
+            if (transposer == null)
+            {
+                transposer = virtualCamera.AddCinemachineComponent<CinemachineTransposer>();
+            }
+
+            transposer.m_FollowOffset = cameraOffset;
+            transposer.m_XDamping = followSpeed;
+            transposer.m_YDamping = followSpeed;
+            transposer.m_ZDamping = followSpeed;
+        }
+        else
+        {
+            Debug.LogWarning("CinemachineSetup: No follow target found. Please assign a target or tag the player GameObject with 'Player'");
+        }
+    }
+
+    private void OnValidate()
+    {
+        // Update settings in editor
+        if (Application.isPlaying && transposer != null)
+        {
+            transposer.m_FollowOffset = cameraOffset;
+            transposer.m_XDamping = followSpeed;
+            transposer.m_YDamping = followSpeed;
+            transposer.m_ZDamping = followSpeed;
+        }
+    }
+#else
+    private void Start()
+    {
+        Debug.LogError("Cinemachine package not installed. Please install Cinemachine via Package Manager.");
+    }
+#endif
+}

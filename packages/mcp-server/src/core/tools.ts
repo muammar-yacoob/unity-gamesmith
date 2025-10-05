@@ -6,6 +6,7 @@ import { ProjectileService } from "../unity/services/ProjectileService.js";
 import { EnemyService } from "../unity/services/EnemyService.js";
 import { LevelService } from "../unity/services/LevelService.js";
 import { UIService } from "../unity/services/UIService.js";
+import { Character3DService } from "../unity/services/Character3DService.js";
 
 /**
  * Register all Unity MCP tools with the server
@@ -17,6 +18,7 @@ export function registerTools(server: FastMCP) {
   const enemyService = new EnemyService();
   const levelService = new LevelService();
   const uiService = new UIService();
+  const character3DService = new Character3DService();
 
   // Tool 1: Create Unity Project
   server.addTool({
@@ -239,6 +241,45 @@ export function registerTools(server: FastMCP) {
         message: "Scene structure functionality coming soon",
         scriptsGenerated: ["CameraController.cs", "ParallaxBackground.cs"],
       }, null, 2);
+    },
+  });
+
+  // Tool 9: Import 3D Character from Sketchfab
+  server.addTool({
+    name: "import_3d_character",
+    description: "Search and import rigged 3D character models from Sketchfab with walk animations. Creates CharacterController3D and Cinemachine camera setup for 3D character movement.",
+    parameters: z.object({
+      projectPath: z.string().describe("Path to the Unity project"),
+      searchQuery: z.string().optional().default("character walk").describe("Search query for Sketchfab model (e.g., 'female character walk', 'robot character')"),
+      sketchfabApiToken: z.string().optional().describe("Sketchfab API token for downloading models (get from https://sketchfab.com/settings/password)"),
+      moveSpeed: z.number().optional().default(5.0).describe("Character movement speed (units per second)"),
+      rotationSpeed: z.number().optional().default(10.0).describe("Character rotation speed"),
+      jumpHeight: z.number().optional().default(1.5).describe("Jump height in units"),
+      cameraDistance: z.number().optional().default(8.0).describe("Cinemachine camera distance from character"),
+      cameraHeight: z.number().optional().default(5.0).describe("Cinemachine camera height offset"),
+      followSpeed: z.number().optional().default(1.0).describe("Cinemachine camera follow smoothing (lower = smoother)"),
+    }),
+    execute: async (params) => {
+      try {
+        const result = await character3DService.setup3DCharacter({
+          projectPath: params.projectPath,
+          searchQuery: params.searchQuery,
+          sketchfabApiToken: params.sketchfabApiToken,
+          moveSpeed: params.moveSpeed,
+          rotationSpeed: params.rotationSpeed,
+          jumpHeight: params.jumpHeight,
+          cameraDistance: params.cameraDistance,
+          cameraHeight: params.cameraHeight,
+          followSpeed: params.followSpeed,
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        }, null, 2);
+      }
     },
   });
 }
