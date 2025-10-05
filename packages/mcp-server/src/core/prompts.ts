@@ -6,53 +6,54 @@ import { FastMCP } from "fastmcp";
  * @param server The FastMCP server instance
  */
 export function registerPrompts(server: FastMCP) {
-  // PCB design assistance prompt
+  // Unity game design assistance prompt
   server.addPrompt({
-    name: "pcb_design_help",
-    description: "Get help with PCB design tasks",
+    name: "game_design_help",
+    description: "Get help with Unity game design tasks",
     arguments: [
       {
         name: "task",
-        description: "The PCB design task you need help with",
+        description: "The game design task you need help with",
         required: true
       }
     ],
     load: async (args: Record<string, unknown>) => {
       const task = args.task as string;
-      return `I'll help you with your PCB design task: ${task}
+      return `I'll help you with your Unity game design task: ${task}
 
-I have access to the following KiCad automation tools:
+I have access to the following Unity automation tools:
 - Project initialization and management
-- Component placement and management
-- DRC (Design Rule Check) and ERC (Electrical Rule Check)
-- PCB export to multiple formats (Gerber, PDF, STEP, etc.)
-- BOM generation
-- 3D model generation
-- Auto-routing
+- Player setup (movement, shooting, health)
+- Enemy creation (AI, health, attacks)
+- Level system (wave-based progression, difficulty)
+- UI generation (HUD, menus, screens)
+- Collision system configuration
+- 3D character import from Sketchfab
+- Scene structure setup (camera, lighting, GameObjects)
 
 What specific assistance do you need with this task?`;
     }
   });
 
-  // DRC/ERC analysis prompt
+  // Game rule analysis prompt
   server.addPrompt({
-    name: "analyze_design_rules",
-    description: "Analyze and fix design rule violations",
+    name: "analyze_game_rules",
+    description: "Analyze and fix game rule violations",
     arguments: [
       {
         name: "projectPath",
-        description: "Path to the KiCad project",
+        description: "Path to the Unity project",
         required: false
       }
     ],
     load: async (args: Record<string, unknown>) => {
       const projectPath = args.projectPath as string | undefined;
       const projectInfo = projectPath ? `for project at ${projectPath}` : "for the current project";
-      return `I'll analyze the design rules ${projectInfo} and help fix any violations.
+      return `I'll analyze the game rules ${projectInfo} and help fix any violations.
 
 I will:
-1. Run DRC (Design Rule Check) to identify layout issues
-2. Run ERC (Electrical Rule Check) to identify schematic issues
+1. Run design rule checks to identify gameplay issues (e.g., unbalanced levels, unfair mechanics)
+2. Run technical checks to identify script issues (e.g., performance bottlenecks, logic errors)
 3. Provide detailed information about any errors or warnings
 4. Suggest fixes for common issues
 
@@ -60,98 +61,98 @@ Would you like me to proceed with the analysis?`;
     }
   });
 
-  // Component placement prompt
+  // GameObject placement prompt
   server.addPrompt({
-    name: "place_components",
-    description: "Guide for placing components on PCB",
+    name: "place_game_objects",
+    description: "Guide for placing GameObjects in a Unity scene",
     arguments: [
       {
-        name: "componentType",
-        description: "Type of components to place (e.g., resistors, capacitors, ICs)",
+        name: "objectType",
+        description: "Type of GameObjects to place (e.g., enemies, power-ups, obstacles)",
         required: false
       }
     ],
     load: async (args: Record<string, unknown>) => {
-      const componentType = args.componentType as string | undefined;
-      const typeInfo = componentType ? ` for ${componentType}` : "";
-      return `I'll help you place components${typeInfo} on your PCB.
+      const objectType = args.objectType as string | undefined;
+      const typeInfo = objectType ? ` for ${objectType}` : "";
+      return `I'll help you place GameObjects${typeInfo} in your Unity scene.
 
 I can assist with:
-- Adding components with specific footprints and values
-- Positioning components at specific coordinates
-- Setting component rotation and layer placement
-- Getting a list of all current components
-- Organizing components for optimal layout
+- Adding GameObjects with specific prefabs and components
+- Positioning GameObjects at specific coordinates
+- Setting GameObject rotation and scale
+- Getting a list of all current GameObjects
+- Organizing GameObjects for optimal scene layout
 
-What components would you like to place, and where?`;
+What GameObjects would you like to place, and where?`;
     }
   });
 
-  // Export and manufacturing prompt
+  // Export and build prompt
   server.addPrompt({
-    name: "prepare_manufacturing",
-    description: "Prepare PCB files for manufacturing",
+    name: "prepare_build",
+    description: "Prepare Unity project for building",
     arguments: [
       {
-        name: "manufacturer",
-        description: "Target manufacturer (e.g., JLCPCB, PCBWay)",
+        name: "platform",
+        description: "Target platform (e.g., Windows, macOS, WebGL)",
         required: false
       }
     ],
     load: async (args: Record<string, unknown>) => {
-      const manufacturer = args.manufacturer as string | undefined;
-      const mfgInfo = manufacturer ? ` for ${manufacturer}` : "";
-      return `I'll help you prepare manufacturing files${mfgInfo}.
+      const platform = args.platform as string | undefined;
+      const platformInfo = platform ? ` for ${platform}` : "";
+      return `I'll help you prepare your Unity project for building${platformInfo}.
 
-I can generate:
-- Gerber files (standard PCB fabrication format)
-- Drill files (for hole drilling)
-- Bill of Materials (BOM) in CSV, XML, or JSON
-- 3D models (STEP, VRML, STL) for mechanical verification
-- Assembly drawings and documentation
+I can configure:
+- Build settings (platform, architecture, quality)
+- Player settings (resolution, icons, splash screen)
+- Asset bundling and optimization
+- Game executable generation
+- Installer creation (future feature)
 
-Which files do you need, and in what format?`;
+Which build files do you need, and for what platform?`;
     }
   });
 
-  // Auto-routing assistance prompt
+  // Scene routing assistance prompt
   server.addPrompt({
-    name: "auto_route_pcb",
-    description: "Help with PCB auto-routing",
+    name: "auto_route_scenes",
+    description: "Help with automatic scene transitions and flow",
     arguments: [],
     load: async () => {
-      return `I'll help you auto-route traces on your PCB.
+      return `I'll help you set up automatic scene transitions and game flow.
 
 Auto-routing can:
-- Automatically connect components based on schematic nets
-- Route power and signal traces
-- Optimize trace paths for manufacturability
-- Respect design rules and clearances
+- Automatically connect scenes based on game progression
+- Route player between levels and menus
+- Optimize scene loading for smooth transitions
+- Respect game logic and design rules
 
 Important considerations:
 - Manual review is recommended after auto-routing
-- Critical signals may need manual routing
-- Design rule compliance should be verified with DRC
+- Critical transitions may need manual configuration
+- Game logic compliance should be verified with testing
 
-Would you like me to proceed with auto-routing?`;
+Would you like me to proceed with auto-routing scenes?`;
     }
   });
 
   // Project creation prompt
   server.addPrompt({
-    name: "create_kicad_project",
-    description: "Guide for creating a new KiCad project",
+    name: "create_unity_project",
+    description: "Guide for creating a new Unity project",
     arguments: [
       {
         name: "projectType",
-        description: "Type of project (e.g., Arduino shield, ESP32 board, power supply)",
+        description: "Type of project (e.g., 2D shooter, 3D platformer, VR experience)",
         required: false
       }
     ],
     load: async (args: Record<string, unknown>) => {
       const projectType = args.projectType as string | undefined;
       const typeInfo = projectType ? ` for a ${projectType}` : "";
-      return `I'll help you create a new KiCad project${typeInfo}.
+      return `I'll help you create a new Unity project${typeInfo}.
 
 To get started, I need:
 - Project name

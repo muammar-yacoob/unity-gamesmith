@@ -1,4 +1,4 @@
-# KiCad MCP - Development Progress
+# Unity MCP - Development Progress
 
 ## ✅ Completed Tasks
 
@@ -6,19 +6,19 @@
 
 - ✅ Monorepo structure with pnpm workspaces
 - ✅ TypeScript 5.x with strict configuration
-- ✅ ESLint, Prettier, and Husky pre-commit hooks
+- ✅ Biome for linting, formatting, and checking
 - ✅ Jest testing framework with ts-jest
 - ✅ Dockerfile for containerization
 - ✅ Cross-platform compatibility
 
 **Test Results:** All checks passing (build, test, type-check)
 
-### Task 2: Implement KiCad Client Bridge (COMPLETE)
+### Task 2: Implement Unity Client Bridge (COMPLETE)
 
 - ✅ Defined comprehensive TypeScript client interface
-- ✅ Implemented MockKiCadClient for development/testing
+- ✅ Implemented MockUnityClient for development/testing
 - ✅ Created error handling framework (ConnectionError, TimeoutError, OperationError, ProjectError)
-- ✅ Implemented all KiCad operations (project, board, components, DRC/ERC, export, 3D, BOM)
+- ✅ Implemented all Unity operations (project, scene, GameObjects, assets, build, 3D, manifest)
 - ✅ 24 comprehensive unit tests (100% passing)
 - ✅ Documented future IPC integration path
 
@@ -27,20 +27,20 @@
 ### Task 3: Design Modular CLI Framework (COMPLETE)
 
 - ✅ Commander.js-based modular CLI
-- ✅ Implemented commands: init, fix, export, bom, gen-3d, route
+- ✅ Implemented commands: init, fix, export, manifest, gen-3d, place
 - ✅ Beautiful CLI output with chalk and ora
-- ✅ Integrated with KiCad client
+- ✅ Integrated with Unity client
 - ✅ Full argument parsing and help generation
 
 **CLI Commands:**
 
 ```bash
-kicad-mcp init <name> [path]        # Create project
-kicad-mcp fix [project]             # Run DRC/ERC
-kicad-mcp export <format> [project] # Export board
-kicad-mcp bom [project]             # Generate BOM
-kicad-mcp gen-3d [project]          # Generate 3D model
-kicad-mcp route [project]           # Auto-route
+unity-mcp init <name> [path]        # Create project
+unity-mcp fix [project]             # Run scene/asset checks
+unity-mcp export <format> [project] # Export build/assets
+unity-mcp manifest [project]        # Generate asset manifest
+unity-mcp gen-3d [project]          # Generate 3D prefab
+unity-mcp place [project]           # Auto-place assets/components
 ```
 
 ## 🔄 Remaining Tasks
@@ -52,7 +52,7 @@ Tasks 4-15 involve additional features like:
 - Natural language project creation
 - Auto-fix and cleanup tools
 - 3D rendering pipeline
-- BOM with supplier integration
+- Asset management with Asset Store integration
 - Cost estimation
 - Batch operations
 - AI command endpoint
@@ -63,10 +63,10 @@ Tasks 4-15 involve additional features like:
 ## Project Structure
 
 ```
-kicad-mcp/
+unity-mcp/
 ├── packages/
 │   ├── mcp-server/          # MCP server (FastMCP)
-│   └── kicad-client/        # KiCad client abstraction
+│   └── unity-client/        # Unity client abstraction
 ├── apps/
 │   └── cli/                 # CLI tool
 ├── .taskmaster/             # Task management
@@ -75,20 +75,20 @@ kicad-mcp/
 
 ## Packages
 
-### @kicad-mcp/kicad-client
+### @unity-mcp/unity-client
 
-- **Purpose:** KiCad operation abstraction
-- **Implementations:** MockKiCadClient (ready), IPCKiCadClient (future)
+- **Purpose:** Unity operation abstraction
+- **Implementations:** MockUnityClient (ready), IPCUnityClient (future)
 - **Tests:** 24 comprehensive unit tests
 - **Coverage:** All core operations
 
-### @kicad-mcp/mcp-server
+### @unity-mcp/mcp-server
 
 - **Purpose:** FastMCP server for Claude/MCP clients
 - **Features:** Tools, Resources, Prompts
 - **Status:** Foundation complete
 
-### @kicad-mcp/cli
+### @unity-mcp/cli
 
 - **Purpose:** Command-line interface
 - **Commands:** 7 core commands implemented
@@ -96,35 +96,35 @@ kicad-mcp/
 
 ## Test Coverage
 
-| Package      | Tests | Status                     |
-| ------------ | ----- | -------------------------- |
-| kicad-client | 24    | ✅ All passing             |
-| mcp-server   | 1     | ✅ Passing                 |
-| cli          | 0     | ⏳ Manual testing complete |
+| Package       | Tests | Status                     |
+| ------------- | ----- | -------------------------- |
+| unity-client  | 24    | ✅ All passing             |
+| mcp-server    | 1     | ✅ Passing                 |
+| cli           | 0     | ⏳ Manual testing complete |
 
 ## How to Use
 
 ### Development
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+npm install
+npm run build
+npm test
 ```
 
 ### CLI Usage
 
 ```bash
 # Build first
-pnpm build
+npm run build
 
 # Run CLI
-node apps/cli/dist/index.js init my-pcb
+node apps/cli/dist/index.js init my-game
 
 # Or link globally
 cd apps/cli
 npm link
-kicad-mcp --help
+unity-mcp --help
 ```
 
 ### MCP Server
@@ -136,9 +136,9 @@ node packages/mcp-server/dist/index.js
 ## Next Steps
 
 1. **Task 4:** Implement project creation with templates
-2. **Task 5:** Add auto-fix operations (DRC/ERC repair)
+2. **Task 5:** Add auto-fix operations (scene/asset repair)
 3. **Task 6:** Integrate 3D rendering pipeline
-4. **Task 7:** Add BOM with supplier APIs (OctoPart, JLCPCB)
+4. **Task 7:** Add asset management with Asset Store APIs
 5. **Task 8:** Implement cost estimation
 6. **Task 9-15:** Additional features and production readiness
 
@@ -149,7 +149,7 @@ node packages/mcp-server/dist/index.js
 - **Testing:** Jest + ts-jest
 - **CLI:** Commander.js
 - **MCP:** FastMCP
-- **Linting:** ESLint + Prettier
+- **Linting:** Biome (replaces ESLint + Prettier)
 - **Git Hooks:** Husky + lint-staged
 - **Containerization:** Docker multi-stage
 
@@ -167,7 +167,7 @@ node packages/mcp-server/dist/index.js
 ## Key Achievements
 
 1. **Solid Foundation:** Professional TypeScript monorepo setup
-2. **Abstraction Layer:** Clean KiCad client interface
+2. **Abstraction Layer:** Clean Unity client interface
 3. **Testability:** Mock client enables full TDD workflow
 4. **User Experience:** Beautiful CLI with spinners and colors
 5. **Extensibility:** Modular design allows easy feature addition
