@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+# [1.2.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.1.0...v1.2.0) (2025-10-08)
+
+
+### Features
+
+* consolidate editor into unified Game Smith window with SparkCore-inspired UI ([3bb9e6b](https://github.com/muammar-yacoob/unity-gamesmith/commit/3bb9e6b4d03488de689fb18cd3149921977ac5b8))
+
+# 📋 Changelog
+
+All notable changes to **Unity GameSmith** will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
 # 1.0.0 (2025-10-08)
 
 
