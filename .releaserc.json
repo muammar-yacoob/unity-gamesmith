@@ -7,19 +7,25 @@
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# 📋 Changelog\n\nAll notable changes to **unity MCP** will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n---"
+        "changelogTitle": "# 📋 Changelog\n\nAll notable changes to **Unity GameSmith** will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n---"
       }
     ],
     [
       "@semantic-release/npm",
       {
-        "npmPublish": true
+        "npmPublish": false
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "node -e \"const pkg = require('./UnityPackage/package.json'); pkg.version = '${nextRelease.version}'; require('fs').writeFileSync('./UnityPackage/package.json', JSON.stringify(pkg, null, 2) + '\\n');\""
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "package.json"],
+        "assets": ["CHANGELOG.md", "package.json", "UnityPackage/package.json"],
         "message": "chore(release): v${nextRelease.version} [skip ci]",
         "gitUserEmail": "action@github.com",
         "gitUserName": "github-actions[bot]"
@@ -30,8 +36,8 @@
       {
         "assets": [
           {
-            "path": "unity-mcp-${nextRelease.version}.tar.gz",
-            "label": "unity MCP Distribution"
+            "path": "unity-gamesmith-${nextRelease.version}.tar.gz",
+            "label": "Unity GameSmith Distribution"
           }
         ]
       }

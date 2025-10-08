@@ -1,60 +1,31 @@
 {
-  "name": "@spark-apps/unity-mcp",
-  "version": "0.1.0",
-  "description": "Model Context Protocol (MCP) server for automated Unity game development and 2D shooter creation",
-  "type": "module",
-  "private": false,
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
+  "name": "unity-gamesmith",
+  "version": "1.0.0",
+  "description": "Unity GameSmith - Forge legendary game code with AI-powered Unity Editor tool",
+  "private": true,
   "scripts": {
-    "build": "bun run --bun build",
-    "dev": "bun run --bun dev",
-    "test": "bun test",
-    "lint": "biome lint .",
-    "lint:fix": "biome lint --write .",
-    "format": "biome format --write .",
-    "check": "biome check .",
-    "check:fix": "biome check --write .",
-    "type-check": "bun run --bun type-check",
-    "clean": "bun run --bun clean && rm -rf node_modules"
+    "build": "echo 'No build step required for Unity package'",
+    "release": "semantic-release"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/muammar-yacoob/unity-mcp.git"
-  },
-  "publishConfig": {
-    "access": "public"
+    "url": "https://github.com/muammar-yacoob/unity-gamesmith.git"
   },
   "keywords": [
     "unity",
+    "ai",
+    "editor",
     "game-development",
-    "mcp",
-    "model-context-protocol",
-    "automation",
-    "2d-shooter",
-    "game-engine",
-    "unity-automation"
+    "gamesmith",
+    "code-generation"
   ],
-  "author": "Muammar Yacoob <https://github.com/muammar-yacoob>",
+  "author": "Spark Games",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^1.8.0",
-    "@types/node": "^20.17.24",
-    "semantic-release": "^23.0.0",
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "typescript": "^5.8.2"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "bun": ">=1.0.0"
-  },
-  "packageManager": "bun@1.1.0",
-  
-  "bugs": {
-    "url": "https://github.com/muammar-yacoob/unity-mcp/issues"
-  },
-  "homepage": "https://github.com/muammar-yacoob/unity-mcp#readme"
+    "@semantic-release/github": "^9.0.0",
+    "semantic-release": "^22.0.0"
+  }
 }

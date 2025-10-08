@@ -1,0 +1,41 @@
+{
+  "name": "com.spark-games.unity-gamesmith",
+  "version": "1.0.0",
+  "displayName": "Unity GameSmith",
+  "description": "Free alternative to Unity Muse. Privacy-first AI code generation with local Ollama support. 10+ templates, works offline, zero telemetry. Create 2D shooters, player systems, enemies, and game mechanics without subscriptions.",
+  "unity": "2021.3",
+  "keywords": [
+    "unity",
+    "editor",
+    "ai",
+    "automation",
+    "game-development",
+    "gamesmith",
+    "2d-shooter",
+    "code-generation",
+    "ollama",
+    "openai",
+    "template-library",
+    "unity-muse-alternative",
+    "free",
+    "privacy",
+    "offline",
+    "local-ai",
+    "open-source"
+  ],
+  "author": {
+    "name": "Spark Games",
+    "url": "https://github.com/muammar-yacoob"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/muammar-yacoob/unity-gamesmith.git"
+  },
+  "homepage": "https://github.com/muammar-yacoob/unity-gamesmith#readme",
+  "bugs": {
+    "url": "https://github.com/muammar-yacoob/unity-gamesmith/issues"
+  },
+  "dependencies": {},
+  "type": "tool"
+}
