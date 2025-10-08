@@ -18,7 +18,7 @@
 |---------|-------------|
 | ![](https://img.shields.io/badge/🤖%20-cc6600?style=for-the-badge) ![AI Code Generation](https://img.shields.io/badge/AI%20Code%20Generation%20-ff9500?style=for-the-badge) | Natural language to Unity C# scripts |
 | ![](https://img.shields.io/badge/📚%20-cc6600?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-ff9500?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, etc.) |
-| ![](https://img.shields.io/badge/🔌%20-cc6600?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-ff9500?style=for-the-badge) | Ollama (local/free), OpenAI, Claude, custom endpoints |
+| ![](https://img.shields.io/badge/🔌%20-cc6600?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-ff9500?style=for-the-badge) | Claude (recommended), Ollama (local/free), OpenAI, custom endpoints |
 | ![](https://img.shields.io/badge/🔒%20-cc6600?style=for-the-badge) ![Privacy-First](https://img.shields.io/badge/Privacy--First%20-ff9500?style=for-the-badge) | Run locally with Ollama, no telemetry |
 | ![](https://img.shields.io/badge/📴%20-cc6600?style=for-the-badge) ![Works Offline](https://img.shields.io/badge/Works%20Offline%20-ff9500?style=for-the-badge) | Templates and local AI work without internet |
 
@@ -72,6 +72,18 @@ ollama pull codellama
    - **API URL:** `http://localhost:11434/api/generate`
    - **Model:** `codellama`
    - **API Key:** (leave empty)
+3. Click **Save Config**
+
+</details>
+
+<details>
+<summary><b>⭐ Claude (Recommended)</b></summary>
+
+1. Get API key from https://console.anthropic.com/
+2. Configure:
+   - **API URL:** `https://api.anthropic.com/v1/messages`
+   - **Model:** `claude-sonnet-4` or `claude-3-5-sonnet-20241022`
+   - **API Key:** Your key
 3. Click **Save Config**
 
 </details>
@@ -176,7 +188,8 @@ Scripts generate to `Assets/Scripts/`
 | Provider | Type | Cost | Performance |
 |----------|------|------|-------------|
 | **Ollama** | Local | 💚 Free | Fast |
-| **OpenAI** | Cloud | 💰 Paid | Best |
+| **Claude** ⭐ | Cloud | 💰 Paid | Best |
+| **OpenAI** | Cloud | 💰 Paid | Excellent |
 | **LM Studio** | Local | 💚 Free | Fast |
 | **Custom** | Any | 🔄 Varies | Varies |
 
