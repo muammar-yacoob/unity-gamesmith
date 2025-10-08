@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+# [1.1.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.0.0...v1.1.0) (2025-10-08)
+
+
+### Features
+
+* add assembly definition for editor-only compilation ([89f9777](https://github.com/muammar-yacoob/unity-gamesmith/commit/89f9777ee40cb4285f1a4d81741bf925c977da97))
+
 # 1.0.0 (2025-10-08)
 
 
