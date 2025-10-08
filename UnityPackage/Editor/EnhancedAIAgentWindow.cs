@@ -6,8 +6,9 @@ using System.Collections.Generic;
 namespace SparkGames.UnityAIAgent.Editor
 {
     /// <summary>
-    /// Enhanced Unity Editor window with Sketchfab-style UI for AI-powered game development
+    /// [DEPRECATED] Legacy Enhanced window - Use Tools/Game Smith instead
     /// </summary>
+    [System.Obsolete("This window is deprecated. Please use Tools/Game Smith instead.")]
     public class EnhancedAIAgentWindow : EditorWindow
     {
         private AIAgentConfig config;
@@ -32,7 +33,7 @@ namespace SparkGames.UnityAIAgent.Editor
         private string[] tabNames = { "AI Generator", "Template Library", "Favorites" };
         private CodeTemplate selectedTemplate;
 
-        [MenuItem("Tools/Unity AI Agent (Enhanced)")]
+        [MenuItem("Tools/Legacy/Unity AI Agent Enhanced (Deprecated)", false, 101)]
         public static void ShowWindow()
         {
             var window = GetWindow<EnhancedAIAgentWindow>("Unity AI Agent");

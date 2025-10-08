@@ -5,8 +5,9 @@ using System.Collections;
 namespace SparkGames.UnityAIAgent.Editor
 {
     /// <summary>
-    /// Main Unity Editor window for AI-powered game development
+    /// [DEPRECATED] Legacy Unity Editor window - Use Tools/Game Smith instead
     /// </summary>
+    [System.Obsolete("This window is deprecated. Please use Tools/Game Smith instead.")]
     public class UnityAIAgentWindow : EditorWindow
     {
         private AIAgentConfig config;
@@ -16,7 +17,7 @@ namespace SparkGames.UnityAIAgent.Editor
         private string responseOutput = "";
         private bool isProcessing = false;
 
-        [MenuItem("Tools/Unity AI Agent")]
+        [MenuItem("Tools/Legacy/Unity AI Agent (Deprecated)", false, 100)]
         public static void ShowWindow()
         {
             var window = GetWindow<UnityAIAgentWindow>("Unity AI Agent");

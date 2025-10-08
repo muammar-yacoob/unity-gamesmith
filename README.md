@@ -1,33 +1,51 @@
 # Unity GameSmith
 
-AI-powered code generation and template library for Unity Editor. Free, open-source alternative to Unity Muse.
+**AI-powered code generation and template library for Unity Editor**  
+🎮 Free, open-source alternative to Unity Muse
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Unity 2021.3+](https://img.shields.io/badge/Unity-2021.3+-blue.svg)](https://unity.com)
+---
 
-## Features
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
+![Unity 2021.3+](https://img.shields.io/badge/Unity-2021.3+-blue.svg?style=for-the-badge)
+![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
+![AI Powered](https://img.shields.io/badge/AI-Powered-cc6600?style=for-the-badge)
 
-- **AI Code Generation** - Natural language to Unity C# scripts
-- **Template Library** - 10+ pre-built game systems (player, enemy, UI, etc.)
-- **Multi-AI Support** - Ollama (local/free), OpenAI, Claude, custom endpoints
-- **Privacy-First** - Run locally with Ollama, no telemetry
-- **Works Offline** - Templates and local AI work without internet
+---
 
-## Installation
+## 🚀 Features
 
-### Via Git URL (Recommended)
+| Feature | Description |
+|---------|-------------|
+| ![](https://img.shields.io/badge/🤖%20-cc6600?style=for-the-badge) ![AI Code Generation](https://img.shields.io/badge/AI%20Code%20Generation%20-ff9500?style=for-the-badge) | Natural language to Unity C# scripts |
+| ![](https://img.shields.io/badge/📚%20-cc6600?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-ff9500?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, etc.) |
+| ![](https://img.shields.io/badge/🔌%20-cc6600?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-ff9500?style=for-the-badge) | Ollama (local/free), OpenAI, Claude, custom endpoints |
+| ![](https://img.shields.io/badge/🔒%20-cc6600?style=for-the-badge) ![Privacy-First](https://img.shields.io/badge/Privacy--First%20-ff9500?style=for-the-badge) | Run locally with Ollama, no telemetry |
+| ![](https://img.shields.io/badge/📴%20-cc6600?style=for-the-badge) ![Works Offline](https://img.shields.io/badge/Works%20Offline%20-ff9500?style=for-the-badge) | Templates and local AI work without internet |
+
+---
+
+## 📥 Installation
+
+<details>
+<summary><b>🎯 Via Git URL (Recommended)</b></summary>
 
 1. Open Unity Package Manager: `Window → Package Manager`
 2. Click `+` → `Add package from git URL`
 3. Enter: `https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage`
 
-### From Disk
+</details>
+
+<details>
+<summary><b>💾 From Disk</b></summary>
 
 1. Clone: `git clone https://github.com/muammar-yacoob/unity-gamesmith.git`
 2. In Unity: `Window → Package Manager → + → Add package from disk`
 3. Select `unity-gamesmith/UnityPackage/package.json`
 
-## Quick Start
+</details>
+
+<details>
+<summary><b>⚡ Quick Start</b></summary>
 
 ```bash
 # 1. Install Ollama (optional, for free local AI)
@@ -40,9 +58,14 @@ ollama pull codellama
 # 3. Open: Tools → Unity GameSmith (Enhanced)
 ```
 
-## Configuration
+</details>
 
-### Ollama (Local, Free)
+---
+
+## ⚙️ Configuration
+
+<details>
+<summary><b>🏠 Ollama (Local, Free)</b></summary>
 
 1. Open `Tools → Unity GameSmith (Enhanced)`
 2. Configure:
@@ -51,7 +74,10 @@ ollama pull codellama
    - **API Key:** (leave empty)
 3. Click **Save Config**
 
-### OpenAI
+</details>
+
+<details>
+<summary><b>☁️ OpenAI</b></summary>
 
 1. Get API key from https://platform.openai.com/api-keys
 2. Configure:
@@ -60,94 +86,153 @@ ollama pull codellama
    - **API Key:** Your key
 3. Click **Save Config**
 
-### Custom API
+</details>
+
+<details>
+<summary><b>🔧 Custom API</b></summary>
 
 Any OpenAI-compatible endpoint works (LM Studio, custom servers, etc.)
+- Just update the **API URL** and **Model** fields
+- Add your **API Key** if required
 
-## Usage
+</details>
 
-### Template Library
+---
+
+## 💡 Usage
+
+<details>
+<summary><b>📚 Template Library</b></summary>
 
 1. `Tools → Unity GameSmith (Enhanced)`
 2. Click **Template Library** tab
 3. Search/filter templates
 4. Click **Use Template** to generate code
 
-### AI Generation
+Scripts generate to `Assets/Scripts/`
+
+</details>
+
+<details>
+<summary><b>🤖 AI Generation</b></summary>
 
 1. `Tools → Unity GameSmith (Enhanced)`
 2. Click **AI Generator** tab
-3. Enter command:
-   ```
-   "Create a player with dash ability"
-   "Generate boss enemy with attack patterns"
-   "Make a health system with shields"
-   ```
-4. Click **Execute Command**
+3. Enter command and click **Execute Command**
 
 Scripts generate to `Assets/Scripts/`
 
-## Available Templates
+</details>
+
+---
+
+## 💬 Example Commands
+
+**🎮 Player Systems**
+* _"Create a 2D player with WASD movement and jump"_
+* _"Generate a player with dash ability and cooldown"_
+* _"Make a character with wall jump mechanics"_
+* _"Create a player with stamina system"_
+
+**👾 Enemy AI**
+* _"Generate boss enemy with 3 attack patterns"_
+* _"Create chase enemy that patrols waypoints"_
+* _"Make flying enemy that shoots projectiles"_
+* _"Generate enemy spawner with wave system"_
+
+**⚔️ Combat & Weapons**
+* _"Create a shooting system with bullet spread"_
+* _"Generate melee combat with combo system"_
+* _"Make a health system with shields and armor"_
+* _"Create weapon switching system"_
+
+**🎨 UI & Effects**
+* _"Generate dynamic health bar with smooth transitions"_
+* _"Create damage number popup effect"_
+* _"Make particle effect on enemy death"_
+* _"Generate pause menu with settings"_
+
+---
+
+## 📦 Available Templates
 
 | Template | Category | Description |
-|----------|----------|-------------|
-| 2D Player Controller | Player | WASD movement + mouse aim |
-| Chase Enemy AI | Enemy | Detection and pursuit |
-| Shooting System | Projectile | Projectile weapons |
-| Health System | Player | Damage/healing |
-| Wave Spawner | Level | Enemy wave spawning |
-| Health Bar UI | UI | Dynamic health display |
-| Camera Follow | Camera | Smooth tracking |
-| Dash Ability | Player | Dash with cooldown |
-| Power-up Pickup | Power-ups | Collectibles |
-| Particle Effect | Effects | Particle triggers |
+|---------|----------|-------------|
+| ![](https://img.shields.io/badge/🎮%20-cc6600?style=for-the-badge) ![2D Player Controller](https://img.shields.io/badge/2D%20Player%20Controller%20-ff9500?style=for-the-badge) | WASD movement + mouse aim |
+| ![](https://img.shields.io/badge/👾%20-cc6600?style=for-the-badge) ![Chase Enemy AI](https://img.shields.io/badge/Chase%20Enemy%20AI%20-ff9500?style=for-the-badge) | Detection and pursuit |
+| ![](https://img.shields.io/badge/🔫%20-cc6600?style=for-the-badge) ![Shooting System](https://img.shields.io/badge/Shooting%20System%20-ff9500?style=for-the-badge) | Projectile weapons |
+| ![](https://img.shields.io/badge/❤️%20-cc6600?style=for-the-badge) ![Health System](https://img.shields.io/badge/Health%20System%20-ff9500?style=for-the-badge) | Damage/healing |
+| ![](https://img.shields.io/badge/🌊%20-cc6600?style=for-the-badge) ![Wave Spawner](https://img.shields.io/badge/Wave%20Spawner%20-ff9500?style=for-the-badge) | Enemy wave spawning |
+| ![](https://img.shields.io/badge/📊%20-cc6600?style=for-the-badge) ![Health Bar UI](https://img.shields.io/badge/Health%20Bar%20UI%20-ff9500?style=for-the-badge) | Dynamic health display |
+| ![](https://img.shields.io/badge/📷%20-cc6600?style=for-the-badge) ![Camera Follow](https://img.shields.io/badge/Camera%20Follow%20-ff9500?style=for-the-badge) | Smooth tracking |
+| ![](https://img.shields.io/badge/⚡%20-cc6600?style=for-the-badge) ![Dash Ability](https://img.shields.io/badge/Dash%20Ability%20-ff9500?style=for-the-badge) | Dash with cooldown |
+| ![](https://img.shields.io/badge/🎁%20-cc6600?style=for-the-badge) ![Power-up Pickup](https://img.shields.io/badge/Power--up%20Pickup%20-ff9500?style=for-the-badge) | Collectibles |
+| ![](https://img.shields.io/badge/✨%20-cc6600?style=for-the-badge) ![Particle Effect](https://img.shields.io/badge/Particle%20Effect%20-ff9500?style=for-the-badge) | Particle triggers |
 
-## AI Providers
+---
 
-| Provider | Type | Cost |
-|----------|------|------|
-| Ollama | Local | Free |
-| OpenAI | Cloud | Paid |
-| LM Studio | Local | Free |
-| Custom | Any | Varies |
+## 🤖 AI Providers
 
-## Requirements
+| Provider | Type | Cost | Performance |
+|----------|------|------|-------------|
+| **Ollama** | Local | 💚 Free | Fast |
+| **OpenAI** | Cloud | 💰 Paid | Best |
+| **LM Studio** | Local | 💚 Free | Fast |
+| **Custom** | Any | 🔄 Varies | Varies |
+
+---
+
+## 📋 Requirements
 
 - Unity 2021.3 LTS or later
 - .NET Standard 2.1 or 4.x
 - AI backend: Ollama (recommended) or API key
 
-## Troubleshooting
+---
 
-**Package not showing:**
+## 🔧 Troubleshooting
+
+<details>
+<summary><b>Package not showing</b></summary>
+
 - Check `Packages/manifest.json`
 - `Assets → Reimport All`
 - Restart Unity
 
-**AI connection failed:**
+</details>
+
+<details>
+<summary><b>AI connection failed</b></summary>
+
 - Ollama: Ensure `ollama serve` is running
 - OpenAI: Verify API key
 - Check firewall settings
 
-**Scripts not generating:**
+</details>
+
+<details>
+<summary><b>Scripts not generating</b></summary>
+
 - Create `Assets/Scripts/` folder
 - Check write permissions
 - View Console for errors
 
-## Contributing
+</details>
 
-1. Fork repository
-2. Create branch: `git checkout -b feature/name`
-3. Commit: `git commit -m 'Add feature'`
-4. Push: `git push origin feature/name`
-5. Open Pull Request
+---
 
-## License
+## 🌱 Support & Contributions
 
-MIT License - see [LICENSE](LICENSE)
+⭐ **Star the repo** & I power up like Mario 🍄  
+☕ **Devs run on coffee** - [Buy me one?](https://www.buymeacoffee.com/muammaryacoob)  
+💰 **Crypto tips welcome** - [Tip in crypto](https://muammar-yacoob.github.io/crypto-tip/)  
+🤝 **Contributions are welcome** - 🍴 Fork, improve, PR!  
+🎥 **Need help?** [YouTube Setup Tutorial](https://youtube.com/@muammaryacoob) • [Discord](https://discord.gg/muammaryacoob)
 
-## Links
+## 💖 Sponsor
 
-- [GitHub Repository](https://github.com/muammar-yacoob/unity-gamesmith)
-- [Issues](https://github.com/muammar-yacoob/unity-gamesmith/issues)
-- [Ollama](https://ollama.com)
+Your support helps maintain and improve the tool. please consider sponsoring the project.
+
+---
+
+**Made with ❤️ for Unity Developers** • [Privacy Policy](https://github.com/muammar-yacoob/unity-gamesmith) • [Terms of Service](https://github.com/muammar-yacoob/unity-gamesmith)
