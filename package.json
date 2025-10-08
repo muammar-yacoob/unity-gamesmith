@@ -1,6 +1,6 @@
 {
   "name": "unity-gamesmith",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Unity GameSmith - Forge legendary game code with AI-powered Unity Editor tool",
   "private": true,
   "scripts": {

@@ -1,240 +1,163 @@
-# Unity GameSmith - Free Alternative to Unity Muse
+# Unity GameSmith Package
 
-> **Privacy-first, open-source AI code generation for Unity**
+**AI-powered code generation and template library for Unity Editor**
+Free, open-source alternative to Unity Muse
 
-Forge legendary game code with AI - for free. No subscriptions, runs locally, works offline. The indie developer's alternative to Unity Muse Chat.
+---
 
-**🆓 100% Free** | **🔒 Privacy-First** | **📚 10+ Templates** | **🤖 Multi-AI Support**
+## 🚀 Quick Start
 
-## 🎨 Two Versions Available
+After installation, access via:
+- **Main Window:** `Tools → Game Smith` (Alt+G)
+- **Legacy Windows:** `Tools → Legacy/` (deprecated)
 
-### 1. Enhanced Window (Recommended)
-**Menu:** `Tools → Unity GameSmith (Enhanced)`
+---
 
-Modern Sketchfab-inspired UI with:
-- 🔍 **Template Library** - Browse 10+ pre-built code templates
-- 🌟 **Favorites System** - Star and quick-access your favorites
-- 📑 **Tabs** - AI Generator, Template Library, Favorites
-- 🎯 **Search & Filter** - Find templates by keyword or category
-- 📄 **Pagination** - Easy navigation through templates
-- 🎨 **Grid Layout** - Beautiful card-based display
+## ⚙️ Configuration
 
-### 2. Classic Window
-**Menu:** `Tools → Unity GameSmith`
+### Ollama (Local, Free) - Recommended
 
-Simplified interface focusing on:
-- AI-powered code generation
-- Quick action buttons
-- Natural language commands
+1. Install Ollama: `curl -fsSL https://ollama.com/install.sh | sh`
+2. Pull model: `ollama pull codellama`
+3. In Unity `Tools → Game Smith`:
+   - **API URL:** `http://localhost:11434/api/generate`
+   - **Model:** `codellama`
+   - **API Key:** (leave empty)
+4. Click **Save**
 
-## Features
+### Claude (Best Quality)
 
-- 🤖 **AI Integration**: Connect to AI agents (Ollama, OpenAI, etc.) for code generation
-- 🎮 **2D Shooter Templates**: Generate complete game systems
-- 👤 **Player Systems**: Movement, health, and shooting mechanics
-- 🤺 **Enemy AI**: Intelligent enemy behaviors and attacks
-- 💥 **Projectile System**: Physics-based combat mechanics
-- 📊 **Level Management**: Wave-based spawning and progression
-- 🎨 **UI System**: Health bars, scores, and game screens
-- 🔧 **Editor Integration**: Work directly in Unity Editor
-- 📚 **Template Library**: 10+ pre-built, production-ready templates (Enhanced only)
-- ⭐ **Favorites**: Save templates for quick access (Enhanced only)
+1. Get API key: https://console.anthropic.com/
+2. Configure:
+   - **API URL:** `https://api.anthropic.com/v1/messages`
+   - **Model:** `claude-sonnet-4`
+   - **API Key:** Your key
+3. Click **Save**
 
-## Installation
+### OpenAI
 
-### Method 1: Unity Package Manager (Recommended)
+1. Get API key: https://platform.openai.com/api-keys
+2. Configure:
+   - **API URL:** `https://api.openai.com/v1/chat/completions`
+   - **Model:** `gpt-4` or `gpt-3.5-turbo`
+   - **API Key:** Your key
+3. Click **Save**
 
-1. Open Unity Editor
-2. Window → Package Manager
-3. Click "+" → Add package from disk
-4. Navigate to and select `package.json` in this folder
-5. Unity will import the package automatically
+### Custom API
 
-### Method 2: Manual Installation
+Any OpenAI-compatible endpoint works (LM Studio, etc.)
 
-1. Copy the `UnityPackage` folder to your Unity project's `Packages` directory
-2. Unity will automatically detect and import the package
+---
 
-## Setup
+## 💡 Usage
 
-### 1. Configure AI Agent
+### 4 Tabs Available
 
-1. Open Unity Editor
-2. Go to **Tools → Unity GameSmith**
-3. In the AI Configuration section, set:
-   - **API URL**: Your AI agent endpoint (e.g., `http://localhost:11434/api/generate` for Ollama)
-   - **Model**: AI model name (e.g., `codellama`, `gpt-4`, etc.)
-   - **API Key**: Optional, for services like OpenAI
-   - **Timeout**: Request timeout in seconds (default: 120)
-   - **Temperature**: AI creativity level 0-1 (default: 0.7)
-4. Click **Save Config**
+1. **AI Generator** - Natural language to C# scripts
+2. **Template Library** - Browse 10+ pre-built templates
+3. **Favorites** - Quick access to starred templates
+4. **Quick Actions** - One-click system generators
 
-### 2. Set Up AI Backend (Example: Ollama)
+### Example Commands
 
-```bash
-# Install Ollama
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Download a code model
-ollama pull codellama
-
-# Start Ollama server (usually runs automatically)
-ollama serve
+**AI Generator Tab:**
+```
+"Create a player with dash ability and 150 health"
+"Generate boss enemy with attack patterns"
+"Make a health system with shields"
 ```
 
-## Usage
+**Template Library Tab:**
+- Search/filter templates
+- Click "Use" to generate scripts
+- Star favorites for quick access
 
-### Quick Start (Enhanced Window)
+**Quick Actions Tab:**
+- One-click complete systems
+- Player, Enemy, Projectile, Level, UI generators
 
-1. Open **Tools → Unity GameSmith (Enhanced)** in Unity Editor
-2. Choose your workflow:
-   - **Template Library Tab**: Browse and use pre-built templates
-   - **AI Generator Tab**: Generate custom code with AI
-   - **Favorites Tab**: Access your starred templates
+---
 
-### Template Library (Enhanced Window Only)
+## 📦 Available Templates
 
-Browse 10+ ready-to-use templates:
-- Search by keyword
-- Filter by category (Player, Enemy, UI, etc.)
-- View complexity ratings
-- Copy code or generate scripts instantly
-- Add to favorites for quick access
+| Template | Category | Description |
+|----------|----------|-------------|
+| 2D Player Controller | Player | WASD movement + mouse aim |
+| Chase Enemy AI | Enemy | Detection and pursuit |
+| Shooting System | Projectile | Projectile weapons |
+| Health System | Player | Damage/healing |
+| Wave Spawner | Level | Enemy wave spawning |
+| Health Bar UI | UI | Dynamic health display |
+| Camera Follow | Camera | Smooth tracking |
+| Dash Ability | Player | Dash with cooldown |
+| Power-up Pickup | Power-ups | Collectibles |
+| Particle Effect | Effects | Particle triggers |
 
-### Quick Actions (Both Windows)
+---
 
-Use **Quick Actions** buttons for common tasks:
-   - Create 2D Shooter Project
-   - Setup Player
-   - Create Enemy AI
-   - Add Projectile System
-   - Setup Level System
-   - Create Game UI
+## 🤖 Supported AI Providers
 
-### Natural Language Commands
+| Provider | Type | Cost | Quality |
+|----------|------|------|---------|
+| **Ollama** | Local | Free | Good |
+| **Claude** ⭐ | Cloud | Paid | Best |
+| **OpenAI** | Cloud | Paid | Excellent |
+| **LM Studio** | Local | Free | Good |
+| **Custom** | Any | Varies | Varies |
 
-Enter commands in the command box:
+---
 
-```
-"Create a player with 5 movement speed and health of 150"
-"Generate an enemy that shoots projectiles at the player"
-"Make a boss enemy with 500 health that teleports"
-```
+## 📋 Requirements
 
-### Menu Items
+- Unity 2021.3 LTS or later
+- .NET Standard 2.1 or 4.x
+- AI backend: Ollama (recommended) or API key
 
-Access generators directly from the menu:
+---
 
-- **Tools → Unity GameSmith → Generate → Player System**
-- **Tools → Unity GameSmith → Generate → Enemy System**
-- **Tools → Unity GameSmith → Generate → Projectile System**
-- **Tools → Unity GameSmith → Generate → Level System**
-- **Tools → Unity GameSmith → Generate → UI System**
+## 🔧 Troubleshooting
 
-## Generated Scripts
+**Package not showing:**
+- Check `Packages/manifest.json`
+- `Assets → Reimport All`
+- Restart Unity
 
-All scripts are generated in `Assets/Scripts/` and include:
+**AI connection failed:**
+- Ollama: Ensure `ollama serve` is running
+- OpenAI/Claude: Verify API key
+- Check firewall settings
 
-### Player System
-- `PlayerController.cs` - Movement and rotation
-- `PlayerHealth.cs` - Health management
-- `PlayerShooting.cs` - Shooting mechanics
+**Scripts not generating:**
+- Create `Assets/Scripts/` folder
+- Check write permissions
+- View Console for errors
 
-### Enemy System
-- `EnemyAI.cs` - Chase and attack AI
-- `EnemyHealth.cs` - Enemy health
-- `EnemyAttack.cs` - Attack behavior
+---
 
-### Projectile System
-- `Projectile.cs` - Bullet behavior
-- `DamageDealer.cs` - Collision damage
+## 📝 Generated Scripts Location
 
-### Level System
-- `LevelManager.cs` - Level progression
-- `WaveSpawner.cs` - Enemy spawning
-- `SpawnPoint.cs` - Spawn locations
+All scripts are created in: `Assets/Scripts/`
 
-### UI System
-- `HealthBar.cs` - Player health display
-- `ScoreDisplay.cs` - Score tracking
-- `GameOverScreen.cs` - Game over UI
+---
 
-## Configuration File
+## 🔗 Links
 
-The tool creates `AIAgentConfig.json` in your project root:
+- **GitHub:** https://github.com/muammar-yacoob/unity-gamesmith
+- **Issues:** https://github.com/muammar-yacoob/unity-gamesmith/issues
+- **Ollama:** https://ollama.com
+- **Documentation:** See main repository README
 
-```json
-{
-  "apiUrl": "http://localhost:11434/api/generate",
-  "model": "codellama",
-  "apiKey": "",
-  "timeout": 120,
-  "temperature": 0.7
-}
-```
+---
 
-## Supported AI Providers
-
-- **Ollama** (Local): `http://localhost:11434/api/generate`
-- **OpenAI**: `https://api.openai.com/v1/chat/completions`
-- **Anthropic Claude**: Via API gateway
-- **Custom APIs**: Any OpenAI-compatible endpoint
-
-## Troubleshooting
-
-### Connection Failed
-- Ensure AI backend is running (e.g., `ollama serve`)
-- Check API URL is correct
-- Verify firewall isn't blocking connections
-
-### No Scripts Generated
-- Check Unity Console for errors
-- Verify `Assets/Scripts/` folder exists
-- Check file permissions
-
-### AI Not Responding
-- Increase timeout in configuration
-- Try a different model
-- Check AI backend logs
-
-## Logs
-
-View detailed logs at: `Logs/AIAgent.log` in your project root
-
-## Examples
-
-### Create a Complete 2D Shooter
-
-1. Click **Create 2D Shooter Project**
-2. Wait for AI to generate all systems
-3. Scripts will be created in `Assets/Scripts/`
-4. Attach scripts to GameObjects as needed
-
-### Custom Enemy Type
-
-```
-Natural Language Command:
-"Create a flying enemy that shoots fireballs every 2 seconds and has 75 health"
-```
-
-The AI will generate a custom enemy script based on your requirements.
-
-## Requirements
-
-- Unity 2021.3 or later
-- AI backend (Ollama, OpenAI API, etc.)
-- Internet connection (for cloud AI) or local AI setup
-
-## Support
-
-- GitHub Issues: https://github.com/muammar-yacoob/unity-gamesmith/issues
-- Documentation: https://github.com/muammar-yacoob/unity-gamesmith
-
-## License
+## 📄 License
 
 MIT License - See LICENSE file for details
 
-## Credits
+## 🙏 Credits
 
-Created by Spark Games
-https://github.com/muammar-yacoob
+- **Author:** Muammar Yacoob
+- **GitHub:** https://github.com/muammar-yacoob
+
+---
+
+**Made with ❤️ for Unity Developers**
