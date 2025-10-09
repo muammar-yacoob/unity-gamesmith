@@ -81,11 +81,17 @@ namespace SparkGames.UnityGameSmith.Editor
 
             client = new AIAgentClient(config);
             searchResults = AITemplateLibrary.GetAllTemplates();
-            InitializeStyles();
+            // Note: InitializeStyles() moved to OnGUI() - cannot call GUI functions from OnEnable()
         }
 
         private void OnGUI()
         {
+            // Lazy initialize styles on first OnGUI call
+            if (headerStyle == null)
+            {
+                InitializeStyles();
+            }
+
             DrawRects();
             DrawHeader();
 

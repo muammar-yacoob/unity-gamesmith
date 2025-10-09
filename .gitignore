@@ -65,9 +65,10 @@ dev-debug.log
 *.sw?
 # OS specific
 
-/.taskmaster
+# Claude Code local settings (user-specific)
 /.claude
 
-# Task files
-# tasks.json
-# tasks/ 
+# Taskmaster MCP (keep docs/ and templates/, ignore user-specific tasks)
+/.taskmaster/tasks/*
+/.taskmaster/.cache
+/.taskmaster/*.log 

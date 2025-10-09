@@ -1,0 +1,210 @@
+# Product Requirements Document Template
+
+## Project: [Feature/System Name]
+**Version:** 1.0
+**Date:** [YYYY-MM-DD]
+**Author:** [Your Name]
+
+---
+
+## 1. Executive Summary
+[Brief overview of what this feature accomplishes - 2-3 sentences]
+
+---
+
+## 2. Problem Statement
+[What problem does this solve? Why is it needed?]
+
+**Current Situation:**
+- [What's the current state?]
+- [What pain points exist?]
+
+**Desired Outcome:**
+- [What should the end result be?]
+- [How will users benefit?]
+
+---
+
+## 3. Goals & Success Metrics
+
+**Primary Goals:**
+1. [Goal 1]
+2. [Goal 2]
+3. [Goal 3]
+
+**Success Metrics:**
+- [Metric 1]: [Target value]
+- [Metric 2]: [Target value]
+- [Metric 3]: [Target value]
+
+---
+
+## 4. User Stories
+
+**As a** [type of user]
+**I want** [goal/desire]
+**So that** [benefit/reason]
+
+**Acceptance Criteria:**
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+- [ ] [Criterion 3]
+
+---
+
+## 5. Technical Requirements
+
+### 5.1 Unity Integration
+- Unity Version: [e.g., 2021.3 LTS+]
+- Platform Support: [e.g., Windows, macOS, Linux, WebGL]
+- Dependencies: [List required packages/assets]
+
+### 5.2 Code Generation
+- Template Type: [e.g., MonoBehaviour, ScriptableObject, Static Utility]
+- Namespace: [e.g., SparkGames.UnityGameSmith.Templates]
+- Script Location: [e.g., Assets/Scripts/Generated/]
+
+### 5.3 AI Provider Compatibility
+- [ ] Works with Ollama (local)
+- [ ] Works with Claude (cloud)
+- [ ] Works with OpenAI (cloud)
+- [ ] Works with custom endpoints
+
+---
+
+## 6. Feature Specification
+
+### 6.1 Core Functionality
+[Detailed description of what the feature does]
+
+**Key Components:**
+1. **[Component 1 Name]**
+   - Purpose: [What it does]
+   - Implementation: [How it works]
+   - Dependencies: [What it needs]
+
+2. **[Component 2 Name]**
+   - Purpose: [What it does]
+   - Implementation: [How it works]
+   - Dependencies: [What it needs]
+
+### 6.2 User Interface
+[Describe UI changes to GameSmith window]
+- Tab placement: [Which tab?]
+- UI elements: [Buttons, fields, etc.]
+- User workflow: [Step-by-step]
+
+### 6.3 Generated Code Structure
+```csharp
+// Example of generated code structure
+using UnityEngine;
+
+namespace SparkGames.UnityGameSmith.Templates
+{
+    public class ExampleGenerated : MonoBehaviour
+    {
+        // Generated code here
+    }
+}
+```
+
+---
+
+## 7. Implementation Phases
+
+### Phase 1: Foundation
+- [ ] [Task 1]
+- [ ] [Task 2]
+- [ ] [Task 3]
+
+### Phase 2: Core Features
+- [ ] [Task 1]
+- [ ] [Task 2]
+- [ ] [Task 3]
+
+### Phase 3: Polish & Testing
+- [ ] [Task 1]
+- [ ] [Task 2]
+- [ ] [Task 3]
+
+---
+
+## 8. Dependencies & Integration
+
+**Depends On:**
+- [Feature/System 1]
+- [Feature/System 2]
+
+**Integrates With:**
+- [Existing system 1]
+- [Existing system 2]
+
+**Blocks:**
+- [Future feature 1]
+- [Future feature 2]
+
+---
+
+## 9. Testing Strategy
+
+### 9.1 Unit Testing
+- [ ] Test component creation
+- [ ] Test code generation
+- [ ] Test AI provider integration
+
+### 9.2 Integration Testing
+- [ ] Test Unity Editor integration
+- [ ] Test with all AI providers
+- [ ] Test generated scripts in Unity project
+
+### 9.3 WebGL Testing (if applicable)
+- [ ] Build WebGL project with generated code
+- [ ] Test in Chrome using DevTools MCP
+- [ ] Performance profiling
+- [ ] Cross-browser compatibility
+
+---
+
+## 10. Documentation Requirements
+
+- [ ] Update README.md
+- [ ] Create feature-specific documentation
+- [ ] Add code examples
+- [ ] Record demo video/GIF
+- [ ] Update changelog
+
+---
+
+## 11. Risks & Mitigations
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| [Risk 1] | High/Med/Low | High/Med/Low | [How to mitigate] |
+| [Risk 2] | High/Med/Low | High/Med/Low | [How to mitigate] |
+
+---
+
+## 12. Timeline & Milestones
+
+**Estimated Duration:** [X weeks/days]
+
+| Milestone | Target Date | Status |
+|-----------|-------------|--------|
+| Phase 1 Complete | [Date] | Not Started |
+| Phase 2 Complete | [Date] | Not Started |
+| Phase 3 Complete | [Date] | Not Started |
+| Release | [Date] | Not Started |
+
+---
+
+## 13. Open Questions
+1. [Question 1]
+2. [Question 2]
+3. [Question 3]
+
+---
+
+## 14. References
+- [Related PRD/Document 1]
+- [Related PRD/Document 2]
+- [External resource 1]

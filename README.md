@@ -185,12 +185,42 @@ Scripts generate to `Assets/Scripts/`
 
 ---
 
+## 🔌 MCP Integration (Advanced)
+
+Unity GameSmith supports **Model Context Protocol (MCP)** for extended AI capabilities:
+
+### 🎯 Taskmaster MCP
+AI-powered task management and PRD parsing for structured project planning.
+
+**Features**:
+- Parse Product Requirements Documents into actionable tasks
+- Dependency-aware task tracking
+- Complexity analysis and effort estimation
+- Progress tracking with AI assistance
+
+### 🌐 Chrome DevTools MCP
+Automated WebGL testing and performance profiling for Unity builds.
+
+**Features**:
+- Automated browser testing with GPU acceleration
+- Performance profiling (CPU, memory, GPU)
+- Console log monitoring and debugging
+- Visual regression testing with screenshots
+
+### 📚 Documentation
+- [MCP Integration Guide](docs/mcp-integration.md) - Complete setup and usage guide
+- [WebGL Testing Guide](docs/webgl-testing.md) - Detailed testing workflows
+
+**Configuration**: `.mcp.json` is pre-configured in the repository.
+
+---
 
 ## 📋 Requirements
 
 - Unity 2021.3 LTS or later
 - .NET Standard 2.1 or 4.x
 - AI backend: Ollama (recommended) or API key
+- **Optional**: Node.js 16+ (for MCP servers)
 
 ---
 
