@@ -1,17 +1,3 @@
 {
-  "mcpServers": {
-    "chrome-devtools": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@chromedevtools/chrome-devtools-mcp",
-        "--",
-        "--headless=new",
-        "--use-angle=vulkan",
-        "--enable-features=Vulkan",
-        "--no-sandbox"
-      ]
-    }
-  }
+  "mcpServers": {}
 }

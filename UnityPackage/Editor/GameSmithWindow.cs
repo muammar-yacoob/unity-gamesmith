@@ -1,623 +1,450 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-using System.Collections.Generic;
+using UnityEngine.Networking;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
-    /// Unified Game Smith Editor Window - Modern UI Toolkit implementation
+    /// Simple AI chat window for Unity development
     /// </summary>
     public class GameSmithWindow : EditorWindow
     {
-        #region Fields
-        private AIAgentConfig config;
+        private GameSmithConfig config;
+        private ChatHistory history;
         private AIAgentClient client;
 
-        // AI Provider System
-        private AIProviderDatabase providerDatabase;
-        private AIProvider selectedProvider;
+        // UI Elements
+        private TextField messageInput;
+        private VisualElement messagesContainer;
+        private ScrollView chatScroll;
+        private Button sendButton;
+        private PopupField<string> modelDropdown;
+        private Label providerStatus;
 
-        // Template Library
-        private string searchQuery = "";
-        private string selectedCategory = "All";
-        private List<CodeTemplate> searchResults = new List<CodeTemplate>();
-        private int currentPage = 0;
-        private const int itemsPerPage = 8;
+        // Coroutine support
+        private IEnumerator currentCoroutine;
 
-        // Favorites
-        private List<CodeTemplate> favorites = new List<CodeTemplate>();
+        // Ollama status
+        private bool isOllamaRunning = false;
+        private float lastOllamaCheck = 0f;
 
-        // UI State
-        private int currentTab = 0;
-        private bool isProcessing = false;
-
-        // UI Elements References
-        private VisualElement root;
-        private Button[] tabButtons;
-        private VisualElement[] tabContents;
-        private Label helpMessage;
-        private TextField commandInput;
-        private TextField responseOutput;
-        private VisualElement responseContainer;
-        private PopupField<string> providerDropdown;
-        private PopupField<string> categoryDropdown;
-        private VisualElement templatesContainer;
-        private VisualElement favoritesContainer;
-        private Label pageLabel;
-        private Button prevPageButton;
-        private Button nextPageButton;
-        #endregion
-
-        #region Menu
         [MenuItem("Tools/Game Smith &G", false, 1)]
         public static void ShowWindow()
         {
-            var window = GetWindow<GameSmithWindow>("Game Smith");
+            var hierarchyWindowType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
+            var window = GetWindow<GameSmithWindow>("Game Smith", false, hierarchyWindowType);
             window.minSize = new Vector2(400, 500);
-            window.maxSize = new Vector2(1200, 900);
             window.Show();
         }
-        #endregion
 
-        #region Unity Callbacks
         public void CreateGUI()
         {
-            // Load provider database
-            providerDatabase = AIProviderManager.GetDatabase();
-            selectedProvider = AIProviderManager.GetSelectedProvider();
-
-            if (selectedProvider != null)
-            {
-                config = selectedProvider.ToConfig();
-            }
-            else
-            {
-                config = AIAgentConfig.Load();
-            }
-
+            // Load config and history
+            config = GameSmithConfig.GetOrCreate();
+            history = ChatHistory.GetOrCreate();
             client = new AIAgentClient(config);
-            searchResults = AITemplateLibrary.GetAllTemplates();
 
-            // Find UXML and USS files dynamically
-            string[] uxmlGuids = AssetDatabase.FindAssets("GameSmithWindow t:VisualTreeAsset");
-            string[] ussGuids = AssetDatabase.FindAssets("GameSmithWindow t:StyleSheet");
-
-            VisualTreeAsset visualTree = null;
-            StyleSheet styleSheet = null;
-
-            if (uxmlGuids.Length > 0)
-            {
-                string uxmlPath = AssetDatabase.GUIDToAssetPath(uxmlGuids[0]);
-                visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath);
-            }
-
-            if (ussGuids.Length > 0)
-            {
-                string ussPath = AssetDatabase.GUIDToAssetPath(ussGuids[0]);
-                styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath);
-            }
+            // Load UXML
+            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+                "Packages/com.spark-games.unity-gamesmith/Editor/GameSmithWindow.uxml");
 
             if (visualTree == null)
             {
-                Debug.LogError("Could not find GameSmithWindow.uxml. Make sure it exists in the Editor folder.");
-                CreateFallbackUI();
+                var label = new Label("GameSmithWindow.uxml not found!");
+                label.style.paddingTop = 20;
+                label.style.paddingLeft = 20;
+                rootVisualElement.Add(label);
                 return;
             }
 
-            root = visualTree.CloneTree();
+            var root = visualTree.CloneTree();
             rootVisualElement.Add(root);
+
+            // Load USS
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
+                "Packages/com.spark-games.unity-gamesmith/Editor/GameSmithWindow.uss");
 
             if (styleSheet != null)
             {
                 root.styleSheets.Add(styleSheet);
             }
-            else
-            {
-                Debug.LogWarning("Could not find GameSmithWindow.uss. Styles may not be applied.");
-            }
 
-            InitializeUIReferences();
-            SetupCallbacks();
-            UpdateProviderUI();
+            InitializeUI(root);
+            LoadChatHistory();
+
+            // Enable coroutine and config updates
+            EditorApplication.update += UpdateCoroutine;
+            EditorApplication.update += CheckConfigChanges;
+            EditorApplication.update += CheckOllamaStatus;
         }
 
-        private void CreateFallbackUI()
+        private void OnDestroy()
         {
-            var fallbackLabel = new Label("Game Smith requires UXML and USS files.\n\nPlease ensure GameSmithWindow.uxml and GameSmithWindow.uss exist in the Editor folder.");
-            fallbackLabel.style.paddingLeft = 20;
-            fallbackLabel.style.paddingRight = 20;
-            fallbackLabel.style.paddingTop = 20;
-            fallbackLabel.style.paddingBottom = 20;
-            fallbackLabel.style.whiteSpace = WhiteSpace.Normal;
-            fallbackLabel.style.fontSize = 14;
-            rootVisualElement.Add(fallbackLabel);
+            EditorApplication.update -= UpdateCoroutine;
+            EditorApplication.update -= CheckConfigChanges;
+            EditorApplication.update -= CheckOllamaStatus;
         }
-        #endregion
 
-        #region Initialization
-        private void InitializeUIReferences()
+        private string lastConfigState = "";
+
+        private void CheckConfigChanges()
         {
-            // Header
-            var helpButton = root.Q<Button>("help-button");
-            if (helpButton != null)
+            if (config == null) return;
+
+            // Create a simple state string to detect changes
+            var currentState = $"{config.apiUrl}|{config.apiKey}|{config.availableModels}|{config.selectedModel}";
+
+            if (currentState != lastConfigState)
             {
-                helpButton.clicked += () => Application.OpenURL("https://github.com/muammar-yacoob/unity-gamesmith#readme");
+                lastConfigState = currentState;
+                RefreshUI();
+            }
+        }
+
+        private void RefreshUI()
+        {
+            // Refresh model dropdown
+            if (modelDropdown != null && config != null)
+            {
+                var models = config.GetModelsList();
+                modelDropdown.choices = models;
+                modelDropdown.SetValueWithoutNotify(config.GetCurrentModel());
             }
 
-            // Tabs
-            tabButtons = new Button[]
+            // Update provider status
+            UpdateProviderStatus();
+
+            // Recreate client with new config
+            client = new AIAgentClient(config);
+        }
+
+        private void StartCoroutine(IEnumerator routine)
+        {
+            currentCoroutine = routine;
+        }
+
+        private void UpdateCoroutine()
+        {
+            if (currentCoroutine != null)
             {
-                root.Q<Button>("tab-ai-generator"),
-                root.Q<Button>("tab-template-library"),
-                root.Q<Button>("tab-favorites"),
-                root.Q<Button>("tab-quick-actions")
-            };
-
-            tabContents = new VisualElement[]
-            {
-                root.Q<VisualElement>("ai-generator-tab"),
-                root.Q<VisualElement>("template-library-tab"),
-                root.Q<VisualElement>("favorites-tab"),
-                root.Q<VisualElement>("quick-actions-tab")
-            };
-
-            // Footer
-            helpMessage = root.Q<Label>("help-message");
-
-            // AI Generator Tab
-            commandInput = root.Q<TextField>("command-input");
-            responseOutput = root.Q<TextField>("response-output");
-            responseContainer = root.Q<VisualElement>("response-container");
-
-            // Provider dropdown
-            var providerNames = providerDatabase?.GetProviderNames() ?? new string[] { };
-            providerDropdown = root.Q<PopupField<string>>("provider-dropdown");
-            if (providerDropdown != null)
-            {
-                providerDropdown.choices = new List<string>(providerNames);
-                if (selectedProvider != null && providerNames.Length > 0)
+                if (!currentCoroutine.MoveNext())
                 {
-                    int providerIndex = providerDatabase.GetProviderIndex(selectedProvider.providerName);
-                    providerDropdown.index = providerIndex;
+                    currentCoroutine = null;
                 }
             }
-
-            // Template Library Tab
-            var categories = AITemplateLibrary.GetCategories();
-            categoryDropdown = root.Q<PopupField<string>>("category-dropdown");
-            if (categoryDropdown != null)
-            {
-                categoryDropdown.choices = categories;
-                categoryDropdown.value = selectedCategory;
-            }
-
-            templatesContainer = root.Q<VisualElement>("templates-container");
-            pageLabel = root.Q<Label>("page-label");
-            prevPageButton = root.Q<Button>("prev-page-button");
-            nextPageButton = root.Q<Button>("next-page-button");
-
-            // Favorites Tab
-            favoritesContainer = root.Q<VisualElement>("favorites-container");
         }
 
-        private void SetupCallbacks()
+        private void InitializeUI(VisualElement root)
         {
-            // Tab buttons
-            for (int i = 0; i < tabButtons.Length; i++)
+            // Get UI elements
+            messageInput = root.Q<TextField>("message-input");
+            messagesContainer = root.Q<VisualElement>("messages-container");
+            chatScroll = root.Q<ScrollView>("chat-scroll");
+            sendButton = root.Q<Button>("send-button");
+            providerStatus = root.Q<Label>("provider-status");
+
+            // Create model dropdown programmatically
+            var modelDropdownContainer = root.Q<VisualElement>("model-dropdown-container");
+            if (modelDropdownContainer != null)
             {
-                int tabIndex = i; // Capture for closure
-                tabButtons[i].clicked += () => SwitchTab(tabIndex);
+                var models = config.GetModelsList();
+                var currentModel = config.GetCurrentModel();
+
+                modelDropdown = new PopupField<string>(models, currentModel);
+                modelDropdown.RegisterValueChangedCallback(evt => OnModelChanged(evt.newValue));
+                modelDropdownContainer.Add(modelDropdown);
             }
 
-            // AI Generator
-            var executeButton = root.Q<Button>("execute-button");
-            executeButton.clicked += ExecuteCommand;
+            UpdateProviderStatus();
 
-            // Provider selection
-            providerDropdown.RegisterValueChangedCallback(evt => OnProviderChanged(evt.newValue));
-
-            // Template Library
-            var searchField = root.Q<TextField>("search-field");
-            searchField.RegisterValueChangedCallback(evt => OnSearchChanged(evt.newValue));
-
-            var clearSearchButton = root.Q<Button>("clear-search-button");
-            clearSearchButton.clicked += () => {
-                searchField.value = "";
-                OnSearchChanged("");
-            };
-
-            categoryDropdown.RegisterValueChangedCallback(evt => OnCategoryChanged(evt.newValue));
-
-            // Pagination
-            prevPageButton.clicked += () => ChangePage(-1);
-            nextPageButton.clicked += () => ChangePage(1);
-
-            // Quick Actions
-            var generateShooterButton = root.Q<Button>("generate-shooter-button");
-            generateShooterButton.clicked += () => ExecuteQuickCommand("Create a complete 2D top-down shooter with player, enemies, and shooting");
-
-            var playerSystemButton = root.Q<Button>("player-system-button");
-            playerSystemButton.clicked += () => PlayerSystemGenerator.GeneratePlayerSystem();
-
-            var enemySystemButton = root.Q<Button>("enemy-system-button");
-            enemySystemButton.clicked += () => EnemySystemGenerator.GenerateEnemySystem();
-
-            var projectileSystemButton = root.Q<Button>("projectile-system-button");
-            projectileSystemButton.clicked += () => ProjectileSystemGenerator.GenerateProjectileSystem();
-
-            var levelSystemButton = root.Q<Button>("level-system-button");
-            levelSystemButton.clicked += () => LevelSystemGenerator.GenerateLevelSystem();
-
-            var uiSystemButton = root.Q<Button>("ui-system-button");
-            uiSystemButton.clicked += () => UISystemGenerator.GenerateUISystem();
-
-            var customSystemButton = root.Q<Button>("custom-system-button");
-            customSystemButton.clicked += () => SwitchTab(0); // Switch to AI Generator
-        }
-
-        private void UpdateProviderUI()
-        {
-            var providerDescription = root.Q<VisualElement>("provider-description");
-            var providerDescriptionText = root.Q<Label>("provider-description-text");
-            var apiKeyContainer = root.Q<VisualElement>("api-key-container");
-            var apiKeyField = root.Q<TextField>("api-key-field");
-            var validationStatus = root.Q<VisualElement>("validation-status");
-            var validationMessage = root.Q<Label>("validation-message");
-
-            if (selectedProvider != null)
+            // Make provider status clickable
+            if (providerStatus != null)
             {
-                // Show description
-                if (!string.IsNullOrEmpty(selectedProvider.description))
+                providerStatus.RegisterCallback<ClickEvent>(OnProviderStatusClicked);
+                providerStatus.style.cursor = new StyleCursor(new UnityEngine.UIElements.Cursor() { texture = null });
+            }
+
+            // Setup callbacks
+            var settingsButton = root.Q<Button>("settings-button");
+            settingsButton.clicked += OpenConfigInInspector;
+
+            var clearButton = root.Q<Button>("clear-button");
+            clearButton.clicked += ClearChat;
+
+            sendButton.clicked += SendMessage;
+
+            // Enter to send
+            messageInput.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode == KeyCode.Return && !evt.shiftKey)
                 {
-                    providerDescription.style.display = DisplayStyle.Flex;
-                    providerDescriptionText.text = selectedProvider.description;
+                    evt.PreventDefault();
+                    SendMessage();
                 }
-                else
-                {
-                    providerDescription.style.display = DisplayStyle.None;
-                }
-
-                // Show API key field if required
-                if (selectedProvider.requiresApiKey)
-                {
-                    apiKeyContainer.style.display = DisplayStyle.Flex;
-                    apiKeyField.value = selectedProvider.apiKey;
-                    apiKeyField.RegisterValueChangedCallback(evt => OnApiKeyChanged(evt.newValue));
-                }
-                else
-                {
-                    apiKeyContainer.style.display = DisplayStyle.None;
-                }
-
-                // Show validation status
-                validationStatus.style.display = DisplayStyle.Flex;
-                bool isValid = selectedProvider.IsValid();
-                validationMessage.text = isValid ? "✅ Provider configured correctly" : $"❌ {selectedProvider.GetValidationMessage()}";
-
-                // Update style based on validation
-                validationStatus.RemoveFromClassList("help-box--error");
-                validationStatus.RemoveFromClassList("help-box--success");
-                validationStatus.AddToClassList(isValid ? "help-box--success" : "help-box--error");
-            }
-        }
-        #endregion
-
-        #region Tab Management
-        private void SwitchTab(int tabIndex)
-        {
-            currentTab = tabIndex;
-
-            // Update tab buttons
-            for (int i = 0; i < tabButtons.Length; i++)
-            {
-                if (i == tabIndex)
-                {
-                    tabButtons[i].AddToClassList("tab-button--selected");
-                }
-                else
-                {
-                    tabButtons[i].RemoveFromClassList("tab-button--selected");
-                }
-            }
-
-            // Update tab contents
-            for (int i = 0; i < tabContents.Length; i++)
-            {
-                tabContents[i].style.display = (i == tabIndex) ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-
-            // Update help message
-            string[] helpMessages = new string[]
-            {
-                "Generate Unity scripts using natural language commands or AI prompts",
-                $"Browse {searchResults.Count} pre-built templates - Search, filter, and use instantly",
-                $"Your starred templates ({favorites.Count}) - Quick access to frequently used code",
-                "One-click generators for common game systems and mechanics"
-            };
-            helpMessage.text = helpMessages[tabIndex];
-
-            // Load content for specific tabs
-            if (tabIndex == 1) // Template Library
-            {
-                UpdateTemplateGrid();
-            }
-            else if (tabIndex == 2) // Favorites
-            {
-                UpdateFavoritesGrid();
-            }
-        }
-        #endregion
-
-        #region AI Generator
-        private void ExecuteCommand()
-        {
-            if (isProcessing || string.IsNullOrWhiteSpace(commandInput.value)) return;
-
-            isProcessing = true;
-            responseContainer.style.display = DisplayStyle.Flex;
-            responseOutput.value = "Processing...";
-
-            var executeButton = root.Q<Button>("execute-button");
-            executeButton.text = "⏳ Processing...";
-            executeButton.SetEnabled(false);
-
-            EditorCoroutineUtility.StartCoroutine(
-                client.SendPromptAsync(
-                    GeneratePrompt(commandInput.value),
-                    OnSuccess,
-                    OnError
-                ),
-                this
-            );
-        }
-
-        private void ExecuteQuickCommand(string command)
-        {
-            commandInput.value = command;
-            SwitchTab(0); // Switch to AI Generator
-            ExecuteCommand();
-        }
-
-        private string GeneratePrompt(string userCommand)
-        {
-            return $@"You are a Unity game development expert. Generate C# code for:
-
-{userCommand}
-
-Requirements:
-- Complete, production-ready Unity C# code
-- All necessary using statements
-- Helpful comments
-- Follow Unity best practices
-- Make it beginner-friendly
-
-Provide only the C# code.";
-        }
-
-        private void OnSuccess(string response)
-        {
-            isProcessing = false;
-            responseOutput.value = response;
-
-            var executeButton = root.Q<Button>("execute-button");
-            executeButton.text = "🚀 Generate Code";
-            executeButton.SetEnabled(true);
-        }
-
-        private void OnError(string error)
-        {
-            isProcessing = false;
-            responseOutput.value = $"Error: {error}";
-            EditorUtility.DisplayDialog("Error", error, "OK");
-
-            var executeButton = root.Q<Button>("execute-button");
-            executeButton.text = "🚀 Generate Code";
-            executeButton.SetEnabled(true);
-        }
-        #endregion
-
-        #region Provider Management
-        private void OnProviderChanged(string providerName)
-        {
-            selectedProvider = providerDatabase.GetProviderByName(providerName);
-            if (selectedProvider != null)
-            {
-                config = selectedProvider.ToConfig();
-                client = new AIAgentClient(config);
-                AIProviderManager.SaveProviderSelection(selectedProvider.providerName);
-                UpdateProviderUI();
-            }
-        }
-
-        private void OnApiKeyChanged(string newApiKey)
-        {
-            if (selectedProvider != null && newApiKey != selectedProvider.apiKey)
-            {
-                AIProviderManager.UpdateProviderApiKey(selectedProvider, newApiKey);
-                config.apiKey = newApiKey;
-                client = new AIAgentClient(config);
-                UpdateProviderUI();
-            }
-        }
-        #endregion
-
-        #region Template Library
-        private void OnSearchChanged(string newSearch)
-        {
-            searchQuery = newSearch;
-            UpdateSearchResults();
-            currentPage = 0;
-            UpdateTemplateGrid();
-        }
-
-        private void OnCategoryChanged(string newCategory)
-        {
-            selectedCategory = newCategory;
-            UpdateSearchResults();
-            currentPage = 0;
-            UpdateTemplateGrid();
-        }
-
-        private void UpdateSearchResults()
-        {
-            string category = selectedCategory == "All" ? null : selectedCategory;
-            searchResults = AITemplateLibrary.SearchTemplates(searchQuery, category);
-        }
-
-        private void UpdateTemplateGrid()
-        {
-            templatesContainer.Clear();
-
-            if (searchResults == null || searchResults.Count == 0)
-            {
-                var helpBox = new VisualElement();
-                helpBox.AddToClassList("help-box");
-                var label = new Label("No templates found");
-                helpBox.Add(label);
-                templatesContainer.Add(helpBox);
-                return;
-            }
-
-            int start = currentPage * itemsPerPage;
-            int end = Mathf.Min(start + itemsPerPage, searchResults.Count);
-
-            for (int i = start; i < end; i++)
-            {
-                var templateCard = CreateTemplateCard(searchResults[i]);
-                templatesContainer.Add(templateCard);
-            }
-
-            UpdatePagination();
-        }
-
-        private VisualElement CreateTemplateCard(CodeTemplate template)
-        {
-            var card = new VisualElement();
-            card.AddToClassList("template-card");
-
-            // Title
-            var title = new Label(template.name);
-            title.AddToClassList("template-title");
-            card.Add(title);
-
-            // Description
-            var description = new Label(template.description);
-            description.AddToClassList("template-description");
-            card.Add(description);
-
-            // Meta info
-            var meta = new VisualElement();
-            meta.AddToClassList("template-meta");
-
-            var category = new Label($"📦 {template.category}");
-            category.AddToClassList("template-category");
-            meta.Add(category);
-
-            var complexity = new Label(new string('⭐', template.complexity));
-            complexity.AddToClassList("template-category");
-            meta.Add(complexity);
-
-            card.Add(meta);
-
-            // Actions
-            var actions = new VisualElement();
-            actions.AddToClassList("template-actions");
-
-            var copyButton = new Button(() => {
-                GUIUtility.systemCopyBuffer = template.code;
-                AIAgentLogger.LogSuccess($"Copied {template.name}");
             });
-            copyButton.text = "📋 Copy";
-            copyButton.AddToClassList("template-button");
-            actions.Add(copyButton);
-
-            var useButton = new Button(() => UseTemplate(template));
-            useButton.text = "✨ Use Template";
-            useButton.AddToClassList("template-button");
-            actions.Add(useButton);
-
-            var favButton = new Button(() => ToggleFavorite(template));
-            favButton.text = favorites.Contains(template) ? "⭐" : "☆";
-            favButton.AddToClassList("favorite-button");
-            if (favorites.Contains(template))
-            {
-                favButton.AddToClassList("favorite-button--active");
-            }
-            actions.Add(favButton);
-
-            card.Add(actions);
-
-            return card;
         }
 
-        private void UseTemplate(CodeTemplate template)
+        private void OpenConfigInInspector()
         {
-            ScriptGeneratorUtility.CreateScript(template.name.Replace(" ", ""), template.code);
-            AIAgentLogger.LogSuccess($"Created: {template.name}");
-            EditorUtility.DisplayDialog("Success", $"{template.name} created in Assets/Scripts/", "OK");
+            // Select and highlight the config ScriptableObject in Inspector
+            Selection.activeObject = config;
+            EditorGUIUtility.PingObject(config);
         }
 
-        private void ToggleFavorite(CodeTemplate template)
+        private void OnModelChanged(string newModel)
         {
-            if (favorites.Contains(template))
-            {
-                favorites.Remove(template);
-                AIAgentLogger.Log($"Removed from favorites: {template.name}");
-            }
-            else
-            {
-                favorites.Add(template);
-                AIAgentLogger.LogSuccess($"Added to favorites: {template.name}");
-            }
-
-            if (currentTab == 1) // Template Library
-            {
-                UpdateTemplateGrid();
-            }
-            else if (currentTab == 2) // Favorites
-            {
-                UpdateFavoritesGrid();
-            }
+            config.selectedModel = newModel;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            UpdateProviderStatus();
         }
 
-        private void UpdatePagination()
+        private void UpdateProviderStatus()
         {
-            int totalPages = Mathf.CeilToInt((float)searchResults.Count / itemsPerPage);
-            pageLabel.text = $"{currentPage + 1} / {totalPages}";
-            prevPageButton.SetEnabled(currentPage > 0);
-            nextPageButton.SetEnabled(currentPage < totalPages - 1);
-        }
+            if (providerStatus == null || config == null) return;
 
-        private void ChangePage(int direction)
-        {
-            int totalPages = Mathf.CeilToInt((float)searchResults.Count / itemsPerPage);
-            currentPage = Mathf.Clamp(currentPage + direction, 0, totalPages - 1);
-            UpdateTemplateGrid();
-        }
-        #endregion
-
-        #region Favorites
-        private void UpdateFavoritesGrid()
-        {
-            favoritesContainer.Clear();
-
-            var emptyMessage = root.Q<VisualElement>("favorites-empty");
-            if (favorites.Count == 0)
+            if (!config.IsValid())
             {
-                emptyMessage.style.display = DisplayStyle.Flex;
+                providerStatus.text = "⚠ Not configured";
+                providerStatus.style.color = new StyleColor(new Color(0.9f, 0.6f, 0.4f));
                 return;
             }
 
-            emptyMessage.style.display = DisplayStyle.None;
+            // Check if this is Ollama
+            bool isOllama = config.apiUrl.Contains("localhost:11434") ||
+                           config.apiUrl.Contains("127.0.0.1:11434") ||
+                           config.providerName.ToLower().Contains("ollama");
 
-            foreach (var template in favorites)
+            if (isOllama)
             {
-                var templateCard = CreateTemplateCard(template);
-                favoritesContainer.Add(templateCard);
+                if (isOllamaRunning)
+                {
+                    providerStatus.text = $"✓ {config.providerName} (Running)";
+                    providerStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
+                }
+                else
+                {
+                    providerStatus.text = $"⚠ {config.providerName} (Stopped) - Click to start";
+                    providerStatus.style.color = new StyleColor(new Color(0.9f, 0.6f, 0.4f));
+                }
+            }
+            else
+            {
+                providerStatus.text = $"✓ {config.providerName}";
+                providerStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
             }
         }
-        #endregion
+
+        private void OnProviderStatusClicked(ClickEvent evt)
+        {
+            bool isOllama = config.apiUrl.Contains("localhost:11434") ||
+                           config.apiUrl.Contains("127.0.0.1:11434") ||
+                           config.providerName.ToLower().Contains("ollama");
+
+            if (isOllama && !isOllamaRunning)
+            {
+                StartOllama();
+            }
+        }
+
+        private void CheckOllamaStatus()
+        {
+            if (config == null) return;
+
+            // Check if this is Ollama
+            bool isOllama = config.apiUrl.Contains("localhost:11434") ||
+                           config.apiUrl.Contains("127.0.0.1:11434") ||
+                           config.providerName.ToLower().Contains("ollama");
+
+            if (!isOllama) return;
+
+            // Check every 5 seconds
+            float currentTime = (float)EditorApplication.timeSinceStartup;
+            if (currentTime - lastOllamaCheck < 5f) return;
+
+            lastOllamaCheck = currentTime;
+
+            // Check if Ollama is running
+            StartCoroutine(CheckOllamaRunning());
+        }
+
+        private IEnumerator CheckOllamaRunning()
+        {
+            using (var request = UnityWebRequest.Get("http://localhost:11434/api/tags"))
+            {
+                request.timeout = 2;
+                yield return request.SendWebRequest();
+
+                bool wasRunning = isOllamaRunning;
+                isOllamaRunning = request.result == UnityWebRequest.Result.Success;
+
+                if (wasRunning != isOllamaRunning)
+                {
+                    UpdateProviderStatus();
+                }
+            }
+        }
+
+        private void StartOllama()
+        {
+            try
+            {
+                // Try to start Ollama
+                var startInfo = new ProcessStartInfo();
+
+                #if UNITY_EDITOR_WIN
+                startInfo.FileName = "cmd.exe";
+                startInfo.Arguments = "/c start ollama serve";
+                startInfo.UseShellExecute = true;
+                startInfo.CreateNoWindow = true;
+                #elif UNITY_EDITOR_OSX
+                startInfo.FileName = "open";
+                startInfo.Arguments = "-a Ollama";
+                #else
+                startInfo.FileName = "ollama";
+                startInfo.Arguments = "serve";
+                startInfo.UseShellExecute = false;
+                startInfo.CreateNoWindow = true;
+                #endif
+
+                Process.Start(startInfo);
+
+                UnityEngine.Debug.Log("Starting Ollama...");
+
+                // Recheck status after a delay
+                EditorApplication.delayCall += () =>
+                {
+                    System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ =>
+                    {
+                        EditorApplication.delayCall += () => StartCoroutine(CheckOllamaRunning());
+                    });
+                };
+            }
+            catch (System.Exception e)
+            {
+                EditorUtility.DisplayDialog("Error",
+                    $"Could not start Ollama.\n\nPlease start it manually or install from: https://ollama.ai\n\nError: {e.Message}",
+                    "OK");
+            }
+        }
+
+        private void LoadChatHistory()
+        {
+            if (history == null || history.Messages == null) return;
+
+            foreach (var message in history.Messages)
+            {
+                if (message.role == ChatMessage.Role.User)
+                {
+                    AddMessageBubble(message.content, true);
+                }
+                else if (message.role == ChatMessage.Role.Assistant)
+                {
+                    AddMessageBubble(message.content, false);
+                }
+            }
+        }
+
+        private void SendMessage()
+        {
+            var message = messageInput.value;
+            if (string.IsNullOrWhiteSpace(message)) return;
+
+            // Add user message
+            AddMessageBubble(message, true);
+            history.AddMessage(ChatMessage.Role.User, message);
+
+            // Clear input
+            messageInput.value = "";
+            sendButton.SetEnabled(false);
+
+            // Get Unity project context
+            var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context.
+
+Help with:
+- Writing C# scripts
+- Explaining Unity concepts
+- Debugging issues
+- Suggesting solutions
+- Analyzing project structure
+
+" + UnityProjectContext.GetProjectContext();
+
+            // Send to AI
+            StartCoroutine(client.SendMessageAsync(message, systemContext, OnAIResponse, OnAIError));
+        }
+
+        private void OnAIResponse(string response)
+        {
+            AddMessageBubble(response, false);
+            history.AddMessage(ChatMessage.Role.Assistant, response);
+            sendButton.SetEnabled(true);
+        }
+
+        private void OnAIError(string error)
+        {
+            AddErrorBubble($"Error: {error}");
+            sendButton.SetEnabled(true);
+        }
+
+        private void AddMessageBubble(string text, bool isUser)
+        {
+            var bubble = new VisualElement();
+            bubble.AddToClassList(isUser ? "message-user" : "message-assistant");
+
+            var label = new Label(text);
+            label.AddToClassList(isUser ? "message-user-text" : "message-assistant-text");
+
+            bubble.Add(label);
+            messagesContainer.Add(bubble);
+
+            // Scroll to bottom
+            EditorApplication.delayCall += () =>
+            {
+                chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
+            };
+        }
+
+        private void AddErrorBubble(string text)
+        {
+            var bubble = new VisualElement();
+            bubble.AddToClassList("message-error");
+
+            var label = new Label(text);
+            label.AddToClassList("message-error-text");
+
+            bubble.Add(label);
+            messagesContainer.Add(bubble);
+
+            EditorApplication.delayCall += () =>
+            {
+                chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
+            };
+        }
+
+        private void ClearChat()
+        {
+            if (EditorUtility.DisplayDialog("Clear Chat", "Clear all chat history?", "Yes", "No"))
+            {
+                history.ClearHistory();
+
+                // Remove all message bubbles (keep welcome message)
+                var messagesToRemove = messagesContainer.Query<VisualElement>()
+                    .Where(e => e.ClassListContains("message-user") ||
+                               e.ClassListContains("message-assistant") ||
+                               e.ClassListContains("message-error"))
+                    .ToList();
+
+                foreach (var msg in messagesToRemove)
+                {
+                    messagesContainer.Remove(msg);
+                }
+            }
+        }
     }
 }

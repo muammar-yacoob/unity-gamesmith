@@ -7,40 +7,42 @@ using UnityEngine.Networking;
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
-    /// HTTP client for communicating with AI agent APIs (Ollama, OpenAI, etc.)
+    /// Simple AI client for making API calls
     /// </summary>
     public class AIAgentClient
     {
-        private readonly AIAgentConfig config;
+        private readonly GameSmithConfig config;
 
-        public AIAgentClient(AIAgentConfig config)
+        public AIAgentClient(GameSmithConfig config)
         {
             this.config = config;
         }
 
-        /// <summary>
-        /// Send a prompt to the AI agent and get a response
-        /// </summary>
-        public IEnumerator SendPromptAsync(string prompt, Action<string> onSuccess, Action<string> onError)
+        public IEnumerator SendMessageAsync(string userMessage, string systemContext, Action<string> onSuccess, Action<string> onError)
         {
-            var requestData = new
+            if (!config.IsValid())
             {
-                model = config.model,
-                prompt = prompt,
-                stream = false,
-                options = new
-                {
-                    temperature = config.temperature
-                }
-            };
+                onError?.Invoke(config.GetValidationMessage());
+                yield break;
+            }
 
-            string jsonData = JsonUtility.ToJson(requestData);
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+            // Build request body (OpenAI format - compatible with most APIs)
+            var requestBody = $@"{{
+                ""model"": ""{config.GetCurrentModel()}"",
+                ""messages"": [
+                    {{""role"": ""system"", ""content"": ""{EscapeJson(systemContext)}""}},
+                    {{""role"": ""user"", ""content"": ""{EscapeJson(userMessage)}""}}
+                ],
+                ""temperature"": {config.temperature},
+                ""max_tokens"": {config.maxTokens}
+            }}";
 
-            using (UnityWebRequest request = new UnityWebRequest(config.apiUrl, "POST"))
+            using (var request = new UnityWebRequest(config.apiUrl, "POST"))
             {
+                byte[] bodyRaw = Encoding.UTF8.GetBytes(requestBody);
                 request.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 request.downloadHandler = new DownloadHandlerBuffer();
+
                 request.SetRequestHeader("Content-Type", "application/json");
 
                 if (!string.IsNullOrEmpty(config.apiKey))
@@ -48,7 +50,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     request.SetRequestHeader("Authorization", $"Bearer {config.apiKey}");
                 }
 
-                request.timeout = config.timeout;
+                request.timeout = 120;
 
                 yield return request.SendWebRequest();
 
@@ -56,26 +58,60 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     try
                     {
-                        string responseText = request.downloadHandler.text;
-                        var response = JsonUtility.FromJson<AIResponse>(responseText);
-                        onSuccess?.Invoke(response.response);
+                        var responseText = request.downloadHandler.text;
+                        var content = ParseResponse(responseText);
+
+                        if (!string.IsNullOrEmpty(content))
+                        {
+                            onSuccess?.Invoke(content);
+                        }
+                        else
+                        {
+                            onError?.Invoke("No response from AI");
+                        }
                     }
                     catch (Exception e)
                     {
-                        onError?.Invoke($"Failed to parse AI response: {e.Message}");
+                        onError?.Invoke($"Failed to parse response: {e.Message}");
                     }
                 }
                 else
                 {
-                    onError?.Invoke($"AI Request failed: {request.error}");
+                    onError?.Invoke($"Request failed: {request.error}\n{request.downloadHandler.text}");
                 }
             }
         }
 
-        [Serializable]
-        private class AIResponse
+        private string ParseResponse(string json)
         {
-            public string response;
+            // Simple JSON parsing for the response content
+            // Looking for: "choices":[{"message":{"content":"..."}}]
+
+            var contentStart = json.IndexOf("\"content\"", StringComparison.Ordinal);
+            if (contentStart == -1) return null;
+
+            contentStart = json.IndexOf(":", contentStart) + 1;
+            contentStart = json.IndexOf("\"", contentStart) + 1;
+
+            var contentEnd = json.IndexOf("\"", contentStart);
+            if (contentEnd == -1) return null;
+
+            return json.Substring(contentStart, contentEnd - contentStart)
+                .Replace("\\n", "\n")
+                .Replace("\\\"", "\"")
+                .Replace("\\\\", "\\");
+        }
+
+        private string EscapeJson(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            return text
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
         }
     }
 }
