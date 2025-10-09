@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+# [1.3.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.2.0...v1.3.0) (2025-10-09)
+
+
+### Bug Fixes
+
+* unify all namespaces to SparkGames.UnityGameSmith.Editor ([9c3d2bd](https://github.com/muammar-yacoob/unity-gamesmith/commit/9c3d2bdc144c2baf87f69bf560570369e4de2314))
+
+
+### Features
+
+* **editor:** simplify AI config with provider dropdown system ([3842de2](https://github.com/muammar-yacoob/unity-gamesmith/commit/3842de2edb8d885c6e022ff77a5af96ed0be38fc))
+
 # [1.2.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.1.0...v1.2.0) (2025-10-08)
 
 
