@@ -126,7 +126,10 @@ namespace SparkGames.UnityGameSmith.Editor
         private void CreateFallbackUI()
         {
             var fallbackLabel = new Label("Game Smith requires UXML and USS files.\n\nPlease ensure GameSmithWindow.uxml and GameSmithWindow.uss exist in the Editor folder.");
-            fallbackLabel.style.padding = new StyleLength(20);
+            fallbackLabel.style.paddingLeft = 20;
+            fallbackLabel.style.paddingRight = 20;
+            fallbackLabel.style.paddingTop = 20;
+            fallbackLabel.style.paddingBottom = 20;
             fallbackLabel.style.whiteSpace = WhiteSpace.Normal;
             fallbackLabel.style.fontSize = 14;
             rootVisualElement.Add(fallbackLabel);

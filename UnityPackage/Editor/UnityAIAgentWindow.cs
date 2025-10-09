@@ -156,7 +156,7 @@ namespace SparkGames.UnityGameSmith.Editor
             }
             else
             {
-                EditorGUILayout.HelpBox("No response yet. Execute a command to see results here.", MessageType.Info, GUILayout.ExpandHeight(true));
+                EditorGUILayout.HelpBox("No response yet. Execute a command to see results here.", MessageType.Info);
             }
 
             EditorGUILayout.EndVertical();
