@@ -14,6 +14,11 @@ namespace SparkGames.UnityGameSmith.Editor
         private AIAgentClient client;
         private Vector2 scrollPos;
 
+        // AI Provider System
+        private AIProviderDatabase providerDatabase;
+        private AIProvider selectedProvider;
+        private int selectedProviderIndex = 0;
+
         // UI State
         private int currentTab;
         private string[] tabNames = { "AI Generator", "Template Library", "Favorites", "Quick Actions" };
@@ -60,7 +65,20 @@ namespace SparkGames.UnityGameSmith.Editor
         #region Unity Callbacks
         private void OnEnable()
         {
-            config = AIAgentConfig.Load();
+            // Load provider database
+            providerDatabase = AIProviderManager.GetDatabase();
+            selectedProvider = AIProviderManager.GetSelectedProvider();
+
+            if (selectedProvider != null)
+            {
+                selectedProviderIndex = providerDatabase.GetProviderIndex(selectedProvider.providerName);
+                config = selectedProvider.ToConfig();
+            }
+            else
+            {
+                config = AIAgentConfig.Load();
+            }
+
             client = new AIAgentClient(config);
             searchResults = AITemplateLibrary.GetAllTemplates();
             InitializeStyles();
@@ -198,28 +216,87 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 EditorGUILayout.BeginVertical(boxStyle);
 
-                config.apiUrl = EditorGUILayout.TextField("API URL", config.apiUrl);
-                config.model = EditorGUILayout.TextField("Model", config.model);
-                config.apiKey = EditorGUILayout.PasswordField("API Key", config.apiKey);
+                // Provider Dropdown
+                EditorGUILayout.LabelField("AI Provider", EditorStyles.boldLabel);
 
-                EditorGUILayout.BeginHorizontal();
-                config.timeout = EditorGUILayout.IntField("Timeout (s)", config.timeout, GUILayout.Width(200));
-                GUILayout.Space(10);
-                config.temperature = EditorGUILayout.Slider("Temperature", config.temperature, 0f, 1f);
-                EditorGUILayout.EndHorizontal();
+                if (providerDatabase == null || providerDatabase.providers.Count == 0)
+                {
+                    EditorGUILayout.HelpBox("No AI providers configured. Creating defaults...", MessageType.Warning);
+                    providerDatabase = AIProviderManager.GetDatabase();
+                }
+                else
+                {
+                    string[] providerNames = providerDatabase.GetProviderNames();
+                    int newIndex = EditorGUILayout.Popup("Select Provider", selectedProviderIndex, providerNames);
 
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("💾 Save"))
-                {
-                    config.Save();
-                    EditorUtility.DisplayDialog("Saved", "Configuration saved successfully", "OK");
+                    if (newIndex != selectedProviderIndex)
+                    {
+                        selectedProviderIndex = newIndex;
+                        selectedProvider = providerDatabase.GetProviderByIndex(selectedProviderIndex);
+                        if (selectedProvider != null)
+                        {
+                            config = selectedProvider.ToConfig();
+                            client = new AIAgentClient(config);
+                            AIProviderManager.SaveProviderSelection(selectedProvider.providerName);
+                        }
+                    }
+
+                    GUILayout.Space(5);
+
+                    // Show provider description
+                    if (selectedProvider != null && !string.IsNullOrEmpty(selectedProvider.description))
+                    {
+                        EditorGUILayout.HelpBox(selectedProvider.description, MessageType.Info);
+                    }
+
+                    GUILayout.Space(5);
+
+                    // API Key field (only if required)
+                    if (selectedProvider != null && selectedProvider.requiresApiKey)
+                    {
+                        string newApiKey = EditorGUILayout.PasswordField("API Key", selectedProvider.apiKey);
+                        if (newApiKey != selectedProvider.apiKey)
+                        {
+                            AIProviderManager.UpdateProviderApiKey(selectedProvider, newApiKey);
+                            config.apiKey = newApiKey;
+                            client = new AIAgentClient(config);
+                        }
+
+                        if (string.IsNullOrEmpty(selectedProvider.apiKey))
+                        {
+                            EditorGUILayout.HelpBox("⚠️ API Key required for this provider", MessageType.Warning);
+                        }
+                    }
+                    else if (selectedProvider != null && selectedProvider.isLocal)
+                    {
+                        EditorGUILayout.HelpBox($"✓ Local provider - No API key needed", MessageType.Info);
+                    }
+
+                    GUILayout.Space(5);
+
+                    // Advanced settings (collapsible)
+                    if (selectedProvider != null)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField("Advanced", EditorStyles.miniBoldLabel, GUILayout.Width(80));
+                        EditorGUILayout.LabelField($"Timeout: {selectedProvider.timeout}s | Temp: {selectedProvider.temperature:F2}", EditorStyles.miniLabel);
+                        EditorGUILayout.EndHorizontal();
+                    }
+
+                    // Validation status
+                    if (selectedProvider != null)
+                    {
+                        bool isValid = selectedProvider.IsValid();
+                        if (!isValid)
+                        {
+                            EditorGUILayout.HelpBox($"❌ {selectedProvider.GetValidationMessage()}", MessageType.Error);
+                        }
+                        else
+                        {
+                            EditorGUILayout.HelpBox("✅ Provider configured correctly", MessageType.None);
+                        }
+                    }
                 }
-                if (GUILayout.Button("🔄 Reset"))
-                {
-                    config = AIAgentConfig.Load();
-                    client = new AIAgentClient(config);
-                }
-                EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.EndVertical();
             }

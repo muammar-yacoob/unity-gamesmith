@@ -1,7 +1,19 @@
 # Unity GameSmith Package
 
-**AI-powered code generation and template library for Unity Editor**
-Free, open-source alternative to Unity Muse
+**AI-powered code generation and template library for Unity Editor**  
+🎮 Free, open-source alternative to Unity Muse
+
+---
+
+## 🚀 Features
+
+| Feature | Description |
+|---------|-------------|
+| ![](https://img.shields.io/badge/🤖%20-5865F2?style=for-the-badge) ![AI Code Generation](https://img.shields.io/badge/AI%20Code%20Generation%20-7289DA?style=for-the-badge) | Natural language to Unity C# scripts |
+| ![](https://img.shields.io/badge/📚%20-57F287?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-3BA55D?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, etc.) |
+| ![](https://img.shields.io/badge/🔌%20-ED4245?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-E67E22?style=for-the-badge) | Claude (recommended), Ollama (local/free), OpenAI, custom endpoints |
+| ![](https://img.shields.io/badge/🔒%20-5865F2?style=for-the-badge) ![Privacy-First](https://img.shields.io/badge/Privacy--First%20-3498DB?style=for-the-badge) | Run locally with Ollama, no telemetry |
+| ![](https://img.shields.io/badge/📴%20-1ABC9C?style=for-the-badge) ![Works Offline](https://img.shields.io/badge/Works%20Offline%20-16A085?style=for-the-badge) | Templates and local AI work without internet |
 
 ---
 
@@ -81,17 +93,17 @@ Any OpenAI-compatible endpoint works (LM Studio, etc.)
 ## 📦 Available Templates
 
 | Template | Category | Description |
-|----------|----------|-------------|
-| 2D Player Controller | Player | WASD movement + mouse aim |
-| Chase Enemy AI | Enemy | Detection and pursuit |
-| Shooting System | Projectile | Projectile weapons |
-| Health System | Player | Damage/healing |
-| Wave Spawner | Level | Enemy wave spawning |
-| Health Bar UI | UI | Dynamic health display |
-| Camera Follow | Camera | Smooth tracking |
-| Dash Ability | Player | Dash with cooldown |
-| Power-up Pickup | Power-ups | Collectibles |
-| Particle Effect | Effects | Particle triggers |
+|---------|----------|-------------|
+| ![](https://img.shields.io/badge/🎮%20-0078D4?style=for-the-badge) ![2D Player Controller](https://img.shields.io/badge/2D%20Player%20Controller%20-4A9EFF?style=for-the-badge) | WASD movement + mouse aim |
+| ![](https://img.shields.io/badge/👾%20-DC143C?style=for-the-badge) ![Chase Enemy AI](https://img.shields.io/badge/Chase%20Enemy%20AI%20-E74856?style=for-the-badge) | Detection and pursuit |
+| ![](https://img.shields.io/badge/🔫%20-FF6B35?style=for-the-badge) ![Shooting System](https://img.shields.io/badge/Shooting%20System%20-FF8C42?style=for-the-badge) | Projectile weapons |
+| ![](https://img.shields.io/badge/❤️%20-2ECC71?style=for-the-badge) ![Health System](https://img.shields.io/badge/Health%20System%20-27AE60?style=for-the-badge) | Damage/healing |
+| ![](https://img.shields.io/badge/🌊%20-8E44AD?style=for-the-badge) ![Wave Spawner](https://img.shields.io/badge/Wave%20Spawner%20-9B59B6?style=for-the-badge) | Enemy wave spawning |
+| ![](https://img.shields.io/badge/📊%20-E91E63?style=for-the-badge) ![Health Bar UI](https://img.shields.io/badge/Health%20Bar%20UI%20-F06292?style=for-the-badge) | Dynamic health display |
+| ![](https://img.shields.io/badge/📷%20-00BCD4?style=for-the-badge) ![Camera Follow](https://img.shields.io/badge/Camera%20Follow%20-26C6DA?style=for-the-badge) | Smooth tracking |
+| ![](https://img.shields.io/badge/⚡%20-FFD700?style=for-the-badge) ![Dash Ability](https://img.shields.io/badge/Dash%20Ability%20-FFC107?style=for-the-badge) | Dash with cooldown |
+| ![](https://img.shields.io/badge/🎁%20-7CB342?style=for-the-badge) ![Power-up Pickup](https://img.shields.io/badge/Power--up%20Pickup%20-8BC34A?style=for-the-badge) | Collectibles |
+| ![](https://img.shields.io/badge/✨%20-AB47BC?style=for-the-badge) ![Particle Effect](https://img.shields.io/badge/Particle%20Effect%20-BA68C8?style=for-the-badge) | Particle triggers |
 
 ---
 

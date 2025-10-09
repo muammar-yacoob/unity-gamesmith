@@ -16,11 +16,11 @@
 
 | Feature | Description |
 |---------|-------------|
-| ![](https://img.shields.io/badge/🤖%20-cc6600?style=for-the-badge) ![AI Code Generation](https://img.shields.io/badge/AI%20Code%20Generation%20-ff9500?style=for-the-badge) | Natural language to Unity C# scripts |
-| ![](https://img.shields.io/badge/📚%20-cc6600?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-ff9500?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, etc.) |
-| ![](https://img.shields.io/badge/🔌%20-cc6600?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-ff9500?style=for-the-badge) | Claude (recommended), Ollama (local/free), OpenAI, custom endpoints |
-| ![](https://img.shields.io/badge/🔒%20-cc6600?style=for-the-badge) ![Privacy-First](https://img.shields.io/badge/Privacy--First%20-ff9500?style=for-the-badge) | Run locally with Ollama, no telemetry |
-| ![](https://img.shields.io/badge/📴%20-cc6600?style=for-the-badge) ![Works Offline](https://img.shields.io/badge/Works%20Offline%20-ff9500?style=for-the-badge) | Templates and local AI work without internet |
+| ![](https://img.shields.io/badge/🤖%20-5865F2?style=for-the-badge) ![AI Code Generation](https://img.shields.io/badge/AI%20Code%20Generation%20-7289DA?style=for-the-badge) | Natural language to Unity C# scripts |
+| ![](https://img.shields.io/badge/📚%20-57F287?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-3BA55D?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, etc.) |
+| ![](https://img.shields.io/badge/🔌%20-ED4245?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-E67E22?style=for-the-badge) | Claude (recommended), Ollama (local/free), OpenAI, custom endpoints |
+| ![](https://img.shields.io/badge/🔒%20-5865F2?style=for-the-badge) ![Privacy-First](https://img.shields.io/badge/Privacy--First%20-3498DB?style=for-the-badge) | Run locally with Ollama, no telemetry |
+| ![](https://img.shields.io/badge/📴%20-1ABC9C?style=for-the-badge) ![Works Offline](https://img.shields.io/badge/Works%20Offline%20-16A085?style=for-the-badge) | Templates and local AI work without internet |
 
 ---
 
@@ -140,29 +140,45 @@ Scripts generate to `Assets/Scripts/`
 
 ## 💬 Example Commands
 
-**🎮 Player Systems**
+<details>
+<summary><b>🎮 Player Systems</b></summary>
+
 * _"Create a 2D player with WASD movement and jump"_
 * _"Generate a player with dash ability and cooldown"_
 * _"Make a character with wall jump mechanics"_
 * _"Create a player with stamina system"_
 
-**👾 Enemy AI**
+</details>
+
+<details>
+<summary><b>👾 Enemy AI</b></summary>
+
 * _"Generate boss enemy with 3 attack patterns"_
 * _"Create chase enemy that patrols waypoints"_
 * _"Make flying enemy that shoots projectiles"_
 * _"Generate enemy spawner with wave system"_
 
-**⚔️ Combat & Weapons**
+</details>
+
+<details>
+<summary><b>⚔️ Combat & Weapons</b></summary>
+
 * _"Create a shooting system with bullet spread"_
 * _"Generate melee combat with combo system"_
 * _"Make a health system with shields and armor"_
 * _"Create weapon switching system"_
 
-**🎨 UI & Effects**
+</details>
+
+<details>
+<summary><b>🎨 UI & Effects</b></summary>
+
 * _"Generate dynamic health bar with smooth transitions"_
 * _"Create damage number popup effect"_
 * _"Make particle effect on enemy death"_
 * _"Generate pause menu with settings"_
+
+</details>
 
 ---
 
@@ -170,16 +186,16 @@ Scripts generate to `Assets/Scripts/`
 
 | Template | Category | Description |
 |---------|----------|-------------|
-| ![](https://img.shields.io/badge/🎮%20-cc6600?style=for-the-badge) ![2D Player Controller](https://img.shields.io/badge/2D%20Player%20Controller%20-ff9500?style=for-the-badge) | WASD movement + mouse aim |
-| ![](https://img.shields.io/badge/👾%20-cc6600?style=for-the-badge) ![Chase Enemy AI](https://img.shields.io/badge/Chase%20Enemy%20AI%20-ff9500?style=for-the-badge) | Detection and pursuit |
-| ![](https://img.shields.io/badge/🔫%20-cc6600?style=for-the-badge) ![Shooting System](https://img.shields.io/badge/Shooting%20System%20-ff9500?style=for-the-badge) | Projectile weapons |
-| ![](https://img.shields.io/badge/❤️%20-cc6600?style=for-the-badge) ![Health System](https://img.shields.io/badge/Health%20System%20-ff9500?style=for-the-badge) | Damage/healing |
-| ![](https://img.shields.io/badge/🌊%20-cc6600?style=for-the-badge) ![Wave Spawner](https://img.shields.io/badge/Wave%20Spawner%20-ff9500?style=for-the-badge) | Enemy wave spawning |
-| ![](https://img.shields.io/badge/📊%20-cc6600?style=for-the-badge) ![Health Bar UI](https://img.shields.io/badge/Health%20Bar%20UI%20-ff9500?style=for-the-badge) | Dynamic health display |
-| ![](https://img.shields.io/badge/📷%20-cc6600?style=for-the-badge) ![Camera Follow](https://img.shields.io/badge/Camera%20Follow%20-ff9500?style=for-the-badge) | Smooth tracking |
-| ![](https://img.shields.io/badge/⚡%20-cc6600?style=for-the-badge) ![Dash Ability](https://img.shields.io/badge/Dash%20Ability%20-ff9500?style=for-the-badge) | Dash with cooldown |
-| ![](https://img.shields.io/badge/🎁%20-cc6600?style=for-the-badge) ![Power-up Pickup](https://img.shields.io/badge/Power--up%20Pickup%20-ff9500?style=for-the-badge) | Collectibles |
-| ![](https://img.shields.io/badge/✨%20-cc6600?style=for-the-badge) ![Particle Effect](https://img.shields.io/badge/Particle%20Effect%20-ff9500?style=for-the-badge) | Particle triggers |
+| ![](https://img.shields.io/badge/🎮%20-0078D4?style=for-the-badge) ![2D Player Controller](https://img.shields.io/badge/2D%20Player%20Controller%20-4A9EFF?style=for-the-badge) | WASD movement + mouse aim |
+| ![](https://img.shields.io/badge/👾%20-DC143C?style=for-the-badge) ![Chase Enemy AI](https://img.shields.io/badge/Chase%20Enemy%20AI%20-E74856?style=for-the-badge) | Detection and pursuit |
+| ![](https://img.shields.io/badge/🔫%20-FF6B35?style=for-the-badge) ![Shooting System](https://img.shields.io/badge/Shooting%20System%20-FF8C42?style=for-the-badge) | Projectile weapons |
+| ![](https://img.shields.io/badge/❤️%20-2ECC71?style=for-the-badge) ![Health System](https://img.shields.io/badge/Health%20System%20-27AE60?style=for-the-badge) | Damage/healing |
+| ![](https://img.shields.io/badge/🌊%20-8E44AD?style=for-the-badge) ![Wave Spawner](https://img.shields.io/badge/Wave%20Spawner%20-9B59B6?style=for-the-badge) | Enemy wave spawning |
+| ![](https://img.shields.io/badge/📊%20-E91E63?style=for-the-badge) ![Health Bar UI](https://img.shields.io/badge/Health%20Bar%20UI%20-F06292?style=for-the-badge) | Dynamic health display |
+| ![](https://img.shields.io/badge/📷%20-00BCD4?style=for-the-badge) ![Camera Follow](https://img.shields.io/badge/Camera%20Follow%20-26C6DA?style=for-the-badge) | Smooth tracking |
+| ![](https://img.shields.io/badge/⚡%20-FFD700?style=for-the-badge) ![Dash Ability](https://img.shields.io/badge/Dash%20Ability%20-FFC107?style=for-the-badge) | Dash with cooldown |
+| ![](https://img.shields.io/badge/🎁%20-7CB342?style=for-the-badge) ![Power-up Pickup](https://img.shields.io/badge/Power--up%20Pickup%20-8BC34A?style=for-the-badge) | Collectibles |
+| ![](https://img.shields.io/badge/✨%20-AB47BC?style=for-the-badge) ![Particle Effect](https://img.shields.io/badge/Particle%20Effect%20-BA68C8?style=for-the-badge) | Particle triggers |
 
 ---
 
