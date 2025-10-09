@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+# [1.4.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.3.0...v1.4.0) (2025-10-09)
+
+
+### Features
+
+* **mcp:** add MCP integration with Taskmaster and Chrome DevTools ([5f60fce](https://github.com/muammar-yacoob/unity-gamesmith/commit/5f60fce1654505b98674bfed048ee268b06558af))
+  - Added Taskmaster MCP for PRD-based planning and task tracking
+  - Added Chrome DevTools MCP for WebGL testing and performance profiling
+  - Created comprehensive MCP integration documentation
+  - Created detailed WebGL testing guide
+  - Updated README with MCP Integration section
+
+* **wizard:** create Project Wizard PRD for AI-powered project initialization ([prd_project_wizard.txt](.taskmaster/docs/prd_project_wizard.txt))
+  - Modern multi-step wizard for project setup
+  - Tech stack selection (UniTask, DOTween, Mirror, Netcode)
+  - AI-generated MVP PRD from user inputs
+  - Visual task dashboard with progress tracking
+
+
+### Bug Fixes
+
+* **editor:** fix Unity GUI initialization error in GameSmithWindow ([5f60fce](https://github.com/muammar-yacoob/unity-gamesmith/commit/5f60fce1654505b98674bfed048ee268b06558af))
+  - Moved InitializeStyles() from OnEnable() to OnGUI()
+  - Added lazy initialization to prevent GUI.skin access violation
+
+* **upm:** resolve "update available" notification issue ([6e5efb9](https://github.com/muammar-yacoob/unity-gamesmith/commit/6e5efb90d542a66f3e88c06e9e6e85c48b3bcd9f))
+  - Bumped version from 1.2.0 to 1.4.0
+  - Fixed version mismatch between package.json and git tags
+
+
 # [1.3.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.2.0...v1.3.0) (2025-10-09)
 
 
