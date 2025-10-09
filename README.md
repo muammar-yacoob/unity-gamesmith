@@ -64,48 +64,41 @@ ollama pull codellama
 
 ## ⚙️ Configuration
 
-<details>
-<summary><b>🏠 Ollama (Local, Free)</b></summary>
-
 1. Open `Tools → Unity GameSmith (Enhanced)`
-2. Configure:
-   - **API URL:** `http://localhost:11434/api/generate`
-   - **Model:** `codellama`
-   - **API Key:** (leave empty)
-3. Click **Save Config**
-
-</details>
-
-<details>
-<summary><b>⭐ Claude (Recommended)</b></summary>
-
-1. Get API key from https://console.anthropic.com/
-2. Configure:
-   - **API URL:** `https://api.anthropic.com/v1/messages`
-   - **Model:** `claude-sonnet-4` or `claude-3-5-sonnet-20241022`
-   - **API Key:** Your key
-3. Click **Save Config**
-
-</details>
+2. Select AI provider from dropdown:
+   - **Ollama** (Local, Free) ⭐ Recommended for privacy
+   - **Claude** (Best quality)
+   - **OpenAI** (Excellent quality)
+   - **Custom** (Any OpenAI-compatible endpoint)
+3. Click **Edit Config** to open the scriptable object
+4. Configure your selected provider:
+   - **API URL** - Endpoint URL
+   - **Model** - Model name
+   - **API Key** - Your API key (if required)
+5. Save the configuration
 
 <details>
-<summary><b>☁️ OpenAI</b></summary>
+<summary><b>📝 Provider Examples</b></summary>
 
-1. Get API key from https://platform.openai.com/api-keys
-2. Configure:
-   - **API URL:** `https://api.openai.com/v1/chat/completions`
-   - **Model:** `gpt-4` or `gpt-3.5-turbo`
-   - **API Key:** Your key
-3. Click **Save Config**
+**Ollama (Local):**
+- API URL: `http://localhost:11434/api/generate`
+- Model: `codellama`
+- API Key: (leave empty)
+- Setup: `ollama pull codellama`
 
-</details>
+**Claude:**
+- API URL: `https://api.anthropic.com/v1/messages`
+- Model: `claude-sonnet-4` or `claude-3-5-sonnet-20241022`
+- API Key: Get from [console.anthropic.com](https://console.anthropic.com/)
 
-<details>
-<summary><b>🔧 Custom API</b></summary>
+**OpenAI:**
+- API URL: `https://api.openai.com/v1/chat/completions`
+- Model: `gpt-4` or `gpt-3.5-turbo`
+- API Key: Get from [platform.openai.com](https://platform.openai.com/api-keys)
 
-Any OpenAI-compatible endpoint works (LM Studio, custom servers, etc.)
-- Just update the **API URL** and **Model** fields
-- Add your **API Key** if required
+**Custom:**
+- Works with LM Studio, LocalAI, and any OpenAI-compatible endpoint
+- Configure URL, model, and key as needed
 
 </details>
 
@@ -199,17 +192,6 @@ Scripts generate to `Assets/Scripts/`
 
 ---
 
-## 🤖 AI Providers
-
-| Provider | Type | Cost | Performance |
-|----------|------|------|-------------|
-| **Ollama** | Local | 💚 Free | Fast |
-| **Claude** ⭐ | Cloud | 💰 Paid | Best |
-| **OpenAI** | Cloud | 💰 Paid | Excellent |
-| **LM Studio** | Local | 💚 Free | Fast |
-| **Custom** | Any | 🔄 Varies | Varies |
-
----
 
 ## 📋 Requirements
 
