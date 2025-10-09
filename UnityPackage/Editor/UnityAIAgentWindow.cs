@@ -152,11 +152,11 @@ namespace SparkGames.UnityGameSmith.Editor
 
             if (!string.IsNullOrEmpty(responseOutput))
             {
-                EditorGUILayout.TextArea(responseOutput, GUILayout.Height(200));
+                EditorGUILayout.TextArea(responseOutput, GUILayout.ExpandHeight(true));
             }
             else
             {
-                EditorGUILayout.HelpBox("No response yet. Execute a command to see results here.", MessageType.Info);
+                EditorGUILayout.HelpBox("No response yet. Execute a command to see results here.", MessageType.Info, GUILayout.ExpandHeight(true));
             }
 
             EditorGUILayout.EndVertical();
