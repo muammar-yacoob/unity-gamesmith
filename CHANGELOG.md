@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+# [1.4.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.3.0...v1.4.0) (2025-10-09)
+
+
+### Features
+
+* add MCP integration with Taskmaster and Chrome DevTools ([5f60fce](https://github.com/muammar-yacoob/unity-gamesmith/commit/5f60fce1654505b98674bfed048ee268b06558af))
+
 # [1.3.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.2.0...v1.3.0) (2025-10-09)
 
 
