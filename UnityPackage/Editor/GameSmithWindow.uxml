@@ -1,0 +1,140 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+        xsi="http://www.w3.org/2001/XMLSchema-instance"
+        engine="UnityEngine.UIElements"
+        editor="UnityEditor.UIElements"
+        noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+        editor-extension-mode="True">
+
+    <ui:VisualElement class="root-container">
+        <!-- Header Section -->
+        <ui:VisualElement name="header" class="header">
+            <ui:Label name="header-title" text="⚒️ Game Smith" class="header-title" />
+            <ui:Button name="help-button" text="?" class="header-button" />
+        </ui:VisualElement>
+
+        <!-- Tab Toolbar -->
+        <ui:VisualElement name="tab-toolbar" class="tab-toolbar">
+            <ui:Button name="tab-ai-generator" text="AI Generator" class="tab-button tab-button--selected" />
+            <ui:Button name="tab-template-library" text="Template Library" class="tab-button" />
+            <ui:Button name="tab-favorites" text="Favorites" class="tab-button" />
+            <ui:Button name="tab-quick-actions" text="Quick Actions" class="tab-button" />
+        </ui:VisualElement>
+
+        <!-- Content Area with ScrollView -->
+        <ui:ScrollView name="content-scroll" class="scroll-view content-area">
+
+            <!-- AI Generator Tab Content -->
+            <ui:VisualElement name="ai-generator-tab" style="display: flex;">
+
+                <!-- Configuration Section (Collapsible) -->
+                <ui:Foldout name="config-foldout" text="AI Configuration" class="foldout-header">
+                    <ui:VisualElement class="section-box">
+
+                        <!-- Provider Selection -->
+                        <ui:Label text="AI Provider" class="section-header" />
+                        <uie:PopupField name="provider-dropdown" class="provider-dropdown" />
+
+                        <ui:VisualElement name="provider-description" class="help-box" style="display: none;">
+                            <ui:Label name="provider-description-text" />
+                        </ui:VisualElement>
+
+                        <!-- API Key Field -->
+                        <ui:VisualElement name="api-key-container" class="config-row mt-10" style="display: none;">
+                            <ui:Label text="API Key" class="config-label" />
+                            <ui:TextField name="api-key-field" is-password-field="true" class="config-field" />
+                        </ui:VisualElement>
+
+                        <!-- Validation Status -->
+                        <ui:VisualElement name="validation-status" class="help-box" style="display: none;">
+                            <ui:Label name="validation-message" />
+                        </ui:VisualElement>
+
+                    </ui:VisualElement>
+                </ui:Foldout>
+
+                <!-- Command Interface -->
+                <ui:VisualElement class="section-box mt-10">
+                    <ui:Label text="💬 Natural Language Command" class="section-header" />
+                    <ui:TextField name="command-input" multiline="true" class="command-input"
+                                  placeholder-text="Enter your command... e.g., 'Create a player controller with jump and movement'" />
+                    <ui:Button name="execute-button" text="🚀 Generate Code" class="primary-button" />
+                </ui:VisualElement>
+
+                <!-- Response Output -->
+                <ui:VisualElement name="response-container" class="section-box mt-10" style="display: none;">
+                    <ui:Label text="📝 AI Response" class="section-header" />
+                    <ui:TextField name="response-output" multiline="true" readonly="true" class="response-output" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+            <!-- Template Library Tab Content -->
+            <ui:VisualElement name="template-library-tab" style="display: none;">
+
+                <!-- Search and Filter -->
+                <ui:VisualElement class="section-box">
+                    <ui:VisualElement class="search-bar">
+                        <ui:Label text="🔍" class="search-icon" />
+                        <ui:TextField name="search-field" class="search-field" placeholder-text="Search templates..." />
+                        <ui:Button name="clear-search-button" text="✕" class="secondary-button" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="config-row">
+                        <ui:Label text="Category:" class="config-label" />
+                        <uie:PopupField name="category-dropdown" class="provider-dropdown" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- Templates Container -->
+                <ui:VisualElement name="templates-container" class="mt-10" />
+
+                <!-- Pagination -->
+                <ui:VisualElement name="pagination" class="pagination">
+                    <ui:Button name="prev-page-button" text="◀" class="pagination-button" />
+                    <ui:Label name="page-label" text="1 / 1" class="pagination-label" />
+                    <ui:Button name="next-page-button" text="▶" class="pagination-button" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+            <!-- Favorites Tab Content -->
+            <ui:VisualElement name="favorites-tab" style="display: none;">
+                <ui:VisualElement name="favorites-empty" class="help-box">
+                    <ui:Label text="No favorites yet.\n\nStar templates in the Template Library to add them here for quick access." />
+                </ui:VisualElement>
+                <ui:VisualElement name="favorites-container" class="mt-10" />
+            </ui:VisualElement>
+
+            <!-- Quick Actions Tab Content -->
+            <ui:VisualElement name="quick-actions-tab" style="display: none;">
+
+                <ui:VisualElement class="section-box">
+                    <ui:Label text="🎮 Complete Systems" class="section-header" />
+                    <ui:Button name="generate-shooter-button" text="🎯 Generate 2D Shooter Project"
+                               class="quick-action-button" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section-box mt-10">
+                    <ui:Label text="⚡ System Generators" class="section-header" />
+                    <ui:VisualElement class="quick-actions-grid">
+                        <ui:Button name="player-system-button" text="🏃 Player System" class="quick-action-button" />
+                        <ui:Button name="enemy-system-button" text="👾 Enemy System" class="quick-action-button" />
+                        <ui:Button name="projectile-system-button" text="💥 Projectile System" class="quick-action-button" />
+                        <ui:Button name="level-system-button" text="📊 Level System" class="quick-action-button" />
+                        <ui:Button name="ui-system-button" text="🎨 UI System" class="quick-action-button" />
+                        <ui:Button name="custom-system-button" text="⚙️ Custom System" class="quick-action-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+        </ui:ScrollView>
+
+        <!-- Footer with Help Message -->
+        <ui:VisualElement name="footer" class="footer">
+            <ui:Label name="help-message" text="Welcome to Game Smith - AI-Powered Unity Development"
+                      class="help-message" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

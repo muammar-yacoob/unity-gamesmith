@@ -1,0 +1,428 @@
+/* Game Smith Window - Modern UI Toolkit Styles */
+
+/* Root container */
+.root-container {
+    flex-grow: 1;
+    background-color: rgb(32, 32, 32);
+}
+
+/* Header section */
+.header {
+    background-color: rgb(38, 38, 38);
+    padding: 10px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(60, 60, 60);
+    min-height: 45px;
+}
+
+.header-title {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(230, 230, 230);
+}
+
+.header-button {
+    width: 30px;
+    height: 30px;
+    background-color: rgb(60, 60, 60);
+    border-radius: 15px;
+    border-width: 0;
+}
+
+.header-button:hover {
+    background-color: rgb(80, 80, 80);
+}
+
+/* Tab toolbar */
+.tab-toolbar {
+    flex-direction: row;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(60, 60, 60);
+    background-color: rgb(40, 40, 40);
+}
+
+.tab-button {
+    flex-grow: 1;
+    padding: 12px;
+    background-color: rgb(40, 40, 40);
+    border-width: 0;
+    color: rgb(180, 180, 180);
+    -unity-font-style: normal;
+}
+
+.tab-button:hover {
+    background-color: rgb(50, 50, 50);
+}
+
+.tab-button--selected {
+    background-color: rgb(60, 60, 60);
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+    border-bottom-width: 3px;
+    border-bottom-color: rgb(102, 178, 255);
+}
+
+/* Content area */
+.content-area {
+    flex-grow: 1;
+    padding: 15px;
+}
+
+.scroll-view {
+    flex-grow: 1;
+}
+
+/* Section boxes */
+.section-box {
+    background-color: rgb(45, 45, 45);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-width: 1px;
+    border-color: rgb(60, 60, 60);
+}
+
+.section-header {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    margin-bottom: 10px;
+}
+
+/* AI Configuration */
+.config-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.config-label {
+    width: 120px;
+    color: rgb(200, 200, 200);
+}
+
+.config-field {
+    flex-grow: 1;
+    background-color: rgb(60, 60, 60);
+    border-color: rgb(80, 80, 80);
+    border-radius: 4px;
+    padding: 6px;
+    color: rgb(255, 255, 255);
+}
+
+/* Provider dropdown */
+.provider-dropdown {
+    background-color: rgb(60, 60, 60);
+    border-color: rgb(80, 80, 80);
+    border-radius: 4px;
+    color: rgb(255, 255, 255);
+}
+
+/* Command interface */
+.command-input {
+    min-height: 80px;
+    background-color: rgb(50, 50, 50);
+    border-radius: 6px;
+    padding: 10px;
+    color: rgb(255, 255, 255);
+    border-width: 1px;
+    border-color: rgb(70, 70, 70);
+    -unity-font-style: normal;
+}
+
+.command-input:focus {
+    border-color: rgb(102, 178, 255);
+}
+
+/* Buttons */
+.primary-button {
+    height: 35px;
+    background-color: rgb(102, 178, 255);
+    border-radius: 6px;
+    border-width: 0;
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+    padding: 8px 16px;
+    margin-top: 8px;
+}
+
+.primary-button:hover {
+    background-color: rgb(120, 190, 255);
+}
+
+.primary-button:active {
+    background-color: rgb(80, 160, 240);
+}
+
+.primary-button:disabled {
+    background-color: rgb(80, 80, 80);
+    color: rgb(150, 150, 150);
+}
+
+.secondary-button {
+    height: 30px;
+    background-color: rgb(60, 60, 60);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(80, 80, 80);
+    color: rgb(255, 255, 255);
+    padding: 6px 12px;
+}
+
+.secondary-button:hover {
+    background-color: rgb(70, 70, 70);
+    border-color: rgb(100, 100, 100);
+}
+
+/* Template cards */
+.template-card {
+    background-color: rgb(50, 50, 50);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-width: 1px;
+    border-color: rgb(70, 70, 70);
+}
+
+.template-card:hover {
+    border-color: rgb(102, 178, 255);
+    background-color: rgb(55, 55, 55);
+}
+
+.template-title {
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    margin-bottom: 6px;
+}
+
+.template-description {
+    font-size: 11px;
+    color: rgb(180, 180, 180);
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.template-meta {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.template-category {
+    font-size: 10px;
+    color: rgb(150, 150, 150);
+    margin-right: 10px;
+}
+
+.template-actions {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.template-button {
+    height: 26px;
+    flex-grow: 1;
+    margin-right: 5px;
+    background-color: rgb(70, 70, 70);
+    border-radius: 4px;
+    border-width: 0;
+    color: rgb(255, 255, 255);
+}
+
+.template-button:hover {
+    background-color: rgb(90, 90, 90);
+}
+
+.favorite-button {
+    width: 30px;
+    height: 26px;
+    background-color: rgb(70, 70, 70);
+    border-radius: 4px;
+    border-width: 0;
+    font-size: 16px;
+}
+
+.favorite-button--active {
+    background-color: rgb(255, 200, 0);
+}
+
+/* Quick actions grid */
+.quick-actions-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.quick-action-button {
+    height: 40px;
+    flex-grow: 1;
+    margin: 4px;
+    background-color: rgb(60, 60, 60);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: rgb(80, 80, 80);
+    color: rgb(255, 255, 255);
+}
+
+.quick-action-button:hover {
+    background-color: rgb(70, 70, 70);
+    border-color: rgb(102, 178, 255);
+}
+
+/* Response output */
+.response-output {
+    min-height: 200px;
+    background-color: rgb(40, 40, 40);
+    border-radius: 6px;
+    padding: 12px;
+    color: rgb(220, 220, 220);
+    border-width: 1px;
+    border-color: rgb(60, 60, 60);
+    white-space: normal;
+}
+
+/* Help message footer */
+.footer {
+    background-color: rgb(45, 45, 45);
+    padding: 12px;
+    border-top-width: 1px;
+    border-top-color: rgb(60, 60, 60);
+    flex-direction: row;
+    align-items: center;
+}
+
+.help-message {
+    font-size: 11px;
+    color: rgb(180, 180, 180);
+    flex-grow: 1;
+}
+
+/* Search bar */
+.search-bar {
+    flex-direction: row;
+    background-color: rgb(50, 50, 50);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-width: 1px;
+    border-color: rgb(70, 70, 70);
+}
+
+.search-field {
+    flex-grow: 1;
+    background-color: transparent;
+    border-width: 0;
+    color: rgb(255, 255, 255);
+    padding: 4px;
+}
+
+.search-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    -unity-text-align: middle-center;
+}
+
+/* Pagination */
+.pagination {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+.pagination-button {
+    width: 40px;
+    height: 30px;
+    background-color: rgb(60, 60, 60);
+    border-radius: 4px;
+    border-width: 0;
+    color: rgb(255, 255, 255);
+}
+
+.pagination-button:hover {
+    background-color: rgb(80, 80, 80);
+}
+
+.pagination-button:disabled {
+    background-color: rgb(50, 50, 50);
+    color: rgb(100, 100, 100);
+}
+
+.pagination-label {
+    margin: 0 15px;
+    color: rgb(200, 200, 200);
+}
+
+/* Foldout */
+.foldout-header {
+    background-color: rgb(50, 50, 50);
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+/* Help boxes */
+.help-box {
+    background-color: rgb(60, 90, 120);
+    border-radius: 6px;
+    padding: 10px;
+    margin: 8px 0;
+    border-left-width: 4px;
+    border-left-color: rgb(102, 178, 255);
+}
+
+.help-box--warning {
+    background-color: rgb(120, 90, 40);
+    border-left-color: rgb(255, 200, 50);
+}
+
+.help-box--error {
+    background-color: rgb(120, 40, 40);
+    border-left-color: rgb(255, 100, 100);
+}
+
+.help-box--success {
+    background-color: rgb(40, 120, 60);
+    border-left-color: rgb(100, 255, 150);
+}
+
+/* Utility classes */
+.mt-10 {
+    margin-top: 10px;
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+.mr-5 {
+    margin-right: 5px;
+}
+
+.ml-5 {
+    margin-left: 5px;
+}
+
+.flex-row {
+    flex-direction: row;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+.text-center {
+    -unity-text-align: middle-center;
+}
+
+.text-bold {
+    -unity-font-style: bold;
+}

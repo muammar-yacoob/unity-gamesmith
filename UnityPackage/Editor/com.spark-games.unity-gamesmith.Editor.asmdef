@@ -1,7 +1,10 @@
 {
     "name": "com.spark-games.unity-gamesmith.Editor",
     "rootNamespace": "SparkGames.UnityGameSmith.Editor",
-    "references": [],
+    "references": [
+        "UnityEngine.UIElementsModule",
+        "UnityEditor.UIElementsModule"
+    ],
     "includePlatforms": [
         "Editor"
     ],
