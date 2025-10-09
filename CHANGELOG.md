@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.1](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.4.0...v1.4.1) (2025-10-09)
+
+
+### Bug Fixes
+
+* **ui:** improve response output area in UnityAIAgentWindow ([e2810f7](https://github.com/muammar-yacoob/unity-gamesmith/commit/e2810f76b956d9056d3a84cce9695f6ec53d0183))
+* **ui:** remove custom arrows and fix template library overlapping ([621febb](https://github.com/muammar-yacoob/unity-gamesmith/commit/621febb6c6e9ebf656263711ff10a9263db0c9b7))
+* window layout ([485fcdc](https://github.com/muammar-yacoob/unity-gamesmith/commit/485fcdc485e2e3fb4738a7bed6ab3dad603235bb))
+
+# 📋 Changelog
+
+All notable changes to **Unity GameSmith** will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
 # [1.4.0](https://github.com/muammar-yacoob/unity-gamesmith/compare/v1.3.0...v1.4.0) (2025-10-09)
 
 
