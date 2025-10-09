@@ -34,7 +34,7 @@ namespace SparkGames.UnityGameSmith.Editor
         private string selectedCategory = "All";
         private List<CodeTemplate> searchResults = new List<CodeTemplate>();
         private int currentPage = 0;
-        private const int itemsPerPage = 6;
+        private const int itemsPerPage = 8;
 
         // Favorites
         private List<CodeTemplate> favorites = new List<CodeTemplate>();
@@ -215,8 +215,7 @@ namespace SparkGames.UnityGameSmith.Editor
             GUILayout.Space(10);
 
             // Collapsible Configuration Section
-            showConfig = EditorGUILayout.BeginFoldoutHeaderGroup(showConfig,
-                $"{(showConfig ? "▼" : "▶")} AI Configuration", h1Style);
+            showConfig = EditorGUILayout.BeginFoldoutHeaderGroup(showConfig, "AI Configuration");
 
             if (showConfig)
             {
@@ -477,70 +476,55 @@ namespace SparkGames.UnityGameSmith.Editor
             int start = GetPageStart();
             int end = Mathf.Min(GetPageEnd(), templates.Count);
 
-            const int columns = 2;
-            float panelWidth = (position.width - 40) / columns;
-            float panelHeight = 140f;
-
-            for (int i = start; i < end; i += columns)
+            for (int i = start; i < end; i++)
             {
-                EditorGUILayout.BeginHorizontal();
-
-                for (int col = 0; col < columns && i + col < end; col++)
-                {
-                    DrawTemplateCard(templates[i + col], panelWidth, panelHeight);
-                }
-
-                EditorGUILayout.EndHorizontal();
-                GUILayout.Space(8);
+                DrawTemplateCard(templates[i]);
+                GUILayout.Space(5);
             }
         }
 
-        private void DrawTemplateCard(CodeTemplate template, float width, float height)
+        private void DrawTemplateCard(CodeTemplate template)
         {
-            Rect cardRect = GUILayoutUtility.GetRect(width - 10, height);
-
-            // Card background
-            EditorGUI.DrawRect(cardRect, new Color(0.22f, 0.22f, 0.22f, 1f));
-
-            // Hover effect
-            if (cardRect.Contains(Event.current.mousePosition))
-            {
-                EditorGUI.DrawRect(cardRect, new Color(0.25f, 0.25f, 0.25f, 0.5f));
-            }
-
-            Rect contentRect = new Rect(cardRect.x + 8, cardRect.y + 8, cardRect.width - 16, cardRect.height - 16);
-            GUILayout.BeginArea(contentRect);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
             // Title
-            GUIStyle titleStyle = new GUIStyle(h1Style) { fontSize = 13 };
-            GUILayout.Label(template.name, titleStyle);
+            GUIStyle titleStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 13,
+                normal = { textColor = Color.white }
+            };
+            EditorGUILayout.LabelField(template.name, titleStyle);
 
             // Description
-            GUIStyle descStyle = new GUIStyle(labelStyle) { wordWrap = true, fontSize = 10 };
-            GUILayout.Label(template.description, descStyle, GUILayout.Height(32));
+            GUIStyle descStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                fontSize = 10,
+                normal = { textColor = new Color(0.8f, 0.8f, 0.8f) }
+            };
+            EditorGUILayout.LabelField(template.description, descStyle);
 
-            GUILayout.FlexibleSpace();
+            GUILayout.Space(5);
 
             // Meta info
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label($"📦 {template.category}", EditorStyles.miniLabel, GUILayout.Width(85));
+            EditorGUILayout.LabelField($"📦 {template.category}", EditorStyles.miniLabel, GUILayout.Width(100));
             string complexity = new string('⭐', template.complexity);
-            GUILayout.Label(complexity, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField(complexity, EditorStyles.miniLabel, GUILayout.Width(60));
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(2);
+            GUILayout.Space(5);
 
             // Action buttons
             EditorGUILayout.BeginHorizontal();
 
-            if (GUILayout.Button("📋", GUILayout.Width(30), GUILayout.Height(24)))
+            if (GUILayout.Button("📋 Copy", GUILayout.Width(80), GUILayout.Height(24)))
             {
                 GUIUtility.systemCopyBuffer = template.code;
                 AIAgentLogger.LogSuccess($"Copied {template.name}");
             }
 
-            if (GUILayout.Button("✨ Use", GUILayout.Height(24)))
+            if (GUILayout.Button("✨ Use Template", GUILayout.Height(24)))
             {
                 UseTemplate(template);
             }
@@ -553,7 +537,7 @@ namespace SparkGames.UnityGameSmith.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            GUILayout.EndArea();
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawPagination()
