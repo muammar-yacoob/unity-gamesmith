@@ -2,7 +2,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace SparkGames.UnityAIAgent.Editor
+namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
     /// Utility for generating and saving Unity C# scripts

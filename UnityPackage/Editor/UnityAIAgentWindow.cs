@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections;
 
-namespace SparkGames.UnityAIAgent.Editor
+namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
     /// [DEPRECATED] Legacy Unity Editor window - Use Tools/Game Smith instead

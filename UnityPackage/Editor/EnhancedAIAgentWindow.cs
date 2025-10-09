@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace SparkGames.UnityAIAgent.Editor
+namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
     /// [DEPRECATED] Legacy Enhanced window - Use Tools/Game Smith instead

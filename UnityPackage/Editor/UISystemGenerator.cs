@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace SparkGames.UnityAIAgent.Editor
+namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
     /// Generates game UI and HUD systems

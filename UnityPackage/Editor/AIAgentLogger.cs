@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using UnityEngine;
 
-namespace SparkGames.UnityAIAgent.Editor
+namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
     /// Logging utility for AI Agent operations

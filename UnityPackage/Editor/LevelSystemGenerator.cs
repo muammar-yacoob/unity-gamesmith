@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace SparkGames.UnityAIAgent.Editor
+namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
     /// Generates level management and wave spawning systems
