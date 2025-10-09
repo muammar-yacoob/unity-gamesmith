@@ -26,39 +26,14 @@
 
 ## 📥 Installation
 
-<details>
-<summary><b>🎯 Via Git URL (Recommended)</b></summary>
-
-1. Open Unity Package Manager: `Window → Package Manager`
-2. Click `+` → `Add package from git URL`
-3. Enter: `https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage`
-
-</details>
-
-<details>
-<summary><b>💾 From Disk</b></summary>
-
-1. Clone: `git clone https://github.com/muammar-yacoob/unity-gamesmith.git`
-2. In Unity: `Window → Package Manager → + → Add package from disk`
-3. Select `unity-gamesmith/UnityPackage/package.json`
-
-</details>
-
-<details>
-<summary><b>⚡ Quick Start</b></summary>
-
-```bash
-# 1. Install Ollama (optional, for free local AI)
-curl -fsSL https://ollama.com/install.sh | sh
-ollama pull codellama
-
-# 2. In Unity: Window → Package Manager → + → Add from git URL
-# https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
-
-# 3. Open: Tools → Unity GameSmith (Enhanced)
+In Unity Package Manager (UPM) Add Package from git URL:
+```
+https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 ```
 
-</details>
+Or **[get the latest Unity Package release](https://github.com/muammar-yacoob/unity-gamesmith/releases)**
+
+After installation, you will see Unity GameSmith option under **[Tools → Unity GameSmith (Enhanced)]** in the Unity editor top menu bar.
 
 ---
 
