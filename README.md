@@ -26,20 +26,26 @@
 
 ## 📥 Installation
 
-In Unity Package Manager (UPM) Add Package from git URL:
+### Option 1: One-Click Install (Recommended)
+
+[![Install via Needle Package Installer](https://img.shields.io/badge/Install-Unity%20Package-blue?style=for-the-badge&logo=unity)](https://package-installer.needle.tools/v1/installer/github.com/muammar-yacoob/unity-gamesmith?upmPackagePath=/UnityPackage&registry=https://github.com/muammar-yacoob/unity-gamesmith.git)
+
+Click the button above to install directly in Unity Editor.
+
+### Option 2: Manual Git URL
+
+In Unity Package Manager (UPM): `Window → Package Manager → + → Add package from git URL`
 ```
 https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 ```
 
-Or **[get the latest Unity Package release](https://github.com/muammar-yacoob/unity-gamesmith/releases)**
-
-After installation, you will see Unity GameSmith option under **[Tools → Unity GameSmith (Enhanced)]** in the Unity editor top menu bar.
+After installation, access via **Tools → Game Smith** (Alt+G) in Unity Editor.
 
 ---
 
 ## ⚙️ Configuration
 
-1. Open `Tools → Unity GameSmith (Enhanced)`
+1. Open `Tools → Game Smith` (Alt+G)
 2. Select AI provider from dropdown:
    - **Ollama** (Local, Free) ⭐ Recommended for privacy
    - **Claude** (Best quality)
@@ -84,7 +90,7 @@ After installation, you will see Unity GameSmith option under **[Tools → Unity
 <details>
 <summary><b>📚 Template Library</b></summary>
 
-1. `Tools → Unity GameSmith (Enhanced)`
+1. `Tools → Game Smith` (Alt+G)
 2. Click **Template Library** tab
 3. Search/filter templates
 4. Click **Use Template** to generate code
@@ -96,7 +102,7 @@ Scripts generate to `Assets/Scripts/`
 <details>
 <summary><b>🤖 AI Generation</b></summary>
 
-1. `Tools → Unity GameSmith (Enhanced)`
+1. `Tools → Game Smith` (Alt+G)
 2. Click **AI Generator** tab
 3. Enter command and click **Execute Command**
 
