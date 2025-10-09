@@ -72,3 +72,4 @@ dev-debug.log
 /.taskmaster/tasks/*
 /.taskmaster/.cache
 /.taskmaster/*.log 
+/DevUnityProject
