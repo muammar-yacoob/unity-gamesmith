@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "taskmaster": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "claude-task-master"],
-      "cwd": "${workspaceFolder}",
-      "description": "AI-powered task management for project planning, PRD parsing, and dependency-aware task tracking"
-    },
     "chrome-devtools": {
       "type": "stdio",
       "command": "npx",
@@ -18,8 +11,7 @@
         "--use-angle=vulkan",
         "--enable-features=Vulkan",
         "--no-sandbox"
-      ],
-      "description": "Chrome DevTools for Unity WebGL testing, performance profiling, and automated browser testing"
+      ]
     }
   }
 }
