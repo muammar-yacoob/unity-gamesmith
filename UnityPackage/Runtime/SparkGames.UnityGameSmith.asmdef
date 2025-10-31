@@ -1,15 +1,12 @@
 {
-    "name": "com.spark-games.unity-gamesmith.Editor",
-    "rootNamespace": "SparkGames.UnityGameSmith.Editor",
+    "name": "SparkGames.UnityGameSmith",
     "references": [],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": false,
+    "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

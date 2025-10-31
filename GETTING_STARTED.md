@@ -2,9 +2,17 @@
 
 Welcome! GameSmith is your **AI-powered Unity assistant** that helps you build games faster.
 
-## 🚀 Zero-Setup Installation
+## 🚀 Quick Installation
 
-### 1. Import the Package
+### 1. Install UniTask (Prerequisite)
+
+**⚠️ Required:** GameSmith uses UniTask for async operations.
+
+1. In Unity: `Window → Package Manager → + → Add package from git URL`
+2. Enter: `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`
+3. Wait for Unity to finish importing
+
+### 2. Import GameSmith
 
 **Via Unity Package Manager:**
 ```
@@ -17,7 +25,7 @@ Enter: `https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 2. Copy `UnityPackage` folder to your project's `Packages` folder
 3. Restart Unity
 
-### 2. Automatic Setup ✨
+### 3. Automatic Setup ✨
 
 **On first launch, GameSmith automatically:**
 - ✓ Creates settings file (`ProjectSettings/GameSmithSettings.json`)
@@ -27,7 +35,7 @@ Enter: `https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 
 **No manual configuration needed!**
 
-### 3. Choose Your AI Provider
+### 4. Choose Your AI Provider
 
 GameSmith supports multiple AI providers. Choose one:
 
@@ -57,7 +65,7 @@ GameSmith supports multiple AI providers. Choose one:
 - **Free tier:** Yes (limited)
 - **Get API key:** [openrouter.ai](https://openrouter.ai/keys)
 
-### 4. Quick Setup (2 minutes)
+### 5. Quick Setup (2 minutes)
 
 1. **Open GameSmith:**
    - Menu: `Tools → GameSmith → Open Window`

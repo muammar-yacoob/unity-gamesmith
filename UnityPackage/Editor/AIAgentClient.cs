@@ -1,41 +1,101 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using UnityEngine;
 using UnityEngine.Networking;
-using Cysharp.Threading.Tasks;
+using UnityEditor;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
-    /// Simple AI client for making API calls using UniTask
+    /// AI client with MCP tool support
     /// </summary>
     public class AIAgentClient
     {
         private readonly GameSmithConfig config;
+        private List<object> conversationHistory = new List<object>();
+        private string lastSystemContext = "";
 
         public AIAgentClient(GameSmithConfig config)
         {
             this.config = config;
         }
 
-        public async UniTask<string> SendMessageAsync(string userMessage, string systemContext, CancellationToken cancellationToken = default)
+        public void SendMessage(string userMessage, string systemContext, List<MCPTool> tools,
+            Action<AIResponse> onSuccess, Action<string> onError)
         {
             if (!config.IsValid())
             {
-                throw new Exception(config.GetValidationMessage());
+                onError?.Invoke(config.GetValidationMessage());
+                return;
             }
 
-            // Build request body (OpenAI format - compatible with most APIs)
-            var requestBody = $@"{{
-                ""model"": ""{config.GetCurrentModel()}"",
-                ""messages"": [
-                    {{""role"": ""system"", ""content"": ""{EscapeJson(systemContext)}""}},
-                    {{""role"": ""user"", ""content"": ""{EscapeJson(userMessage)}""}}
-                ],
-                ""temperature"": {config.temperature},
-                ""max_tokens"": {config.maxTokens}
-            }}";
+            // Add user message to history
+            conversationHistory.Add(new Dictionary<string, object>
+            {
+                { "role", "user" },
+                { "content", userMessage }
+            });
+
+            lastSystemContext = systemContext;
+            var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
+            EditorCoroutineRunner.StartCoroutine(coroutine);
+        }
+
+        public void SendToolResult(string toolUseId, string toolResult, string systemContext, List<MCPTool> tools,
+            Action<AIResponse> onSuccess, Action<string> onError)
+        {
+            // Add tool result to history
+            conversationHistory.Add(new Dictionary<string, object>
+            {
+                { "role", "user" },
+                { "content", new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            { "type", "tool_result" },
+                            { "tool_use_id", toolUseId },
+                            { "content", toolResult }
+                        }
+                    }
+                }
+            });
+
+            var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
+            EditorCoroutineRunner.StartCoroutine(coroutine);
+        }
+
+        private IEnumerator SendWebRequest(string systemContext, List<MCPTool> tools,
+            Action<AIResponse> onSuccess, Action<string> onError)
+        {
+            // Build Claude API request
+            var requestDict = new Dictionary<string, object>
+            {
+                { "model", config.GetCurrentModel() },
+                { "max_tokens", config.maxTokens },
+                { "temperature", config.temperature },
+                { "system", systemContext },
+                { "messages", conversationHistory }
+            };
+
+            // Add tools if available
+            if (tools != null && tools.Count > 0)
+            {
+                var toolsArray = new List<object>();
+                foreach (var tool in tools)
+                {
+                    toolsArray.Add(new Dictionary<string, object>
+                    {
+                        { "name", tool.Name },
+                        { "description", tool.Description },
+                        { "input_schema", tool.InputSchema ?? new Dictionary<string, object>() }
+                    });
+                }
+                requestDict["tools"] = toolsArray;
+            }
+
+            var requestBody = MiniJSON.Json.Serialize(requestDict);
 
             using (var request = new UnityWebRequest(config.apiUrl, "POST"))
             {
@@ -44,68 +104,108 @@ namespace SparkGames.UnityGameSmith.Editor
                 request.downloadHandler = new DownloadHandlerBuffer();
 
                 request.SetRequestHeader("Content-Type", "application/json");
-
-                if (!string.IsNullOrEmpty(config.apiKey))
-                {
-                    request.SetRequestHeader("Authorization", $"Bearer {config.apiKey}");
-                }
+                request.SetRequestHeader("anthropic-version", "2023-06-01");
+                request.SetRequestHeader("x-api-key", config.apiKey);
 
                 request.timeout = 120;
 
-                await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
+                yield return request.SendWebRequest();
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     var responseText = request.downloadHandler.text;
-                    var content = ParseResponse(responseText);
+                    var response = ParseClaudeResponse(responseText);
 
-                    if (!string.IsNullOrEmpty(content))
+                    if (response != null)
                     {
-                        return content;
+                        // Add assistant response to history
+                        conversationHistory.Add(new Dictionary<string, object>
+                        {
+                            { "role", "assistant" },
+                            { "content", response.ContentBlocks }
+                        });
+
+                        onSuccess?.Invoke(response);
                     }
                     else
                     {
-                        throw new Exception("No response from AI");
+                        onError?.Invoke("Failed to parse AI response");
                     }
                 }
                 else
                 {
-                    throw new Exception($"Request failed: {request.error}\n{request.downloadHandler.text}");
+                    onError?.Invoke($"Request failed: {request.error}\n{request.downloadHandler.text}");
                 }
             }
         }
 
-        private string ParseResponse(string json)
+        private AIResponse ParseClaudeResponse(string json)
         {
-            // Simple JSON parsing for the response content
-            // Looking for: "choices":[{"message":{"content":"..."}}]
+            try
+            {
+                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
+                if (response == null) return null;
 
-            var contentStart = json.IndexOf("\"content\"", StringComparison.Ordinal);
-            if (contentStart == -1) return null;
+                var result = new AIResponse
+                {
+                    ContentBlocks = new List<object>()
+                };
 
-            contentStart = json.IndexOf(":", contentStart) + 1;
-            contentStart = json.IndexOf("\"", contentStart) + 1;
+                if (response.ContainsKey("content"))
+                {
+                    var content = response["content"] as List<object>;
+                    if (content != null)
+                    {
+                        foreach (var item in content)
+                        {
+                            var block = item as Dictionary<string, object>;
+                            if (block != null)
+                            {
+                                result.ContentBlocks.Add(block);
 
-            var contentEnd = json.IndexOf("\"", contentStart);
-            if (contentEnd == -1) return null;
+                                var type = block.ContainsKey("type") ? block["type"].ToString() : "";
 
-            return json.Substring(contentStart, contentEnd - contentStart)
-                .Replace("\\n", "\n")
-                .Replace("\\t", "\t")
-                .Replace("\\\"", "\"")
-                .Replace("\\\\", "\\");
+                                if (type == "text" && block.ContainsKey("text"))
+                                {
+                                    result.TextContent += block["text"].ToString();
+                                }
+                                else if (type == "tool_use")
+                                {
+                                    result.HasToolUse = true;
+                                    result.ToolUseId = block.ContainsKey("id") ? block["id"].ToString() : "";
+                                    result.ToolName = block.ContainsKey("name") ? block["name"].ToString() : "";
+                                    result.ToolInput = block.ContainsKey("input") ? block["input"] as Dictionary<string, object> : new Dictionary<string, object>();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith] Failed to parse response: {ex.Message}");
+                return null;
+            }
         }
 
-        private string EscapeJson(string text)
+        public void ClearHistory()
         {
-            if (string.IsNullOrEmpty(text)) return text;
-
-            return text
-                .Replace("\\", "\\\\")
-                .Replace("\"", "\\\"")
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t");
+            conversationHistory.Clear();
         }
+    }
+
+    /// <summary>
+    /// Represents an AI response with potential tool uses
+    /// </summary>
+    public class AIResponse
+    {
+        public string TextContent = "";
+        public List<object> ContentBlocks = new List<object>();
+        public bool HasToolUse = false;
+        public string ToolUseId = "";
+        public string ToolName = "";
+        public Dictionary<string, object> ToolInput = new Dictionary<string, object>();
     }
 }

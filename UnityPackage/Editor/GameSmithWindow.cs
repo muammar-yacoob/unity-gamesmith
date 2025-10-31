@@ -1,9 +1,9 @@
+using System;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Cysharp.Threading.Tasks;
+using System.Diagnostics;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -12,9 +12,11 @@ namespace SparkGames.UnityGameSmith.Editor
     /// </summary>
     public class GameSmithWindow : EditorWindow
     {
+        // MCP integration enabled
         private GameSmithConfig config;
         private ChatHistory history;
         private AIAgentClient client;
+        private MCPClient mcpClient;
 
         // UI Elements
         private TextField messageInput;
@@ -24,19 +26,13 @@ namespace SparkGames.UnityGameSmith.Editor
         private Label providerStatus;
         private Button sendButton;
 
-        // Cancellation token for async operations
-        private CancellationTokenSource cancellationTokenSource;
-
-        [MenuItem("Tools/GameSmith/Open Window &g", false, 1)]
+        [MenuItem("Tools/GameSmith/GameSmith AI &g", false, 1)]
         public static void ShowWindow()
         {
-            var hierarchyWindowType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
-            var window = GetWindow<GameSmithWindow>("GameSmith", false, hierarchyWindowType);
-            window.minSize = new Vector2(400, 500);
-            window.Show();
+            GetWindow<GameSmithWindow>("GameSmith AI");
         }
 
-        [MenuItem("Tools/GameSmith/Configure Settings", false, 2)]
+        // Note: MenuItem for Configure Settings is in GameSmithSettingsWindow.cs
         public static void OpenSettingsWindow()
         {
             GameSmithSettingsWindow.ShowWindow();
@@ -83,11 +79,107 @@ namespace SparkGames.UnityGameSmith.Editor
             InitializeUI(root);
             LoadChatHistory();
 
+            // Start MCP server after UI is ready
+            EditorApplication.delayCall += () => StartMCPServer();
+
             // Enable config updates
             EditorApplication.update += CheckConfigChanges;
-            
-            // Initialize cancellation token
-            cancellationTokenSource = new CancellationTokenSource();
+        }
+
+        private void StartMCPServer()
+        {
+            // Check if MCP server is already running
+            if (mcpClient != null && mcpClient.IsConnected)
+            {
+                UnityEngine.Debug.Log("[GameSmith] MCP server is already running.");
+                return;
+            }
+
+            try
+            {
+                string executablePath = "";
+                string[] argsArray;
+
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                {
+                    // On Windows, find node.exe
+                    var whereNode = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "cmd.exe",
+                            Arguments = "/c where node",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            CreateNoWindow = true
+                        }
+                    };
+
+                    whereNode.Start();
+                    string nodePath = whereNode.StandardOutput.ReadLine()?.Trim();
+                    whereNode.WaitForExit();
+
+                    if (string.IsNullOrEmpty(nodePath))
+                    {
+                        throw new Exception("node.exe not found. Please ensure Node.js is installed and in PATH.");
+                    }
+
+                    // Find the npm prefix directory
+                    var nodeDir = System.IO.Path.GetDirectoryName(nodePath);
+
+                    // npx-cli.js is typically at: <node_dir>/node_modules/npm/bin/npx-cli.js
+                    string npxCliPath = System.IO.Path.Combine(nodeDir, "node_modules", "npm", "bin", "npx-cli.js");
+
+                    if (!System.IO.File.Exists(npxCliPath))
+                    {
+                        // Try alternate location: node_modules/npm/bin/npx-cli.js relative to node.exe
+                        npxCliPath = System.IO.Path.Combine(nodeDir, "..", "node_modules", "npm", "bin", "npx-cli.js");
+                        npxCliPath = System.IO.Path.GetFullPath(npxCliPath);
+                    }
+
+                    if (!System.IO.File.Exists(npxCliPath))
+                    {
+                        throw new Exception($"npx-cli.js not found. Searched at: {npxCliPath}");
+                    }
+
+                    UnityEngine.Debug.Log($"[GameSmith] Using node.exe at: {nodePath}");
+                    UnityEngine.Debug.Log($"[GameSmith] Using npx-cli.js at: {npxCliPath}");
+
+                    // Run: node.exe <npx-cli.js> -y @spark-apps/unity-mcp
+                    executablePath = nodePath;
+                    argsArray = new string[] { npxCliPath, "-y", "@spark-apps/unity-mcp" };
+                }
+                else // macOS or Linux
+                {
+                    executablePath = "npx";
+                    argsArray = new string[] { "-y", "@spark-apps/unity-mcp" };
+                }
+
+                // Create and start MCP client
+                if (mcpClient == null)
+                {
+                    mcpClient = new MCPClient();
+                }
+
+                bool mcpStarted = mcpClient.StartServer(executablePath, argsArray);
+
+                if (mcpStarted && mcpClient.IsConnected)
+                {
+                    UnityEngine.Debug.Log($"[GameSmith] MCP server connected with {mcpClient.AvailableTools.Count} tools available.");
+                    AddMessageBubble($"✓ Unity MCP server started ({mcpClient.AvailableTools.Count} tools available)", false);
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning("[GameSmith] MCP server failed to start or connect.");
+                    AddMessageBubble("⚠ Unity MCP failed to start. Chat works but Unity scene manipulation is disabled.", false);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith] Exception while starting MCP server: {ex.Message}");
+                AddMessageBubble($"⚠ Unity MCP not available: {ex.Message}\nChat works but Unity scene manipulation is disabled.", false);
+            }
         }
 
         private void OnDestroy()
@@ -95,9 +187,8 @@ namespace SparkGames.UnityGameSmith.Editor
             // Unregister all callbacks
             EditorApplication.update -= CheckConfigChanges;
 
-            // Cancel any ongoing async operations
-            cancellationTokenSource?.Cancel();
-            cancellationTokenSource?.Dispose();
+            // Dispose MCP client
+            mcpClient?.Dispose();
 
             // Clear references
             modelDropdown = null;
@@ -300,28 +391,63 @@ Help with:
 
 " + UnityProjectContext.GetProjectContext();
 
-            // Send to AI using UniTask
-            SendMessageAsync(message, systemContext).Forget();
+            // Get MCP tools if available
+            var tools = mcpClient != null && mcpClient.IsConnected ? mcpClient.AvailableTools : null;
+
+            // Send to AI with tools
+            client.SendMessage(message, systemContext, tools,
+                onSuccess: (response) => HandleAIResponse(response),
+                onError: (error) => HandleError(error));
         }
 
-        private async UniTaskVoid SendMessageAsync(string message, string systemContext)
+        private void HandleAIResponse(AIResponse response)
         {
-            try
+            // Display text content if any
+            if (!string.IsNullOrEmpty(response.TextContent))
             {
-                var response = await client.SendMessageAsync(message, systemContext, cancellationTokenSource.Token);
-                
-                // Add AI response
-                AddMessageBubble(response, false);
-                history.AddMessage(ChatMessage.Role.Assistant, response);
+                AddMessageBubble(response.TextContent, false);
+                history.AddMessage(ChatMessage.Role.Assistant, response.TextContent);
             }
-            catch (System.Exception ex)
+
+            // Handle tool use
+            if (response.HasToolUse)
             {
-                // Handle errors
-                AddErrorBubble($"Error: {ex.Message}");
+                AddMessageBubble($"[Using tool: {response.ToolName}]", false);
+
+                // Execute tool
+                if (mcpClient != null && mcpClient.IsConnected)
+                {
+                    var toolResult = mcpClient.CallTool(response.ToolName, response.ToolInput);
+
+                    // Add tool result to chat
+                    AddMessageBubble($"[Tool result: {toolResult}]", false);
+
+                    // Get tools and system context again
+                    var tools = mcpClient.AvailableTools;
+                    var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context and Unity MCP tools.
+
+Help with:
+- Writing C# scripts
+- Explaining Unity concepts
+- Debugging issues
+- Suggesting solutions
+- Analyzing project structure
+
+" + UnityProjectContext.GetProjectContext();
+
+                    // Send tool result back to AI to continue conversation
+                    client.SendToolResult(response.ToolUseId, toolResult, systemContext, tools,
+                        onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
+                        onError: (error) => HandleError(error));
+                }
+                else
+                {
+                    HandleError("MCP client not available for tool execution");
+                }
             }
-            finally
+            else
             {
-                // Re-enable input
+                // No more tool use, re-enable input
                 messageInput.SetEnabled(true);
                 if (sendButton != null)
                 {
@@ -329,6 +455,19 @@ Help with:
                 }
                 messageInput.Focus();
             }
+        }
+
+        private void HandleError(string error)
+        {
+            AddErrorBubble($"Error: {error}");
+
+            // Re-enable input
+            messageInput.SetEnabled(true);
+            if (sendButton != null)
+            {
+                sendButton.SetEnabled(true);
+            }
+            messageInput.Focus();
         }
 
         private void AddMessageBubble(string text, bool isUser)
@@ -378,6 +517,7 @@ Help with:
             if (EditorUtility.DisplayDialog("Clear Chat", "Clear all chat history?", "Yes", "No"))
             {
                 history.ClearHistory();
+                client?.ClearHistory();
 
                 // Remove all message bubbles (keep welcome message)
                 var messagesToRemove = messagesContainer.Query<VisualElement>()

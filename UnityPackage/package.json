@@ -36,8 +36,6 @@
   "bugs": {
     "url": "https://github.com/muammar-yacoob/unity-gamesmith/issues"
   },
-  "dependencies": {
-    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"
-  },
+  "dependencies": {},
   "type": "tool"
 }
