@@ -1,3 +1,9 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "unity-mcp": {
+      "command": "npx",
+      "args": ["-y", "@spark-apps/unity-mcp"],
+      "description": "Unity MCP Server - Control Unity Editor through Model Context Protocol"
+    }
+  }
 }

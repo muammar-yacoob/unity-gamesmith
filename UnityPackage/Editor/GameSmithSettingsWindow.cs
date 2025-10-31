@@ -77,10 +77,10 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 config.activeProvider = providerNames[newProviderIndex];
                 // Reset to first model when changing provider
-                var models = config.GetModelsList();
-                if (models.Count > 0)
+                var providerModels = config.GetModelsList();
+                if (providerModels.Count > 0)
                 {
-                    config.selectedModel = models[0];
+                    config.selectedModel = providerModels[0];
                 }
             }
 

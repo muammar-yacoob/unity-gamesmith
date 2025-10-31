@@ -26,6 +26,7 @@
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^9.0.0",
+    "@spark-apps/unity-mcp": "^1.0.4",
     "semantic-release": "^22.0.0"
   }
 }

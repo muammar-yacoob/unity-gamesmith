@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "wsl",
+      "args": [
+        "npx",
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_API_KEY": "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",
+        "NOTION_VERSION": "2022-06-28"
+      }
+    },
+    "taskmaster": {
+      "command": "wsl",
+      "args": [
+        "npx",
+        "-y",
+        "task-master-ai",
+        "--mcp"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "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",
+        "PERPLEXITY_API_KEY": "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"
+      }
+    }
+  }
+}

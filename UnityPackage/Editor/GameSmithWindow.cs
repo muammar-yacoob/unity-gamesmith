@@ -1,12 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Threading;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Text.RegularExpressions;
-using UnityEngine.Networking;
+using Cysharp.Threading.Tasks;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -27,8 +24,8 @@ namespace SparkGames.UnityGameSmith.Editor
         private Label providerStatus;
         private Button sendButton;
 
-        // Coroutine support
-        private IEnumerator currentCoroutine;
+        // Cancellation token for async operations
+        private CancellationTokenSource cancellationTokenSource;
 
         [MenuItem("Tools/GameSmith/Open Window &g", false, 1)]
         public static void ShowWindow()
@@ -86,19 +83,21 @@ namespace SparkGames.UnityGameSmith.Editor
             InitializeUI(root);
             LoadChatHistory();
 
-            // Enable coroutine and config updates
-            EditorApplication.update += UpdateCoroutine;
+            // Enable config updates
             EditorApplication.update += CheckConfigChanges;
+            
+            // Initialize cancellation token
+            cancellationTokenSource = new CancellationTokenSource();
         }
 
         private void OnDestroy()
         {
             // Unregister all callbacks
-            EditorApplication.update -= UpdateCoroutine;
             EditorApplication.update -= CheckConfigChanges;
 
-            // Clear coroutine
-            currentCoroutine = null;
+            // Cancel any ongoing async operations
+            cancellationTokenSource?.Cancel();
+            cancellationTokenSource?.Dispose();
 
             // Clear references
             modelDropdown = null;
@@ -116,7 +115,7 @@ namespace SparkGames.UnityGameSmith.Editor
             if (config == null || modelDropdown == null) return;
 
             // Create a simple state string to detect changes
-            var currentState = $"{config.apiUrl}|{config.apiKey}|{config.availableModels}|{config.selectedModel}";
+            var currentState = $"{config.apiUrl}|{config.apiKey}|{config.selectedModel}";
 
             if (currentState != lastConfigState)
             {
@@ -140,22 +139,6 @@ namespace SparkGames.UnityGameSmith.Editor
 
             // Recreate client with new config
             client = new AIAgentClient(config);
-        }
-
-        private void StartCoroutine(IEnumerator routine)
-        {
-            currentCoroutine = routine;
-        }
-
-        private void UpdateCoroutine()
-        {
-            if (currentCoroutine != null)
-            {
-                if (!currentCoroutine.MoveNext())
-                {
-                    currentCoroutine = null;
-                }
-            }
         }
 
         private void InitializeUI(VisualElement root)
@@ -204,9 +187,6 @@ namespace SparkGames.UnityGameSmith.Editor
 
             UpdateProviderStatus();
 
-            // Populate Ollama models if active and empty
-            StartCoroutine(LoadOllamaModelsIfNeeded());
-
             // Make provider status clickable
             if (providerStatus != null)
             {
@@ -218,7 +198,7 @@ namespace SparkGames.UnityGameSmith.Editor
             var settingsButton = root.Q<Button>("settings-button");
             if (settingsButton != null)
             {
-                settingsButton.clicked += OpenConfigInInspector;
+                settingsButton.clicked += () => GameSmithSettingsWindow.ShowWindow();
             }
 
             var clearButton = root.Q<Button>("clear-button");
@@ -320,31 +300,35 @@ Help with:
 
 " + UnityProjectContext.GetProjectContext();
 
-            // Send to AI
-            StartCoroutine(client.SendMessageAsync(message, systemContext, OnAIResponse, OnAIError));
+            // Send to AI using UniTask
+            SendMessageAsync(message, systemContext).Forget();
         }
 
-        private void OnAIResponse(string response)
+        private async UniTaskVoid SendMessageAsync(string message, string systemContext)
         {
-            AddMessageBubble(response, false);
-            history.AddMessage(ChatMessage.Role.Assistant, response);
-            messageInput.SetEnabled(true);
-            if (sendButton != null)
+            try
             {
-                sendButton.SetEnabled(true);
+                var response = await client.SendMessageAsync(message, systemContext, cancellationTokenSource.Token);
+                
+                // Add AI response
+                AddMessageBubble(response, false);
+                history.AddMessage(ChatMessage.Role.Assistant, response);
             }
-            messageInput.Focus();
-        }
-
-        private void OnAIError(string error)
-        {
-            AddErrorBubble($"Error: {error}");
-            messageInput.SetEnabled(true);
-            if (sendButton != null)
+            catch (System.Exception ex)
             {
-                sendButton.SetEnabled(true);
+                // Handle errors
+                AddErrorBubble($"Error: {ex.Message}");
             }
-            messageInput.Focus();
+            finally
+            {
+                // Re-enable input
+                messageInput.SetEnabled(true);
+                if (sendButton != null)
+                {
+                    sendButton.SetEnabled(true);
+                }
+                messageInput.Focus();
+            }
         }
 
         private void AddMessageBubble(string text, bool isUser)
@@ -374,7 +358,7 @@ Help with:
             bubble.style.cursor = new StyleCursor(StyleKeyword.Auto);
             bubble.RegisterCallback<ClickEvent>(evt =>
             {
-                OpenConfigInInspector();
+                GameSmithSettingsWindow.ShowWindow();
             });
 
             var label = new Label(text + "\n\n💡 Click here to configure API settings");

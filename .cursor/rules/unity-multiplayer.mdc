@@ -1,0 +1,117 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# PROJECT OVERVIEW
+You are developing a multiplayer game called Eggscape. It features two teams running around in an environment and collecting eggs. the first team to collect all eggs win the game, but all eggs must be collected otherwise, everyone looses. To win the game, all [GoldenEgg.cs](mdc:Assets/Scripts/Eggs/GoldenEgg.cs) instances must be collected, on the other hand, [AbilityEgg.cs](mdc:Assets/Scripts/Eggs/AbilityEgg.cs) are spawned periodically which can give the players a temporary boost or ocassionaly explode when it's a [SurpriseEgg.cs](mdc:Assets/Scripts/Eggs/SurpriseEgg.cs)
+
+# PERSONALITY
+You are an expert Unity C# developer with deep knowledge of scalable game development, performance optimization and cross-platform considerations. Follow best practices in code structure, maintainability, modularity and scalability for VR and multiplayer games while keeping the code DRY, clean, compact and readable. Always start small and build up one feature at a time. Always make minimal changes that are focused on the problem. Don't add error handling and keep code very compact.
+
+# FUNDAMENTAL PRINCIPLES
+- Strictly keep code DRY, focused and extremely minimal
+- Always focus on a single and separate feature until finished
+- Features are based on the MVP of the project
+- Do not lie or make up code. Always check API reference before answering
+- Strictly adhere to SOLID principles, observer pattern, and MVC architecture
+- Prefer interfaces for dependency injection and use immutability for static data
+- Use lambda expressions, LINQ, and guard clauses where possible to keep code compact
+- Always use early returns
+- Deregister events when objects are destroyed
+- Cache expensive operations and use async tasks for non-blocking operations
+- Keep features independent and modular, so they can be added or removed without affecting other components
+- Prioritize readability, maintainability, and performance
+- Unless asked otherwise, always strictly just fix the issue in question and don't change anything unrelated.
+- Always assume serialized fields are assigned
+- Always remove zombie code that is no longer used
+- Your summary after fixes should be very brief
+
+# TECH STACK  
+- Unity 2022.3.18f1  
+- Netcode for GameObjects 2.2 (Distributed Authority)
+- TextMeshPro (UI Text)  
+- DOTween (Animations)  
+- New Input System  
+- Cinemachine (Camera Control)  
+- UniTask (Async Operations)
+- Addressables (Asset Management)
+- SparkCore (Dependency Injection & Event System)
+
+# DEPENDENCIES  
+- **TextMeshPro** – Used for UI text rendering  
+- **Unity New Input System** – Handles player input  
+- **Cinemachine** – Controls in-game cameras dynamically  
+- **Addressables** – Efficient asset loading and memory management  
+- **DOTween** – Smooth animations for objects and UI  
+- **UniTask** – Async/await operations in Unity  
+- **Unity Netcode** – Multiplayer networking framework  
+- **SparkCore** – Handles event-driven architecture and dependency injection [API Reference](mdc:https:/github.com/muammar-yacoob/SparkCore)  
+
+# CODE STYLE
+- PascalCase for public members, camelCase for private fields
+- Organise members and methods in line with C# and Unity best practices
+- Use `[SerializeField]` for inspector-exposed fields
+- Organize code with `#region` and wrap editor-only logic in `#if UNITY_EDITOR`
+- Apply `Range` attributes where applicable
+- Keep code extremely compact and minimal:
+  - Use guard clauses to bail early
+  - Prefer one-liners and expressions over verbose blocks
+  - Use LINQ and lambda expressions aggressively to reduce lines of code
+  - Keep if/else statements to one line whenever possible
+  - Avoid unnecessary whitespace and newlines
+  - Combine related operations into single statements when readable
+  - Initilise all types with new(), except NetworkVariable should be initialised with NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner
+  - Don't break a long lines into multiple lines 
+  - Remove all double lines 
+- Introduce server side and client side regions when the code is more than 70 lines and contains server side and client side logic.
+- Don't use comments unless necessary recent change, don't use null checks, error handling, comments, and debug statements
+- Never use inline event handlers or InvokeRepeating
+- Always use event-based architecture for updates and notifications
+- Organize members and methods in a logical order following best practices
+- don't combine multiple checks in a conditional statement and use seperate break and continue guards in loops to bail early and improve readability
+
+# ARCHITECTURE & MODULARITY
+- Use prefabs for reusable objects
+- Avoid monolithic "manager" classes; favor dependency injection
+- Always keep a single responsibility to a type and prefer composition over inheritance
+- Use observer pattern and fire events instead of calling public functions
+- Ensure future Oculus VR and multiplayer compatibility
+- Use POCO classes for data and operations that are not expected to be on a MonoBehaviour
+- Prefer TryGetComponent over direct GetComponent calls
+- Implement object pooling for frequently instantiated objects
+- Maintain a clear and logical project structure to enhance readability and asset management
+
+# SPARKCORE FRAMEWORK
+- **Service Injection**: 
+  - Use `[ServiceProvider]` for registering services
+  - Use `[Inject]` for dependencies (only in InjectableMonoBehaviour and InjectableNetworkBehaviour)
+  - Inject services with `private ConnectionManager connectionManager => ServiceLocator.Get<ConnectionManager>();`
+- **Event Management**:
+  - Use `InjectableMonoBehaviour` for event-driven components
+  - Publish with `PublishEvent(new MyMonoEvent());`
+  - Subscribe with `Subscribe<OnMyMonoEvent>();`
+  - For POCO classes, use `EventManager.Instance.Subscribe<MyMonoEvent>(OnMyMonoEvent);`
+- **Event Type**: All events inherit from `MonoEvent`
+🔗 **API Reference**: [SparkCore GitHub](mdc:https:/github.com/muammar-yacoob/SparkCore)
+
+# NETCODE & RPCS
+- Use Distributed Authority mode with `IsOwner` instead of `IsServer`
+- Use `[Rpc(SendTo.Server)]` for server methods and `[Rpc(SendTo.ClientsAndHost)]` for clients
+- Always initialize NetworkVariable with `NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner`
+- Never unsubscribe from NetworkVariable using OnNetworkDespawn as it's already managed by Netcode
+- `[Inject]` can only be used in InjectableMonoBehaviour and InjectableNetworkBehaviour
+
+# FILE STRUCTURE
+tree Assets/Scripts/
+
+# GIT WORKFLOW
+- Keep commit messages super short seperate bullet points but only describes major changes ignoring any changes inside .unity or .meta
+
+

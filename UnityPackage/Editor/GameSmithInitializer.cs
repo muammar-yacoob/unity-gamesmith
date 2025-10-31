@@ -26,6 +26,9 @@ namespace SparkGames.UnityGameSmith.Editor
             // Always ensure settings exist
             EnsureSettingsExist();
 
+            // Ensure project-level AIModels.json exists
+            EnsureAIModelsExist();
+
             // Show welcome window only on first run and if not disabled
             bool hideWelcome = EditorPrefs.GetBool(HIDE_WELCOME_KEY, false);
             if (isFirstRun && !hideWelcome)
@@ -34,7 +37,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 EditorApplication.delayCall += ShowWelcomeWindow;
             }
 
-            // Ensure providers.json is loaded
+            // Ensure config is loaded
             GameSmithConfig.GetOrCreate();
         }
 
@@ -50,16 +53,23 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
+        private static void EnsureAIModelsExist()
+        {
+            // Check if AIModels.json exists in project Resources
+            var aiModelsAsset = UnityEngine.Resources.Load<TextAsset>("GameSmith/AIModels");
+
+            if (aiModelsAsset == null)
+            {
+                Debug.Log("[GameSmith] Creating AIModels.json with default providers...");
+
+                // Trigger the config creation which will create the file with defaults
+                GameSmithConfig.GetOrCreate();
+            }
+        }
+
         private static void ShowWelcomeWindow()
         {
             GameSmithWelcomeWindow.ShowWindow();
-        }
-
-        [MenuItem("Tools/GameSmith/Reset First-Time Setup", false, 100)]
-        private static void ResetFirstTimeSetup()
-        {
-            EditorPrefs.DeleteKey(FIRST_RUN_KEY);
-            Debug.Log("[GameSmith] First-time setup reset. Restart Unity to see welcome window.");
         }
     }
 }

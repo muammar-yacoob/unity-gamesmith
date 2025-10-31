@@ -1,13 +1,14 @@
 using System;
-using System.Collections;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Networking;
+using Cysharp.Threading.Tasks;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
-    /// Simple AI client for making API calls
+    /// Simple AI client for making API calls using UniTask
     /// </summary>
     public class AIAgentClient
     {
@@ -18,12 +19,11 @@ namespace SparkGames.UnityGameSmith.Editor
             this.config = config;
         }
 
-        public IEnumerator SendMessageAsync(string userMessage, string systemContext, Action<string> onSuccess, Action<string> onError)
+        public async UniTask<string> SendMessageAsync(string userMessage, string systemContext, CancellationToken cancellationToken = default)
         {
             if (!config.IsValid())
             {
-                onError?.Invoke(config.GetValidationMessage());
-                yield break;
+                throw new Exception(config.GetValidationMessage());
             }
 
             // Build request body (OpenAI format - compatible with most APIs)
@@ -52,32 +52,25 @@ namespace SparkGames.UnityGameSmith.Editor
 
                 request.timeout = 120;
 
-                yield return request.SendWebRequest();
+                await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    try
-                    {
-                        var responseText = request.downloadHandler.text;
-                        var content = ParseResponse(responseText);
+                    var responseText = request.downloadHandler.text;
+                    var content = ParseResponse(responseText);
 
-                        if (!string.IsNullOrEmpty(content))
-                        {
-                            onSuccess?.Invoke(content);
-                        }
-                        else
-                        {
-                            onError?.Invoke("No response from AI");
-                        }
-                    }
-                    catch (Exception e)
+                    if (!string.IsNullOrEmpty(content))
                     {
-                        onError?.Invoke($"Failed to parse response: {e.Message}");
+                        return content;
+                    }
+                    else
+                    {
+                        throw new Exception("No response from AI");
                     }
                 }
                 else
                 {
-                    onError?.Invoke($"Request failed: {request.error}\n{request.downloadHandler.text}");
+                    throw new Exception($"Request failed: {request.error}\n{request.downloadHandler.text}");
                 }
             }
         }
@@ -98,6 +91,7 @@ namespace SparkGames.UnityGameSmith.Editor
 
             return json.Substring(contentStart, contentEnd - contentStart)
                 .Replace("\\n", "\n")
+                .Replace("\\t", "\t")
                 .Replace("\\\"", "\"")
                 .Replace("\\\\", "\\");
         }
