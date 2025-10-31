@@ -1,63 +1,73 @@
 # Unity GameSmith
 
-**AI-powered code generation and template library for Unity Editor**
+**Simple AI Chat Assistant for Unity Development**
 
-Generate Unity C# scripts using natural language commands or choose from 10+ pre-built templates.
+Chat with AI directly in Unity Editor - ask questions, get code help, debug issues.
 
 ---
 
 ## 🚀 Quick Start
 
-After installation, access the tool:
-- **Main Window:** `Tools → Game Smith` (Alt+G)
+### 1. Install Package
 
-### First Time Setup
-
-1. Select an AI provider from the dropdown:
-   - **Ollama** (Local, Free) - Recommended for beginners
-   - **Claude** (Cloud, Paid) - Best quality
-   - **OpenAI** (Cloud, Paid) - Excellent quality
-   - **LM Studio** (Local, Free)
-   - **Custom** (Your own endpoint)
-
-2. Enter your API key (if required for cloud providers)
-
-3. Start generating code!
-
----
-
-## 💡 Features
-
-- **AI Generator** - Natural language to Unity C# scripts
-- **Template Library** - Browse and use 10+ pre-built game systems
-- **Favorites** - Quick access to your most-used templates
-- **Quick Actions** - One-click complete system generators
-
----
-
-## 📝 Example Commands
+In Unity Package Manager: `Window → Package Manager → + → Add package from git URL`
 
 ```
-"Create a 2D player with WASD movement and jump"
-"Generate boss enemy with 3 attack patterns"
-"Make a health system with shields and armor"
-"Create a shooting system with bullet spread"
+https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
+```
+
+### 2. Open Chat Window
+
+`Tools → GameSmith → Open Window` (or press **Alt+G**)
+
+### 3. Configure AI Provider
+
+Click **⚙️ Settings** button in the chat window, then:
+
+1. **Select a Provider:**
+   - **Claude** (Recommended) - Best for code
+   - **OpenAI** - GPT-4o
+   - **Gemini** - Google's model
+   - **Ollama** - Free local AI (requires [Ollama](https://ollama.com) installed)
+
+2. **Enter API Key** (not needed for Ollama):
+   - Claude: Get key from [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+   - OpenAI: Get key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - Gemini: Get key from [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+
+3. **Click "Open Chat Window"** and start chatting!
+
+---
+
+## 💬 Example Questions
+
+```
+"How do I make a 2D player move with WASD?"
+"What's wrong with this script?" [paste code]
+"Create a health system script"
+"Explain Unity's Start() vs Awake()"
+"How do I detect collisions in 2D?"
 ```
 
 ---
 
-## 📚 Learn More
+## 🎯 Features
 
-**Full documentation, installation guide, examples, and troubleshooting:**
+- **💬 Simple Chat Interface** - Just ask questions
+- **🔌 Multiple AI Providers** - Claude, OpenAI, Gemini, Ollama
+- **🔒 Privacy First** - API keys stored locally, works offline with Ollama
+- **📝 Chat History** - Conversations saved per project
+- **⚡ Fast & Lightweight** - No bloat, just chat
 
-👉 **[View Complete Documentation](https://github.com/muammar-yacoob/unity-gamesmith#readme)**
+---
 
-- Installation methods (Git URL, disk, quick start)
-- AI provider configuration (Ollama, Claude, OpenAI, custom)
-- Complete template library
-- Example commands for every game system
-- Troubleshooting guide
-- Contributing guidelines
+## 🆓 Using Ollama (Free Local AI)
+
+1. Install Ollama from [ollama.com](https://ollama.com)
+2. Run in terminal: `ollama pull llama3.2`
+3. Start server: `ollama serve`
+4. In GameSmith settings, select "Ollama" provider
+5. Chat for free - no API key needed!
 
 ---
 
@@ -65,21 +75,38 @@ After installation, access the tool:
 
 - Unity 2021.3 LTS or later
 - .NET Standard 2.1 or 4.x
-- AI provider: Ollama (free) or API key (Claude/OpenAI)
+- AI Provider: Ollama (free) OR API key (Claude/OpenAI/Gemini)
 
 ---
 
-## 🔗 Quick Links
+## 🔧 Troubleshooting
+
+**Package not showing?**
+- Check `Packages/manifest.json` contains the package
+- Try `Assets → Reimport All`
+- Restart Unity
+
+**AI not responding?**
+- Check your API key is entered correctly
+- For Ollama: Make sure `ollama serve` is running
+- Check Unity Console for error messages
+
+**Settings button not working?**
+- Use menu: `Tools → GameSmith → Configure Settings`
+
+---
+
+## 🔗 Links
 
 - [GitHub Repository](https://github.com/muammar-yacoob/unity-gamesmith)
 - [Report Issues](https://github.com/muammar-yacoob/unity-gamesmith/issues)
-- [Ollama Installation](https://ollama.com)
+- [Ollama](https://ollama.com) - Free local AI
 
 ---
 
 ## 📄 License
 
-MIT License - See LICENSE file in repository
+MIT License
 
 ---
 
