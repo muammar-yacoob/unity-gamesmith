@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Text.RegularExpressions;
 using UnityEngine.Networking;
 
 namespace SparkGames.UnityGameSmith.Editor
@@ -22,24 +23,32 @@ namespace SparkGames.UnityGameSmith.Editor
         private TextField messageInput;
         private VisualElement messagesContainer;
         private ScrollView chatScroll;
-        private Button sendButton;
         private PopupField<string> modelDropdown;
         private Label providerStatus;
+        private Button sendButton;
 
         // Coroutine support
         private IEnumerator currentCoroutine;
 
-        // Ollama status
-        private bool isOllamaRunning = false;
-        private float lastOllamaCheck = 0f;
-
-        [MenuItem("Tools/Game Smith &G", false, 1)]
+        [MenuItem("Tools/GameSmith/Open Window &g", false, 1)]
         public static void ShowWindow()
         {
             var hierarchyWindowType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
-            var window = GetWindow<GameSmithWindow>("Game Smith", false, hierarchyWindowType);
+            var window = GetWindow<GameSmithWindow>("GameSmith", false, hierarchyWindowType);
             window.minSize = new Vector2(400, 500);
             window.Show();
+        }
+
+        [MenuItem("Tools/GameSmith/Configure Settings", false, 2)]
+        public static void OpenSettingsWindow()
+        {
+            GameSmithSettingsWindow.ShowWindow();
+        }
+
+        [MenuItem("Tools/GameSmith/Show Welcome Window", false, 3)]
+        private static void ShowWelcome()
+        {
+            GameSmithWelcomeWindow.ShowWindow();
         }
 
         public void CreateGUI()
@@ -80,21 +89,31 @@ namespace SparkGames.UnityGameSmith.Editor
             // Enable coroutine and config updates
             EditorApplication.update += UpdateCoroutine;
             EditorApplication.update += CheckConfigChanges;
-            EditorApplication.update += CheckOllamaStatus;
         }
 
         private void OnDestroy()
         {
+            // Unregister all callbacks
             EditorApplication.update -= UpdateCoroutine;
             EditorApplication.update -= CheckConfigChanges;
-            EditorApplication.update -= CheckOllamaStatus;
+
+            // Clear coroutine
+            currentCoroutine = null;
+
+            // Clear references
+            modelDropdown = null;
+            messageInput = null;
+            messagesContainer = null;
+            chatScroll = null;
+            providerStatus = null;
+            sendButton = null;
         }
 
         private string lastConfigState = "";
 
         private void CheckConfigChanges()
         {
-            if (config == null) return;
+            if (config == null || modelDropdown == null) return;
 
             // Create a simple state string to detect changes
             var currentState = $"{config.apiUrl}|{config.apiKey}|{config.availableModels}|{config.selectedModel}";
@@ -145,22 +164,48 @@ namespace SparkGames.UnityGameSmith.Editor
             messageInput = root.Q<TextField>("message-input");
             messagesContainer = root.Q<VisualElement>("messages-container");
             chatScroll = root.Q<ScrollView>("chat-scroll");
-            sendButton = root.Q<Button>("send-button");
             providerStatus = root.Q<Label>("provider-status");
+            sendButton = root.Q<Button>("send-button");
 
             // Create model dropdown programmatically
             var modelDropdownContainer = root.Q<VisualElement>("model-dropdown-container");
             if (modelDropdownContainer != null)
             {
+                // Clear any existing children
+                modelDropdownContainer.Clear();
+
                 var models = config.GetModelsList();
                 var currentModel = config.GetCurrentModel();
 
-                modelDropdown = new PopupField<string>(models, currentModel);
-                modelDropdown.RegisterValueChangedCallback(evt => OnModelChanged(evt.newValue));
-                modelDropdownContainer.Add(modelDropdown);
+                // Ensure current model is in the list, otherwise use first model
+                if (models != null && models.Count > 0)
+                {
+                    if (!models.Contains(currentModel))
+                    {
+                        currentModel = models[0];
+                        config.selectedModel = currentModel;
+                    }
+
+                    modelDropdown = new PopupField<string>(models, currentModel);
+                    // Display human-friendly names from config while keeping ids as values
+                    modelDropdown.formatSelectedValueCallback = (val) => config.GetModelDisplayName(val);
+                    modelDropdown.formatListItemCallback = (val) => config.GetModelDisplayName(val);
+                    modelDropdown.RegisterValueChangedCallback(evt => OnModelChanged(evt.newValue));
+                    modelDropdownContainer.Add(modelDropdown);
+                }
+                else
+                {
+                    // No models available - show label instead
+                    var noModelsLabel = new Label("No models available");
+                    noModelsLabel.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.7f));
+                    modelDropdownContainer.Add(noModelsLabel);
+                }
             }
 
             UpdateProviderStatus();
+
+            // Populate Ollama models if active and empty
+            StartCoroutine(LoadOllamaModelsIfNeeded());
 
             // Make provider status clickable
             if (providerStatus != null)
@@ -169,38 +214,41 @@ namespace SparkGames.UnityGameSmith.Editor
                 providerStatus.style.cursor = new StyleCursor(new UnityEngine.UIElements.Cursor() { texture = null });
             }
 
-            // Setup callbacks
+            // Setup button callbacks
             var settingsButton = root.Q<Button>("settings-button");
-            settingsButton.clicked += OpenConfigInInspector;
+            if (settingsButton != null)
+            {
+                settingsButton.clicked += OpenConfigInInspector;
+            }
 
             var clearButton = root.Q<Button>("clear-button");
-            clearButton.clicked += ClearChat;
-
-            sendButton.clicked += SendMessage;
-
-            // Enter to send
-            messageInput.RegisterCallback<KeyDownEvent>(evt =>
+            if (clearButton != null)
             {
-                if (evt.keyCode == KeyCode.Return && !evt.shiftKey)
-                {
-                    evt.PreventDefault();
-                    SendMessage();
-                }
-            });
-        }
+                clearButton.clicked += ClearChat;
+            }
 
-        private void OpenConfigInInspector()
-        {
-            // Select and highlight the config ScriptableObject in Inspector
-            Selection.activeObject = config;
-            EditorGUIUtility.PingObject(config);
+            if (sendButton != null)
+            {
+                sendButton.clicked += SendMessage;
+            }
+
+            // Enter to send (Return and KeypadEnter), Shift+Enter inserts newline
+            if (messageInput != null)
+            {
+                messageInput.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (!evt.shiftKey && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter))
+                    {
+                        evt.StopPropagation();
+                        SendMessage();
+                    }
+                }, TrickleDown.TrickleDown);
+            }
         }
 
         private void OnModelChanged(string newModel)
         {
             config.selectedModel = newModel;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
             UpdateProviderStatus();
         }
 
@@ -210,127 +258,20 @@ namespace SparkGames.UnityGameSmith.Editor
 
             if (!config.IsValid())
             {
-                providerStatus.text = "⚠ Not configured";
+                providerStatus.text = "⚠ Not configured - Click to configure";
                 providerStatus.style.color = new StyleColor(new Color(0.9f, 0.6f, 0.4f));
-                return;
-            }
-
-            // Check if this is Ollama
-            bool isOllama = config.apiUrl.Contains("localhost:11434") ||
-                           config.apiUrl.Contains("127.0.0.1:11434") ||
-                           config.providerName.ToLower().Contains("ollama");
-
-            if (isOllama)
-            {
-                if (isOllamaRunning)
-                {
-                    providerStatus.text = $"✓ {config.providerName} (Running)";
-                    providerStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
-                }
-                else
-                {
-                    providerStatus.text = $"⚠ {config.providerName} (Stopped) - Click to start";
-                    providerStatus.style.color = new StyleColor(new Color(0.9f, 0.6f, 0.4f));
-                }
             }
             else
             {
-                providerStatus.text = $"✓ {config.providerName}";
+                providerStatus.text = $"✓ {config.activeProvider}";
                 providerStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
             }
         }
 
         private void OnProviderStatusClicked(ClickEvent evt)
         {
-            bool isOllama = config.apiUrl.Contains("localhost:11434") ||
-                           config.apiUrl.Contains("127.0.0.1:11434") ||
-                           config.providerName.ToLower().Contains("ollama");
-
-            if (isOllama && !isOllamaRunning)
-            {
-                StartOllama();
-            }
-        }
-
-        private void CheckOllamaStatus()
-        {
-            if (config == null) return;
-
-            // Check if this is Ollama
-            bool isOllama = config.apiUrl.Contains("localhost:11434") ||
-                           config.apiUrl.Contains("127.0.0.1:11434") ||
-                           config.providerName.ToLower().Contains("ollama");
-
-            if (!isOllama) return;
-
-            // Check every 5 seconds
-            float currentTime = (float)EditorApplication.timeSinceStartup;
-            if (currentTime - lastOllamaCheck < 5f) return;
-
-            lastOllamaCheck = currentTime;
-
-            // Check if Ollama is running
-            StartCoroutine(CheckOllamaRunning());
-        }
-
-        private IEnumerator CheckOllamaRunning()
-        {
-            using (var request = UnityWebRequest.Get("http://localhost:11434/api/tags"))
-            {
-                request.timeout = 2;
-                yield return request.SendWebRequest();
-
-                bool wasRunning = isOllamaRunning;
-                isOllamaRunning = request.result == UnityWebRequest.Result.Success;
-
-                if (wasRunning != isOllamaRunning)
-                {
-                    UpdateProviderStatus();
-                }
-            }
-        }
-
-        private void StartOllama()
-        {
-            try
-            {
-                // Try to start Ollama
-                var startInfo = new ProcessStartInfo();
-
-                #if UNITY_EDITOR_WIN
-                startInfo.FileName = "cmd.exe";
-                startInfo.Arguments = "/c start ollama serve";
-                startInfo.UseShellExecute = true;
-                startInfo.CreateNoWindow = true;
-                #elif UNITY_EDITOR_OSX
-                startInfo.FileName = "open";
-                startInfo.Arguments = "-a Ollama";
-                #else
-                startInfo.FileName = "ollama";
-                startInfo.Arguments = "serve";
-                startInfo.UseShellExecute = false;
-                startInfo.CreateNoWindow = true;
-                #endif
-
-                Process.Start(startInfo);
-
-                UnityEngine.Debug.Log("Starting Ollama...");
-
-                // Recheck status after a delay
-                EditorApplication.delayCall += () =>
-                {
-                    System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ =>
-                    {
-                        EditorApplication.delayCall += () => StartCoroutine(CheckOllamaRunning());
-                    });
-                };
-            }
-            catch (System.Exception e)
-            {
-                EditorUtility.DisplayDialog("Error",
-                    $"Could not start Ollama.\n\nPlease start it manually or install from: https://ollama.ai\n\nError: {e.Message}",
-                    "OK");
-            }
+            // Always open settings window on click
+            GameSmithSettingsWindow.ShowWindow();
         }
 
         private void LoadChatHistory()
@@ -359,9 +300,13 @@ namespace SparkGames.UnityGameSmith.Editor
             AddMessageBubble(message, true);
             history.AddMessage(ChatMessage.Role.User, message);
 
-            // Clear input
+            // Clear input and disable during processing
             messageInput.value = "";
-            sendButton.SetEnabled(false);
+            messageInput.SetEnabled(false);
+            if (sendButton != null)
+            {
+                sendButton.SetEnabled(false);
+            }
 
             // Get Unity project context
             var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context.
@@ -383,13 +328,23 @@ Help with:
         {
             AddMessageBubble(response, false);
             history.AddMessage(ChatMessage.Role.Assistant, response);
-            sendButton.SetEnabled(true);
+            messageInput.SetEnabled(true);
+            if (sendButton != null)
+            {
+                sendButton.SetEnabled(true);
+            }
+            messageInput.Focus();
         }
 
         private void OnAIError(string error)
         {
             AddErrorBubble($"Error: {error}");
-            sendButton.SetEnabled(true);
+            messageInput.SetEnabled(true);
+            if (sendButton != null)
+            {
+                sendButton.SetEnabled(true);
+            }
+            messageInput.Focus();
         }
 
         private void AddMessageBubble(string text, bool isUser)
@@ -415,7 +370,14 @@ Help with:
             var bubble = new VisualElement();
             bubble.AddToClassList("message-error");
 
-            var label = new Label(text);
+            // Make clickable with pointer cursor
+            bubble.style.cursor = new StyleCursor(StyleKeyword.Auto);
+            bubble.RegisterCallback<ClickEvent>(evt =>
+            {
+                OpenConfigInInspector();
+            });
+
+            var label = new Label(text + "\n\n💡 Click here to configure API settings");
             label.AddToClassList("message-error-text");
 
             bubble.Add(label);

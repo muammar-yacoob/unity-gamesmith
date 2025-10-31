@@ -2,10 +2,12 @@
 
 .chat-window {
     flex-grow: 1;
+    flex-direction: column;
     background-color: rgb(32, 32, 32);
+    height: 100%;
 }
 
-/* Header */
+/* Header - Fixed height */
 .header {
     flex-direction: row;
     justify-content: space-between;
@@ -14,6 +16,9 @@
     background-color: rgb(45, 45, 45);
     border-bottom-width: 2px;
     border-bottom-color: rgb(102, 178, 255);
+    flex-shrink: 0;
+    min-height: 50px;
+    max-height: 50px;
 }
 
 .header-title {
@@ -37,10 +42,13 @@
     background-color: rgb(75, 75, 75);
 }
 
-/* Chat Messages */
+/* Chat Messages - Takes remaining space (flexible, ~50%) */
 .chat-messages {
     flex-grow: 1;
+    flex-shrink: 1;
     background-color: rgb(38, 38, 38);
+    min-height: 150px;
+    overflow: hidden;
 }
 
 .messages-container {
@@ -103,6 +111,13 @@
     margin: 8px 80px 8px 15px;
     border-width: 1px;
     border-color: rgb(180, 60, 60);
+    cursor: link;
+    transition: background-color 0.2s;
+}
+
+.message-error:hover {
+    background-color: rgb(140, 50, 50);
+    border-color: rgb(200, 80, 80);
 }
 
 .message-error-text {
@@ -111,86 +126,208 @@
     font-size: 13px;
 }
 
-/* Input Area */
+/* Input Area - Sized for 10 lines + dropdown footer */
 .input-area {
     flex-direction: column;
-    padding: 12px 15px;
-    background-color: rgb(45, 45, 45);
+    padding: 0;
+    background-color: rgb(38, 38, 38);
     border-top-width: 1px;
-    border-top-color: rgb(60, 60, 60);
+    border-top-color: rgb(55, 55, 55);
+    flex-shrink: 0;
+    min-height: 240px;
+    max-height: 240px;
 }
 
-/* Model Selector Row (Cursor-style) */
-.model-selector-row {
-    flex-direction: row;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 6px 0;
-}
-
-.model-label {
-    font-size: 11px;
-    color: rgb(180, 180, 180);
-    margin-right: 8px;
-    min-width: 45px;
-}
-
-.model-dropdown-container {
+.input-container {
+    flex-direction: column;
     flex-grow: 1;
-    max-width: 300px;
+    flex-shrink: 1;
+    padding: 0;
+    margin: 0;
 }
 
-.provider-status {
-    font-size: 10px;
-    color: rgb(150, 150, 150);
-    margin-left: 10px;
-    cursor: link;
-}
-
-.provider-status:hover {
-    text-decoration: underline;
-}
-
-/* Message Input Row */
-.message-row {
+/* Input Field Container - 10 lines tall (18px * 10 = 180px + padding) */
+.input-field-container {
     flex-direction: row;
-    align-items: flex-end;
+    align-items: stretch;
+    background-color: transparent;
+    border-radius: 0;
+    border-width: 0;
+    padding: 8px;
+    margin: 0;
+    flex-shrink: 0;
+    min-height: 196px;
+    max-height: 196px;
 }
 
 .message-input {
     flex-grow: 1;
-    min-height: 40px;
-    max-height: 120px;
-    background-color: rgb(55, 55, 55);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: rgb(255, 255, 255);
+    flex-shrink: 1;
+    background-color: rgb(45, 45, 45);
+    border-radius: 4px;
+    padding: 8px;
+    color: rgb(220, 220, 220);
     border-width: 1px;
-    border-color: rgb(75, 75, 75);
-    margin-right: 10px;
+    border-color: rgb(60, 60, 60);
+    font-size: 14px;
 }
 
-.message-input:focus {
-    border-color: rgb(102, 178, 255);
+.message-input > TextElement {
+    white-space: normal;
 }
 
+.message-input:focus { background-color: transparent; border-width: 0; }
+
+/* Send Button - Ultra Minimal */
 .send-button {
-    width: 44px;
-    height: 44px;
-    background-color: rgb(102, 178, 255);
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    margin: 4px 6px 4px 0;
+    background-color: transparent;
+    border-radius: 4px;
     border-width: 0;
-    color: rgb(255, 255, 255);
-    font-size: 18px;
-    -unity-font-style: bold;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
 .send-button:hover {
-    background-color: rgb(120, 190, 255);
+    background-color: rgb(60, 60, 60);
+}
+
+.send-button:active {
+    background-color: rgb(70, 70, 70);
 }
 
 .send-button:disabled {
-    background-color: rgb(70, 70, 70);
-    color: rgb(140, 140, 140);
+    opacity: 0.3;
+}
+
+.send-icon {
+    font-size: 14px;
+    color: rgb(160, 160, 160);
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+}
+
+.send-button:hover .send-icon {
+    color: rgb(220, 220, 220);
+}
+
+/* Input Footer - Model & Status (fixed at bottom) */
+.input-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: 44px;
+    max-height: 44px;
+    flex-shrink: 0;
+    background-color: rgb(32, 32, 32);
+    border-top-width: 1px;
+    border-top-color: rgb(55, 55, 55);
+}
+
+/* Borderless scroll-view hosting the textarea */
+.input-editor-scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+}
+
+.input-editor-scroll > .unity-scroll-view__content-and-vertical-scroll-container,
+.input-editor-scroll > .unity-scroll-view__content-container,
+.input-editor-scroll > .unity-scroll-view__viewport {
+    background-color: transparent;
+}
+
+.input-editor-scroll .unity-vertical-scroller,
+.input-editor-scroll .unity-horizontal-scroller {
+    opacity: 0.6;
+}
+
+.input-footer-right {
+    flex-direction: row;
+    align-items: center;
+}
+
+.model-selector-compact {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    flex-grow: 1;
+    min-height: 30px;
+}
+
+.model-dropdown-container {
+    flex-shrink: 0;
+    flex-grow: 1;
+    min-width: 180px;
+    max-width: 350px;
+}
+
+.model-dropdown-container > .unity-base-popup-field {
+    font-size: 12px;
+    min-height: 30px;
+    height: 30px;
+    background-color: rgb(50, 50, 50);
+    border-width: 1px;
+    border-color: rgb(70, 70, 70);
+    border-radius: 4px;
+    padding: 0 8px;
+    margin: 0;
+}
+
+.model-dropdown-container > .unity-base-popup-field:hover {
+    background-color: rgb(55, 55, 55);
+    border-color: rgb(102, 178, 255);
+}
+
+/* Ensure inner input matches background */
+.model-dropdown-container .unity-base-popup-field__input {
+    background-color: transparent;
+    border-width: 0;
+    padding: 0;
+}
+
+.model-dropdown-container .unity-base-popup-field__label {
+    background-color: transparent;
+    color: rgb(220, 220, 220);
+    padding: 4px 6px;
+    font-size: 12px;
+    -unity-text-align: middle-left;
+    -unity-font-style: normal;
+}
+
+.model-dropdown-container > .unity-base-popup-field > .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(150, 150, 150);
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
+}
+
+.model-dropdown-container > .unity-base-popup-field:hover > .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(200, 200, 200);
+}
+
+.provider-status-compact {
+    font-size: 11px;
+    color: rgb(130, 130, 130);
+    margin-left: auto;
+    cursor: link;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding-left: 12px;
+}
+
+.provider-status-compact:hover {
+    color: rgb(170, 170, 170);
 }
 

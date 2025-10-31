@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -5,85 +6,202 @@ using UnityEngine;
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
-    /// ScriptableObject to store AI API configuration
+    /// Simple helper class that loads provider configurations from AIModels.json
+    /// and provides convenient access to settings stored in GameSmithSettings
     /// </summary>
-    [CreateAssetMenu(fileName = "GameSmithConfig", menuName = "Game Smith/Config")]
-    public class GameSmithConfig : ScriptableObject
+    public class GameSmithConfig
     {
-        [Header("AI Provider Settings")]
-        [Tooltip("AI provider name (e.g., Ollama, OpenAI, Anthropic)")]
-        public string providerName = "Ollama";
+        [Serializable]
+        public class ModelJson
+        {
+            public string id;
+            public string displayName;
+            public bool isEnabled = true;
+        }
 
-        [Tooltip("API endpoint URL")]
-        public string apiUrl = "http://localhost:11434/v1/chat/completions";
+        [Serializable]
+        public class ProviderJson
+        {
+            public string name;
+            public string apiUrl;
+            public string apiKeyUrl;
+            public List<ModelJson> models;
+        }
 
-        [Tooltip("Your API key (not required for Ollama)")]
-        public string apiKey = "";
+        [Serializable]
+        public class ProvidersJson
+        {
+            public List<ProviderJson> providers;
+        }
 
-        [Tooltip("Available models (comma-separated, e.g., llama2,codellama,mistral)")]
-        public string availableModels = "llama2";
+        // Singleton instance
+        private static GameSmithConfig instance;
+        public static GameSmithConfig GetOrCreate()
+        {
+            if (instance == null)
+            {
+                instance = new GameSmithConfig();
+                instance.LoadProviders();
+            }
+            return instance;
+        }
 
-        [Tooltip("Currently selected model")]
-        public string selectedModel = "llama2";
+        // Provider data loaded from JSON
+        private List<ProviderJson> providers = new List<ProviderJson>();
 
-        [Header("Generation Settings")]
-        [Range(0f, 2f)]
-        [Tooltip("Higher values make output more random")]
-        public float temperature = 0.7f;
+        // Properties that delegate to GameSmithSettings
+        public string activeProvider
+        {
+            get => GameSmithSettings.Instance.activeProvider;
+            set
+            {
+                GameSmithSettings.Instance.activeProvider = value;
+                GameSmithSettings.Instance.Save();
+            }
+        }
 
-        [Range(1, 4096)]
-        [Tooltip("Maximum tokens in response")]
-        public int maxTokens = 2000;
+        public string selectedModel
+        {
+            get => GameSmithSettings.Instance.selectedModel;
+            set
+            {
+                GameSmithSettings.Instance.selectedModel = value;
+                GameSmithSettings.Instance.Save();
+            }
+        }
 
+        public float temperature
+        {
+            get => GameSmithSettings.Instance.temperature;
+            set
+            {
+                GameSmithSettings.Instance.temperature = value;
+                GameSmithSettings.Instance.Save();
+            }
+        }
+
+        public int maxTokens
+        {
+            get => GameSmithSettings.Instance.maxTokens;
+            set
+            {
+                GameSmithSettings.Instance.maxTokens = value;
+                GameSmithSettings.Instance.Save();
+            }
+        }
+
+        // Convenience properties
+        public string apiUrl => GetActiveProviderData()?.apiUrl ?? "";
+        public string apiKey => GameSmithSettings.Instance.GetApiKey(activeProvider);
+        
+        public void SetApiKey(string provider, string key)
+        {
+            GameSmithSettings.Instance.SetApiKey(provider, key);
+        }
+
+        // Load providers from AIModels.json
+        public void LoadProviders()
+        {
+            var jsonAsset = Resources.Load<TextAsset>("GameSmith/AIModels");
+            if (jsonAsset == null)
+            {
+                Debug.LogError("[GameSmith] AIModels.json not found in Resources/GameSmith/");
+                return;
+            }
+
+            try
+            {
+                var data = JsonUtility.FromJson<ProvidersJson>(jsonAsset.text);
+                if (data != null && data.providers != null)
+                {
+                    providers = data.providers;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[GameSmith] Failed to parse AIModels.json: {e.Message}");
+            }
+        }
+
+        // Get list of provider names
+        public List<string> GetProviderNames()
+        {
+            return providers.Select(p => p.name).ToList();
+        }
+
+        // Get active provider data
+        public ProviderJson GetActiveProviderData()
+        {
+            return providers.FirstOrDefault(p => p.name == activeProvider);
+        }
+
+        // Get models for active provider
+        public List<string> GetModelsList()
+        {
+            var provider = GetActiveProviderData();
+            if (provider == null || provider.models == null) return new List<string>();
+            
+            return provider.models
+                .Where(m => m.isEnabled)
+                .Select(m => m.id)
+                .ToList();
+        }
+
+        // Get display name for a model
+        public string GetModelDisplayName(string modelId)
+        {
+            var provider = GetActiveProviderData();
+            if (provider == null) return modelId;
+            
+            var model = provider.models?.FirstOrDefault(m => m.id == modelId);
+            return model?.displayName ?? modelId;
+        }
+
+        // Get current model or first available
+        public string GetCurrentModel()
+        {
+            var models = GetModelsList();
+            if (models.Count == 0) return "default";
+            
+            if (!string.IsNullOrEmpty(selectedModel) && models.Contains(selectedModel))
+                return selectedModel;
+            
+            return models[0];
+        }
+
+        // Get API key URL for active provider
+        public string GetApiKeyUrl()
+        {
+            return GetActiveProviderData()?.apiKeyUrl ?? "";
+        }
+
+        // Simple validation
         public bool IsValid()
         {
-            return !string.IsNullOrEmpty(apiUrl) && !string.IsNullOrEmpty(apiKey);
+            if (string.IsNullOrEmpty(apiUrl)) return false;
+            
+            // Ollama doesn't need API key
+            if (activeProvider.ToLower().Contains("ollama")) return true;
+            
+            return !string.IsNullOrEmpty(apiKey);
         }
 
         public string GetValidationMessage()
         {
-            if (string.IsNullOrEmpty(apiUrl)) return "API URL is required";
-            if (string.IsNullOrEmpty(apiKey)) return "API Key is required";
-            return "Configuration is valid";
+            if (string.IsNullOrEmpty(apiUrl))
+                return "API URL not configured";
+            
+            if (string.IsNullOrEmpty(apiKey) && !activeProvider.ToLower().Contains("ollama"))
+                return $"{activeProvider} API key not configured";
+            
+            return "Configuration valid";
         }
 
-        public List<string> GetModelsList()
+        // Get system prompt (simple Unity context)
+        public string GetSystemPrompt()
         {
-            if (string.IsNullOrEmpty(availableModels))
-                return new List<string> { "llama2" };
-
-            return availableModels
-                .Split(',')
-                .Select(m => m.Trim())
-                .Where(m => !string.IsNullOrEmpty(m))
-                .ToList();
-        }
-
-        public string GetCurrentModel()
-        {
-            return string.IsNullOrEmpty(selectedModel) ? "llama2" : selectedModel;
-        }
-
-        /// <summary>
-        /// Get or create the default config instance
-        /// </summary>
-        public static GameSmithConfig GetOrCreate()
-        {
-            var config = Resources.Load<GameSmithConfig>("GameSmithConfig");
-            if (config == null)
-            {
-                config = CreateInstance<GameSmithConfig>();
-#if UNITY_EDITOR
-                var resourcesPath = "Assets/Resources";
-                if (!UnityEditor.AssetDatabase.IsValidFolder(resourcesPath))
-                {
-                    UnityEditor.AssetDatabase.CreateFolder("Assets", "Resources");
-                }
-                UnityEditor.AssetDatabase.CreateAsset(config, $"{resourcesPath}/GameSmithConfig.asset");
-                UnityEditor.AssetDatabase.SaveAssets();
-#endif
-            }
-            return config;
+            return "You are a helpful AI assistant for Unity game development. " +
+                   "Provide clear, concise answers about Unity, C#, and game development.";
         }
     }
 }

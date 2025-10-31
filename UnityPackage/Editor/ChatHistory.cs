@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -30,11 +31,14 @@ namespace SparkGames.UnityGameSmith.Editor
     }
 
     /// <summary>
-    /// ScriptableObject to store chat history
+    /// Lightweight JSON-backed chat history stored as a TextAsset
     /// </summary>
-    [CreateAssetMenu(fileName = "ChatHistory", menuName = "Game Smith/Chat History")]
-    public class ChatHistory : ScriptableObject
+    public class ChatHistory
     {
+        private const int MaxMessages = 200; // cap to prevent bloat
+        private const string ResourcesRelativePath = "Assets/Resources/GameSmith";
+        private const string JsonAssetPath = ResourcesRelativePath + "/ChatHistory.json";
+
         [SerializeField]
         private List<ChatMessage> messages = new List<ChatMessage>();
 
@@ -43,6 +47,7 @@ namespace SparkGames.UnityGameSmith.Editor
         public void AddMessage(ChatMessage.Role role, string content)
         {
             messages.Add(new ChatMessage(role, content));
+            TrimToLimit();
             SaveHistory();
         }
 
@@ -54,10 +59,21 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private void SaveHistory()
         {
+            var wrapper = new ChatHistoryWrapper { messages = messages };
+            var json = JsonUtility.ToJson(wrapper, prettyPrint: true);
 #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
+            EnsureFolders();
+            File.WriteAllText(JsonAssetPath, json);
+            UnityEditor.AssetDatabase.ImportAsset(JsonAssetPath);
             UnityEditor.AssetDatabase.SaveAssets();
 #endif
+        }
+
+        private void TrimToLimit()
+        {
+            if (messages.Count <= MaxMessages) return;
+            int removeCount = messages.Count - MaxMessages;
+            messages.RemoveRange(0, removeCount);
         }
 
         /// <summary>
@@ -65,21 +81,57 @@ namespace SparkGames.UnityGameSmith.Editor
         /// </summary>
         public static ChatHistory GetOrCreate()
         {
-            var history = Resources.Load<ChatHistory>("ChatHistory");
-            if (history == null)
+            var history = new ChatHistory();
+
+            // Try load TextAsset from Resources
+            TextAsset ta = Resources.Load<TextAsset>("GameSmith/ChatHistory");
+            if (ta != null && !string.IsNullOrEmpty(ta.text))
             {
-                history = CreateInstance<ChatHistory>();
-#if UNITY_EDITOR
-                var resourcesPath = "Assets/Resources";
-                if (!UnityEditor.AssetDatabase.IsValidFolder(resourcesPath))
+                try
                 {
-                    UnityEditor.AssetDatabase.CreateFolder("Assets", "Resources");
+                    var loaded = JsonUtility.FromJson<ChatHistoryWrapper>(ta.text);
+                    if (loaded != null && loaded.messages != null)
+                    {
+                        history.messages = loaded.messages;
+                        history.TrimToLimit();
+                    }
                 }
-                UnityEditor.AssetDatabase.CreateAsset(history, $"{resourcesPath}/ChatHistory.asset");
-                UnityEditor.AssetDatabase.SaveAssets();
+                catch { }
+            }
+            else
+            {
+#if UNITY_EDITOR
+                EnsureFolders();
+                if (!File.Exists(JsonAssetPath))
+                {
+                    File.WriteAllText(JsonAssetPath, JsonUtility.ToJson(new ChatHistoryWrapper { messages = new List<ChatMessage>() }, true));
+                    UnityEditor.AssetDatabase.ImportAsset(JsonAssetPath);
+                    UnityEditor.AssetDatabase.SaveAssets();
+                }
 #endif
             }
+
             return history;
         }
+
+        [Serializable]
+        private class ChatHistoryWrapper
+        {
+            public List<ChatMessage> messages;
+        }
+
+#if UNITY_EDITOR
+        private static void EnsureFolders()
+        {
+            if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources"))
+            {
+                UnityEditor.AssetDatabase.CreateFolder("Assets", "Resources");
+            }
+            if (!UnityEditor.AssetDatabase.IsValidFolder(ResourcesRelativePath))
+            {
+                UnityEditor.AssetDatabase.CreateFolder("Assets/Resources", "GameSmith");
+            }
+        }
+#endif
     }
 }

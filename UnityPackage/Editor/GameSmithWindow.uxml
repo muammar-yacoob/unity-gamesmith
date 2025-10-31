@@ -1,14 +1,14 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <ui:VisualElement class="chat-window">
 
-        <!-- Header -->
+        <!-- Header (fixed ~50px) -->
         <ui:VisualElement class="header">
             <ui:Label text="⚒️ Game Smith AI" class="header-title" />
             <ui:Button name="settings-button" text="⚙️" class="icon-button" tooltip="Settings" />
             <ui:Button name="clear-button" text="🗑️" class="icon-button" tooltip="Clear Chat" />
         </ui:VisualElement>
 
-        <!-- Chat Messages Area -->
+        <!-- Chat Messages Area (flexible, takes ~75% of remaining space) -->
         <ui:ScrollView name="chat-scroll" class="chat-messages">
             <ui:VisualElement name="messages-container" class="messages-container">
                 <!-- Messages will be added here dynamically -->
@@ -19,20 +19,29 @@
             </ui:VisualElement>
         </ui:ScrollView>
 
-        <!-- Input Area -->
+        <!-- Input Area (fixed ~150px) -->
         <ui:VisualElement class="input-area">
-            <!-- Model Selector Row (like Cursor) -->
-            <ui:VisualElement class="model-selector-row">
-                <ui:Label text="Model:" class="model-label" />
-                <ui:VisualElement name="model-dropdown-container" class="model-dropdown-container" />
-                <ui:Label name="provider-status" text="" class="provider-status" />
-            </ui:VisualElement>
+            <ui:VisualElement class="input-container">
+                <!-- Scrollable text input area filling ~90% of bottom section -->
+                <ui:VisualElement class="input-field-container">
+                    <ui:ScrollView name="input-scroll" class="input-editor-scroll">
+                        <ui:TextField name="message-input" multiline="true" class="message-input"
+                                     placeholder-text="Ask about your Unity project..." />
+                    </ui:ScrollView>
+                </ui:VisualElement>
 
-            <!-- Message Input Row -->
-            <ui:VisualElement class="message-row">
-                <ui:TextField name="message-input" multiline="true" class="message-input"
-                             placeholder-text="Ask about your Unity project..." />
-                <ui:Button name="send-button" text="▶" class="send-button" tooltip="Send (Enter)" />
+                <!-- Bottom Row: Model (left) + Send (right) -->
+                <ui:VisualElement class="input-footer">
+                    <ui:VisualElement class="model-selector-compact">
+                        <ui:VisualElement name="model-dropdown-container" class="model-dropdown-container" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="input-footer-right">
+                        <ui:Label name="provider-status" text="" class="provider-status-compact" />
+                        <ui:Button name="send-button" class="send-button" tooltip="Send message">
+                            <ui:Label text="➤" class="send-icon" />
+                        </ui:Button>
+                    </ui:VisualElement>
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
 
