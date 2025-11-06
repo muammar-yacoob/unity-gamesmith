@@ -29,7 +29,8 @@
       "apiUrl": "http://localhost:11434/v1/chat/completions",
       "apiKeyUrl": "",
       "models": [
-        { "id": "llama3.2:latest", "displayName": "Llama 3.2", "isEnabled": true }
+        { "id": "qwen3:8b", "displayName": "Qwen3 8B", "isEnabled": true },
+        { "id": "deepseek-coder-v2:16b", "displayName": "DeepSeek Coder V2 16B", "isEnabled": true }
       ]
     }
   ]

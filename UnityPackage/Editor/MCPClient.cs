@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -44,23 +45,56 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                // Use the command directly (npx.cmd on Windows)
+                // Use the command directly
                 var fileName = command;
-                var arguments = string.Join(" ", args);
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Directory.GetCurrentDirectory() // Explicitly set working directory
+                };
+
+                // Use ArgumentList if available (proper way to handle arguments with spaces)
+                // This is supported in .NET Core and .NET Standard 2.1+
+                var argumentListProperty = startInfo.GetType().GetProperty("ArgumentList");
+                if (argumentListProperty != null)
+                {
+                    // Use ArgumentList - no manual quoting needed
+                    var argumentList = argumentListProperty.GetValue(startInfo);
+                    var addMethod = argumentList.GetType().GetMethod("Add");
+                    foreach (var arg in args)
+                    {
+                        addMethod.Invoke(argumentList, new object[] { arg });
+                    }
+                    UnityEngine.Debug.Log("[GameSmith MCP] Using ArgumentList for proper argument handling");
+                }
+                else
+                {
+                    // Fallback to Arguments string with manual quoting
+                    var quotedArgs = new List<string>();
+                    foreach (var arg in args)
+                    {
+                        if (arg.Contains(" ") && !arg.StartsWith("\""))
+                        {
+                            quotedArgs.Add($"\"{arg}\"");
+                        }
+                        else
+                        {
+                            quotedArgs.Add(arg);
+                        }
+                    }
+                    startInfo.Arguments = string.Join(" ", quotedArgs);
+                    UnityEngine.Debug.Log($"[GameSmith MCP] Using Arguments string: {startInfo.Arguments}");
+                }
 
                 serverProcess = new Process
                 {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = fileName,
-                        Arguments = arguments,
-                        UseShellExecute = false,
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true,
-                        WorkingDirectory = Directory.GetCurrentDirectory() // Explicitly set working directory
-                    }
+                    StartInfo = startInfo
                 };
 
                 bool started = serverProcess.Start();

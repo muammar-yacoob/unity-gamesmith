@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,7 +18,7 @@ namespace SparkGames.UnityGameSmith.Editor
         private GameSmithConfig config;
         private ChatHistory history;
         private AIAgentClient client;
-        private MCPClient mcpClient;
+        private MCPClientAsync mcpClient;
 
         // UI Elements
         private TextField messageInput;
@@ -51,13 +53,24 @@ namespace SparkGames.UnityGameSmith.Editor
             history = ChatHistory.GetOrCreate();
             client = new AIAgentClient(config);
 
-            // Load UXML
-            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
-                "Packages/com.spark-games.unity-gamesmith/Editor/GameSmithWindow.uxml");
+            // Load UXML - try multiple possible paths
+            string[] uiPaths = new string[]
+            {
+                "Assets/GameSmith/UnityPackage/Editor/GameSmithWindow.uxml",
+                "Assets/UnityPackage/Editor/GameSmithWindow.uxml",
+                "Packages/com.spark-games.unity-gamesmith/Editor/GameSmithWindow.uxml"
+            };
+
+            VisualTreeAsset visualTree = null;
+            foreach (var path in uiPaths)
+            {
+                visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
+                if (visualTree != null) break;
+            }
 
             if (visualTree == null)
             {
-                var label = new Label("GameSmithWindow.uxml not found!");
+                var label = new Label("GameSmithWindow.uxml not found! Checked paths:\n" + string.Join("\n", uiPaths));
                 label.style.paddingTop = 20;
                 label.style.paddingLeft = 20;
                 rootVisualElement.Add(label);
@@ -67,9 +80,20 @@ namespace SparkGames.UnityGameSmith.Editor
             var root = visualTree.CloneTree();
             rootVisualElement.Add(root);
 
-            // Load USS
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
-                "Packages/com.spark-games.unity-gamesmith/Editor/GameSmithWindow.uss");
+            // Load USS - try multiple possible paths
+            string[] stylePaths = new string[]
+            {
+                "Assets/GameSmith/UnityPackage/Editor/GameSmithWindow.uss",
+                "Assets/UnityPackage/Editor/GameSmithWindow.uss",
+                "Packages/com.spark-games.unity-gamesmith/Editor/GameSmithWindow.uss"
+            };
+
+            StyleSheet styleSheet = null;
+            foreach (var path in stylePaths)
+            {
+                styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
+                if (styleSheet != null) break;
+            }
 
             if (styleSheet != null)
             {
@@ -79,108 +103,137 @@ namespace SparkGames.UnityGameSmith.Editor
             InitializeUI(root);
             LoadChatHistory();
 
-            // Start MCP server after UI is ready
-            EditorApplication.delayCall += () => StartMCPServer();
+            // Add MCP status message
+            AddMessageBubble("💬 Chat ready. Click 'Start MCP' button below to enable Unity scene manipulation features.", false);
 
             // Enable config updates
             EditorApplication.update += CheckConfigChanges;
         }
 
-        private void StartMCPServer()
+        private void StartMCPServerAsync()
         {
             // Check if MCP server is already running
             if (mcpClient != null && mcpClient.IsConnected)
             {
                 UnityEngine.Debug.Log("[GameSmith] MCP server is already running.");
+                AddMessageBubble("✓ MCP server is already running", false);
                 return;
             }
 
-            try
+            AddMessageBubble("🔄 Starting MCP server...", false);
+
+            // Find node path asynchronously
+            EditorCoroutineRunner.StartCoroutine(FindNodeAndStartMCP());
+        }
+
+        private IEnumerator FindNodeAndStartMCP()
+        {
+            string nodePath = null;
+
+            // On Windows, try to find node.exe
+            if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                string executablePath = "";
-                string[] argsArray;
-
-                if (Application.platform == RuntimePlatform.WindowsEditor)
+                // Try common locations first
+                string[] commonPaths = new string[]
                 {
-                    // On Windows, find node.exe
-                    var whereNode = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = "cmd.exe",
-                            Arguments = "/c where node",
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            CreateNoWindow = true
-                        }
-                    };
+                    @"C:\Program Files\nodejs\node.exe",
+                    @"C:\Program Files (x86)\nodejs\node.exe",
+                    System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("ProgramFiles"), "nodejs", "node.exe"),
+                    System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("LOCALAPPDATA"), "Programs", "nodejs", "node.exe")
+                };
 
-                    whereNode.Start();
-                    string nodePath = whereNode.StandardOutput.ReadLine()?.Trim();
-                    whereNode.WaitForExit();
-
-                    if (string.IsNullOrEmpty(nodePath))
-                    {
-                        throw new Exception("node.exe not found. Please ensure Node.js is installed and in PATH.");
-                    }
-
-                    // Find the npm prefix directory
-                    var nodeDir = System.IO.Path.GetDirectoryName(nodePath);
-
-                    // npx-cli.js is typically at: <node_dir>/node_modules/npm/bin/npx-cli.js
-                    string npxCliPath = System.IO.Path.Combine(nodeDir, "node_modules", "npm", "bin", "npx-cli.js");
-
-                    if (!System.IO.File.Exists(npxCliPath))
-                    {
-                        // Try alternate location: node_modules/npm/bin/npx-cli.js relative to node.exe
-                        npxCliPath = System.IO.Path.Combine(nodeDir, "..", "node_modules", "npm", "bin", "npx-cli.js");
-                        npxCliPath = System.IO.Path.GetFullPath(npxCliPath);
-                    }
-
-                    if (!System.IO.File.Exists(npxCliPath))
-                    {
-                        throw new Exception($"npx-cli.js not found. Searched at: {npxCliPath}");
-                    }
-
-                    UnityEngine.Debug.Log($"[GameSmith] Using node.exe at: {nodePath}");
-                    UnityEngine.Debug.Log($"[GameSmith] Using npx-cli.js at: {npxCliPath}");
-
-                    // Run: node.exe <npx-cli.js> -y @spark-apps/unity-mcp
-                    executablePath = nodePath;
-                    argsArray = new string[] { npxCliPath, "-y", "@spark-apps/unity-mcp" };
-                }
-                else // macOS or Linux
+                foreach (var path in commonPaths)
                 {
-                    executablePath = "npx";
-                    argsArray = new string[] { "-y", "@spark-apps/unity-mcp" };
+                    if (System.IO.File.Exists(path))
+                    {
+                        nodePath = path;
+                        break;
+                    }
                 }
 
-                // Create and start MCP client
-                if (mcpClient == null)
+                // If not found, try using 'where' command (but non-blocking)
+                if (string.IsNullOrEmpty(nodePath))
                 {
-                    mcpClient = new MCPClient();
+                    UnityEngine.Debug.LogWarning("[GameSmith] Node.js not found in common locations. Please ensure Node.js is installed.");
+                    AddMessageBubble("❌ Node.js not found. Please install Node.js and try again.", false);
+                    yield break;
                 }
+            }
+            else
+            {
+                // On Mac/Linux, use npx directly
+                nodePath = "npx";
+            }
 
-                bool mcpStarted = mcpClient.StartServer(executablePath, argsArray);
+            // Try to find or use unity-mcp
+            if (mcpClient == null)
+            {
+                mcpClient = new MCPClientAsync();
+            }
 
-                if (mcpStarted && mcpClient.IsConnected)
+            string[] args;
+            if (Application.platform == RuntimePlatform.WindowsEditor && !string.IsNullOrEmpty(nodePath))
+            {
+                // Try to use globally installed package
+                string npmPrefix = System.Environment.GetEnvironmentVariable("APPDATA");
+                if (!string.IsNullOrEmpty(npmPrefix))
                 {
-                    UnityEngine.Debug.Log($"[GameSmith] MCP server connected with {mcpClient.AvailableTools.Count} tools available.");
-                    AddMessageBubble($"✓ Unity MCP server started ({mcpClient.AvailableTools.Count} tools available)", false);
+                    npmPrefix = System.IO.Path.GetDirectoryName(npmPrefix); // Get parent of AppData\Roaming
+                    string globalPath = System.IO.Path.Combine(npmPrefix, "AppData", "Roaming", "npm", "node_modules", "@spark-apps", "unity-mcp", "dist", "index.js");
+                    if (System.IO.File.Exists(globalPath))
+                    {
+                        args = new string[] { globalPath };
+                    }
+                    else
+                    {
+                        // Fallback to npx
+                        args = new string[] { "-c", "npx -y @spark-apps/unity-mcp" };
+                        nodePath = "cmd.exe";
+                    }
                 }
                 else
                 {
-                    UnityEngine.Debug.LogWarning("[GameSmith] MCP server failed to start or connect.");
-                    AddMessageBubble("⚠ Unity MCP failed to start. Chat works but Unity scene manipulation is disabled.", false);
+                    args = new string[] { "-c", "npx -y @spark-apps/unity-mcp" };
+                    nodePath = "cmd.exe";
                 }
             }
-            catch (System.Exception ex)
+            else
             {
-                UnityEngine.Debug.LogError($"[GameSmith] Exception while starting MCP server: {ex.Message}");
-                AddMessageBubble($"⚠ Unity MCP not available: {ex.Message}\nChat works but Unity scene manipulation is disabled.", false);
+                args = new string[] { "-y", "@spark-apps/unity-mcp" };
             }
+
+            // Start server asynchronously
+            mcpClient.StartServerAsync(nodePath, args, (success) =>
+            {
+                if (success)
+                {
+                    UnityEngine.Debug.Log($"[GameSmith] MCP server connected with {mcpClient.AvailableTools.Count} tools");
+                    AddMessageBubble($"✓ MCP server started ({mcpClient.AvailableTools.Count} tools available)", false);
+
+                    // Update button
+                    var mcpButton = rootVisualElement.Q<Button>("mcp-button");
+                    if (mcpButton != null)
+                    {
+                        mcpButton.text = "MCP Running";
+                        mcpButton.SetEnabled(false);
+                    }
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning("[GameSmith] Failed to start MCP server");
+                    AddMessageBubble("❌ Failed to start MCP server. Check console for details.", false);
+                }
+            });
+
+            yield return null;
         }
+
+        // OLD MCP server startup code - REMOVED
+        // This code was causing Unity to freeze due to blocking operations:
+        // - Process.WaitForExit() blocking calls
+        // - Synchronous npm install operations
+        // - MCPClient.StartServer() with Thread.Sleep
+        // Replaced with StartMCPServerAsync() using coroutines
 
         private void OnDestroy()
         {
@@ -240,6 +293,23 @@ namespace SparkGames.UnityGameSmith.Editor
             chatScroll = root.Q<ScrollView>("chat-scroll");
             providerStatus = root.Q<Label>("provider-status");
             sendButton = root.Q<Button>("send-button");
+
+            // Add MCP control button
+            var controlsContainer = root.Q<VisualElement>("controls-container");
+            if (controlsContainer == null)
+            {
+                // Create controls container if it doesn't exist
+                controlsContainer = new VisualElement();
+                controlsContainer.style.flexDirection = FlexDirection.Row;
+                controlsContainer.style.marginTop = 5;
+                controlsContainer.style.marginBottom = 5;
+                root.Insert(0, controlsContainer);
+            }
+
+            var mcpButton = new Button(() => StartMCPServerAsync());
+            mcpButton.text = "Start MCP Server";
+            mcpButton.name = "mcp-button";
+            controlsContainer.Add(mcpButton);
 
             // Create model dropdown programmatically
             var modelDropdownContainer = root.Q<VisualElement>("model-dropdown-container");
@@ -414,17 +484,17 @@ Help with:
             {
                 AddMessageBubble($"[Using tool: {response.ToolName}]", false);
 
-                // Execute tool
+                // Execute tool asynchronously
                 if (mcpClient != null && mcpClient.IsConnected)
                 {
-                    var toolResult = mcpClient.CallTool(response.ToolName, response.ToolInput);
+                    mcpClient.CallToolAsync(response.ToolName, response.ToolInput, (toolResult) =>
+                    {
+                        // Add tool result to chat
+                        AddMessageBubble($"[Tool result: {toolResult}]", false);
 
-                    // Add tool result to chat
-                    AddMessageBubble($"[Tool result: {toolResult}]", false);
-
-                    // Get tools and system context again
-                    var tools = mcpClient.AvailableTools;
-                    var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context and Unity MCP tools.
+                        // Get tools and system context again
+                        var tools = mcpClient.AvailableTools;
+                        var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context and Unity MCP tools.
 
 Help with:
 - Writing C# scripts
@@ -435,10 +505,11 @@ Help with:
 
 " + UnityProjectContext.GetProjectContext();
 
-                    // Send tool result back to AI to continue conversation
-                    client.SendToolResult(response.ToolUseId, toolResult, systemContext, tools,
-                        onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
-                        onError: (error) => HandleError(error));
+                        // Send tool result back to AI to continue conversation
+                        client.SendToolResult(response.ToolUseId, toolResult, systemContext, tools,
+                            onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
+                            onError: (error) => HandleError(error));
+                    });
                 }
                 else
                 {
