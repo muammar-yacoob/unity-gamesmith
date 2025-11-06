@@ -1,16 +1,14 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEditor;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
-    /// Non-blocking MCP client that won't freeze Unity
+    /// MCP (Model Context Protocol) client using UniTask for non-blocking async operations
     /// </summary>
     public class MCPClientAsync : IDisposable
     {
@@ -19,9 +17,7 @@ namespace SparkGames.UnityGameSmith.Editor
         private StreamReader stdoutReader;
         private StreamReader stderrReader;
         private int nextRequestId = 1;
-        private bool isInitializing = false;
         private bool isInitialized = false;
-        private Queue<Action<bool>> initCallbacks = new Queue<Action<bool>>();
 
         public List<MCPTool> AvailableTools { get; private set; } = new List<MCPTool>();
 
@@ -30,45 +26,30 @@ namespace SparkGames.UnityGameSmith.Editor
             get
             {
                 if (serverProcess == null) return false;
-                try
-                {
-                    return !serverProcess.HasExited && isInitialized;
-                }
-                catch
-                {
-                    return false;
-                }
+                try { return !serverProcess.HasExited; }
+                catch { return false; }
             }
         }
 
-        /// <summary>
-        /// Start MCP server process asynchronously
-        /// </summary>
-        public void StartServerAsync(string command, string[] args, Action<bool> onComplete = null)
+        public async void StartServerAsync(string command, string[] args, Action<bool> callback)
         {
-            if (onComplete != null)
-                initCallbacks.Enqueue(onComplete);
-
-            if (isInitializing)
+            try
             {
-                UnityEngine.Debug.Log("[GameSmith MCP] Server initialization already in progress");
-                return;
+                bool success = await StartServerInternalAsync(command, args);
+                callback?.Invoke(success);
             }
-
-            isInitializing = true;
-
-            // Start the initialization coroutine
-            EditorCoroutineRunner.StartCoroutine(StartServerCoroutine(command, args));
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith MCP] Error: {ex.Message}");
+                callback?.Invoke(false);
+            }
         }
 
-        private IEnumerator StartServerCoroutine(string command, string[] args)
+        private async UniTask<bool> StartServerInternalAsync(string command, string[] args)
         {
-            UnityEngine.Debug.Log("[GameSmith MCP] Starting server asynchronously...");
+            // Switch to thread pool for process startup
+            await UniTask.SwitchToThreadPool();
 
-            bool hasError = false;
-            string errorMessage = null;
-
-            // Try block without yield
             try
             {
                 var startInfo = new ProcessStartInfo
@@ -78,373 +59,263 @@ namespace SparkGames.UnityGameSmith.Editor
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    WorkingDirectory = Directory.GetCurrentDirectory()
+                    CreateNoWindow = true
                 };
 
                 // Add arguments
-                var argumentListProperty = startInfo.GetType().GetProperty("ArgumentList");
-                if (argumentListProperty != null)
+                foreach (var arg in args)
                 {
-                    var argumentList = argumentListProperty.GetValue(startInfo);
-                    var addMethod = argumentList.GetType().GetMethod("Add");
-                    foreach (var arg in args)
-                    {
-                        addMethod.Invoke(argumentList, new object[] { arg });
-                    }
-                }
-                else
-                {
-                    var quotedArgs = new List<string>();
-                    foreach (var arg in args)
-                    {
-                        if (arg.Contains(" ") && !arg.StartsWith("\""))
-                        {
-                            quotedArgs.Add($"\"{arg}\"");
-                        }
-                        else
-                        {
-                            quotedArgs.Add(arg);
-                        }
-                    }
-                    startInfo.Arguments = string.Join(" ", quotedArgs);
+                    startInfo.ArgumentList.Add(arg);
                 }
 
                 serverProcess = new Process { StartInfo = startInfo };
-
-                bool started = serverProcess.Start();
-                if (!started)
+                if (!serverProcess.Start())
                 {
-                    errorMessage = $"Failed to start process: {command}";
-                    hasError = true;
+                    await UniTask.SwitchToMainThread();
+                    UnityEngine.Debug.LogError("[GameSmith MCP] Failed to start process");
+                    return false;
                 }
-                else
-                {
-                    stdinWriter = serverProcess.StandardInput;
-                    stdoutReader = serverProcess.StandardOutput;
-                    stderrReader = serverProcess.StandardError;
-                }
-            }
-            catch (Exception ex)
-            {
-                errorMessage = $"Failed to start server: {ex.Message}";
-                hasError = true;
-            }
 
-            // Handle errors outside try block
-            if (hasError)
-            {
-                UnityEngine.Debug.LogError($"[GameSmith MCP] {errorMessage}");
-                NotifyInitCallbacks(false);
-                isInitializing = false;
-                yield break;
-            }
+                stdinWriter = serverProcess.StandardInput;
+                stdoutReader = serverProcess.StandardOutput;
+                stderrReader = serverProcess.StandardError;
 
-            // Wait a frame for process to start
-            yield return null;
-
-            // Check if process crashed immediately
-            if (serverProcess.HasExited)
-            {
-                UnityEngine.Debug.LogError("[GameSmith MCP] Process exited immediately");
-                NotifyInitCallbacks(false);
-                isInitializing = false;
-                yield break;
-            }
-
-            // Send initialize request asynchronously
-            var initRequest = new
-            {
-                jsonrpc = "2.0",
-                id = nextRequestId++,
-                method = "initialize",
-                @params = new
-                {
-                    protocolVersion = "2024-11-05",
-                    capabilities = new { tools = new { } },
-                    clientInfo = new
-                    {
-                        name = "unity-gamesmith",
-                        version = "1.4.1"
-                    }
-                }
-            };
-
-            try
-            {
-                var json = MiniJSON.Json.Serialize(initRequest);
-                stdinWriter.WriteLine(json);
-                stdinWriter.Flush();
-            }
-            catch (Exception ex)
-            {
-                UnityEngine.Debug.LogError($"[GameSmith MCP] Failed to send init request: {ex.Message}");
-                NotifyInitCallbacks(false);
-                isInitializing = false;
-                yield break;
-            }
-
-            // Wait for response asynchronously
-            float timeoutTime = Time.realtimeSinceStartup + 5f; // 5 second timeout
-            string response = null;
-
-            while (Time.realtimeSinceStartup < timeoutTime)
-            {
-                try
-                {
-                    if (stdoutReader.Peek() >= 0)
-                    {
-                        response = stdoutReader.ReadLine();
-                        if (!string.IsNullOrEmpty(response))
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith MCP] Error reading response: {ex.Message}");
-                    break;
-                }
+                // Wait a bit for process to initialize
+                await UniTask.Delay(500);
 
                 if (serverProcess.HasExited)
                 {
-                    UnityEngine.Debug.LogError("[GameSmith MCP] Server process exited during initialization");
-                    NotifyInitCallbacks(false);
-                    isInitializing = false;
-                    yield break;
+                    string stderr = await stderrReader.ReadToEndAsync();
+                    await UniTask.SwitchToMainThread();
+                    UnityEngine.Debug.LogError($"[GameSmith MCP] Process exited. Exit code: {serverProcess.ExitCode}. Stderr: {stderr}");
+                    return false;
                 }
 
-                yield return null; // Wait one frame
-            }
+                // Send initialize request
+                var initRequest = new
+                {
+                    jsonrpc = "2.0",
+                    id = nextRequestId++,
+                    method = "initialize",
+                    @params = new
+                    {
+                        protocolVersion = "2024-11-05",
+                        capabilities = new { tools = new { } },
+                        clientInfo = new
+                        {
+                            name = "unity-gamesmith",
+                            version = "1.4.1"
+                        }
+                    }
+                };
 
-            if (string.IsNullOrEmpty(response))
-            {
-                UnityEngine.Debug.LogError("[GameSmith MCP] Initialization timeout");
-                NotifyInitCallbacks(false);
-                isInitializing = false;
-                yield break;
-            }
+                var json = MiniJSON.Json.Serialize(initRequest);
+                await stdinWriter.WriteLineAsync(json);
+                await stdinWriter.FlushAsync();
 
-            try
-            {
+                // Read response with timeout
+                string response;
+                try
+                {
+                    response = await stdoutReader.ReadLineAsync()
+                        .AsUniTask()
+                        .Timeout(TimeSpan.FromSeconds(10));
+                }
+                catch (TimeoutException)
+                {
+                    await UniTask.SwitchToMainThread();
+                    UnityEngine.Debug.LogError("[GameSmith MCP] Initialization timeout");
+                    return false;
+                }
+
+                if (string.IsNullOrEmpty(response))
+                {
+                    await UniTask.SwitchToMainThread();
+                    UnityEngine.Debug.LogError("[GameSmith MCP] No response received");
+                    return false;
+                }
+
+                // Switch to main thread for JSON parsing (Unity's JsonUtility)
+                await UniTask.SwitchToMainThread();
+
                 var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
                 if (responseObj != null && responseObj.ContainsKey("result"))
                 {
                     isInitialized = true;
-                    UnityEngine.Debug.Log("[GameSmith MCP] Server initialized successfully");
-
-                    // List tools asynchronously
-                    EditorCoroutineRunner.StartCoroutine(ListToolsCoroutine());
-
-                    NotifyInitCallbacks(true);
+                    await ListToolsAsync();
+                    UnityEngine.Debug.Log($"[GameSmith MCP] Server initialized with {AvailableTools.Count} tools");
+                    return true;
                 }
                 else
                 {
-                    UnityEngine.Debug.LogError("[GameSmith MCP] Invalid initialization response");
-                    NotifyInitCallbacks(false);
+                    UnityEngine.Debug.LogError($"[GameSmith MCP] Invalid init response: {response}");
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogError($"[GameSmith MCP] Failed to parse response: {ex.Message}");
-                NotifyInitCallbacks(false);
+                await UniTask.SwitchToMainThread();
+                UnityEngine.Debug.LogError($"[GameSmith MCP] Exception: {ex.Message}");
+                return false;
             }
-
-            isInitializing = false;
         }
 
-        private IEnumerator ListToolsCoroutine()
+        private async UniTask ListToolsAsync()
         {
-            var request = new
-            {
-                jsonrpc = "2.0",
-                id = nextRequestId++,
-                method = "tools/list"
-            };
+            await UniTask.SwitchToThreadPool();
 
             try
             {
+                var request = new
+                {
+                    jsonrpc = "2.0",
+                    id = nextRequestId++,
+                    method = "tools/list"
+                };
+
                 var json = MiniJSON.Json.Serialize(request);
-                stdinWriter.WriteLine(json);
-                stdinWriter.Flush();
+                await stdinWriter.WriteLineAsync(json);
+                await stdinWriter.FlushAsync();
+
+                // Read response with timeout
+                string response;
+                try
+                {
+                    response = await stdoutReader.ReadLineAsync()
+                        .AsUniTask()
+                        .Timeout(TimeSpan.FromSeconds(10));
+                }
+                catch (TimeoutException)
+                {
+                    await UniTask.SwitchToMainThread();
+                    UnityEngine.Debug.LogError("[GameSmith MCP] ListTools timeout");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(response))
+                {
+                    await UniTask.SwitchToMainThread();
+                    return;
+                }
+
+                await UniTask.SwitchToMainThread();
+
+                var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
+                if (responseObj != null && responseObj.ContainsKey("result"))
+                {
+                    var result = responseObj["result"] as Dictionary<string, object>;
+                    if (result != null && result.ContainsKey("tools"))
+                    {
+                        var toolsList = result["tools"] as List<object>;
+                        if (toolsList != null)
+                        {
+                            AvailableTools.Clear();
+                            foreach (var toolObj in toolsList)
+                            {
+                                var tool = toolObj as Dictionary<string, object>;
+                                if (tool != null)
+                                {
+                                    AvailableTools.Add(new MCPTool
+                                    {
+                                        Name = tool.ContainsKey("name") ? tool["name"].ToString() : "",
+                                        Description = tool.ContainsKey("description") ? tool["description"].ToString() : "",
+                                        InputSchema = tool.ContainsKey("inputSchema") ? tool["inputSchema"] : null
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogError($"[GameSmith MCP] Failed to send tools/list request: {ex.Message}");
-                yield break;
+                await UniTask.SwitchToMainThread();
+                UnityEngine.Debug.LogError($"[GameSmith MCP] ListTools error: {ex.Message}");
             }
+        }
 
-            // Wait for response
-            float timeoutTime = Time.realtimeSinceStartup + 3f;
-            string response = null;
-
-            while (Time.realtimeSinceStartup < timeoutTime)
+        public async void CallToolAsync(string toolName, Dictionary<string, object> arguments, Action<string> callback)
+        {
+            try
             {
-                try
+                string result = await CallToolInternalAsync(toolName, arguments);
+                callback?.Invoke(result);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith MCP] CallTool error: {ex.Message}");
+                callback?.Invoke($"Error: {ex.Message}");
+            }
+        }
+
+        private async UniTask<string> CallToolInternalAsync(string toolName, Dictionary<string, object> arguments)
+        {
+            await UniTask.SwitchToThreadPool();
+
+            try
+            {
+                var request = new
                 {
-                    if (stdoutReader.Peek() >= 0)
+                    jsonrpc = "2.0",
+                    id = nextRequestId++,
+                    method = "tools/call",
+                    @params = new
                     {
-                        response = stdoutReader.ReadLine();
-                        if (!string.IsNullOrEmpty(response))
-                            break;
+                        name = toolName,
+                        arguments = arguments
                     }
-                }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith MCP] Error reading tools response: {ex.Message}");
-                    break;
-                }
-                yield return null;
-            }
+                };
 
-            if (!string.IsNullOrEmpty(response))
-            {
+                var json = MiniJSON.Json.Serialize(request);
+                await stdinWriter.WriteLineAsync(json);
+                await stdinWriter.FlushAsync();
+
+                // Read response with timeout
+                string response;
                 try
                 {
-                    var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
-                    if (responseObj != null && responseObj.ContainsKey("result"))
+                    response = await stdoutReader.ReadLineAsync()
+                        .AsUniTask()
+                        .Timeout(TimeSpan.FromSeconds(30));
+                }
+                catch (TimeoutException)
+                {
+                    await UniTask.SwitchToMainThread();
+                    UnityEngine.Debug.LogError("[GameSmith MCP] CallTool timeout");
+                    return "Tool execution timeout";
+                }
+
+                if (string.IsNullOrEmpty(response))
+                {
+                    await UniTask.SwitchToMainThread();
+                    return "No response";
+                }
+
+                await UniTask.SwitchToMainThread();
+
+                var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
+                if (responseObj != null && responseObj.ContainsKey("result"))
+                {
+                    var result = responseObj["result"] as Dictionary<string, object>;
+                    if (result != null && result.ContainsKey("content"))
                     {
-                        var result = responseObj["result"] as Dictionary<string, object>;
-                        if (result != null && result.ContainsKey("tools"))
+                        var contentList = result["content"] as List<object>;
+                        if (contentList != null && contentList.Count > 0)
                         {
-                            var toolsList = result["tools"] as List<object>;
-                            if (toolsList != null)
+                            var firstContent = contentList[0] as Dictionary<string, object>;
+                            if (firstContent != null && firstContent.ContainsKey("text"))
                             {
-                                AvailableTools.Clear();
-                                foreach (var toolObj in toolsList)
-                                {
-                                    var tool = toolObj as Dictionary<string, object>;
-                                    if (tool != null)
-                                    {
-                                        AvailableTools.Add(new MCPTool
-                                        {
-                                            Name = tool.ContainsKey("name") ? tool["name"].ToString() : "",
-                                            Description = tool.ContainsKey("description") ? tool["description"].ToString() : "",
-                                            InputSchema = tool.ContainsKey("inputSchema") ? tool["inputSchema"] : null
-                                        });
-                                    }
-                                }
-                                UnityEngine.Debug.Log($"[GameSmith MCP] Loaded {AvailableTools.Count} tools");
+                                return firstContent["text"].ToString();
                             }
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith MCP] Failed to parse tools: {ex.Message}");
-                }
+
+                return "Tool execution failed";
             }
-        }
-
-        /// <summary>
-        /// Call an MCP tool asynchronously
-        /// </summary>
-        public void CallToolAsync(string toolName, Dictionary<string, object> arguments, Action<string> onResult)
-        {
-            if (!isInitialized || !IsConnected)
+            catch (Exception ex)
             {
-                onResult?.Invoke("MCP server not connected");
-                return;
-            }
-
-            EditorCoroutineRunner.StartCoroutine(CallToolCoroutine(toolName, arguments, onResult));
-        }
-
-        private IEnumerator CallToolCoroutine(string toolName, Dictionary<string, object> arguments, Action<string> onResult)
-        {
-            var request = new
-            {
-                jsonrpc = "2.0",
-                id = nextRequestId++,
-                method = "tools/call",
-                @params = new
-                {
-                    name = toolName,
-                    arguments = arguments
-                }
-            };
-
-            var json = MiniJSON.Json.Serialize(request);
-            stdinWriter.WriteLine(json);
-            stdinWriter.Flush();
-
-            // Wait for response
-            float timeoutTime = Time.realtimeSinceStartup + 5f;
-            string response = null;
-
-            while (Time.realtimeSinceStartup < timeoutTime)
-            {
-                if (stdoutReader.Peek() >= 0)
-                {
-                    response = stdoutReader.ReadLine();
-                    if (!string.IsNullOrEmpty(response))
-                        break;
-                }
-                yield return null;
-            }
-
-            if (!string.IsNullOrEmpty(response))
-            {
-                try
-                {
-                    var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
-                    if (responseObj != null && responseObj.ContainsKey("result"))
-                    {
-                        var result = responseObj["result"] as Dictionary<string, object>;
-                        if (result != null && result.ContainsKey("content"))
-                        {
-                            var contentList = result["content"] as List<object>;
-                            if (contentList != null && contentList.Count > 0)
-                            {
-                                var firstContent = contentList[0] as Dictionary<string, object>;
-                                if (firstContent != null && firstContent.ContainsKey("text"))
-                                {
-                                    onResult?.Invoke(firstContent["text"].ToString());
-                                    yield break;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    onResult?.Invoke($"Error parsing response: {ex.Message}");
-                }
-            }
-            else
-            {
-                onResult?.Invoke("Tool execution timeout");
-            }
-        }
-
-        // Compatibility method for existing code
-        public string CallTool(string toolName, Dictionary<string, object> arguments)
-        {
-            string result = null;
-            bool completed = false;
-
-            CallToolAsync(toolName, arguments, (r) =>
-            {
-                result = r;
-                completed = true;
-            });
-
-            // Wait for completion (with timeout)
-            float timeoutTime = Time.realtimeSinceStartup + 5f;
-            while (!completed && Time.realtimeSinceStartup < timeoutTime)
-            {
-                // This is still blocking, but at least has a timeout
-                System.Threading.Thread.Yield();
-            }
-
-            return result ?? "Tool execution failed or timed out";
-        }
-
-        private void NotifyInitCallbacks(bool success)
-        {
-            while (initCallbacks.Count > 0)
-            {
-                var callback = initCallbacks.Dequeue();
-                callback?.Invoke(success);
+                return $"Error: {ex.Message}";
             }
         }
 
@@ -458,10 +329,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     serverProcess.Kill();
                     serverProcess.Dispose();
                 }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith MCP] Error disposing: {ex.Message}");
-                }
+                catch { }
             }
         }
     }

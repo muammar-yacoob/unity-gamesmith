@@ -1,7 +1,9 @@
 {
     "name": "com.spark-games.unity-gamesmith.Editor",
     "rootNamespace": "SparkGames.UnityGameSmith.Editor",
-    "references": [],
+    "references": [
+        "UniTask"
+    ],
     "includePlatforms": [
         "Editor"
     ],

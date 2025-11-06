@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Diagnostics;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -103,14 +105,8 @@ namespace SparkGames.UnityGameSmith.Editor
             InitializeUI(root);
             LoadChatHistory();
 
-            // Auto-start MCP server
-            EditorApplication.delayCall += () =>
-            {
-                if (mcpClient == null || !mcpClient.IsConnected)
-                {
-                    StartMCPServerAsync();
-                }
-            };
+            // Auto-start MCP server (don't block window creation)
+            EditorApplication.delayCall += StartMCPServerAsync;
 
             // Enable config updates
             EditorApplication.update += CheckConfigChanges;
@@ -121,97 +117,48 @@ namespace SparkGames.UnityGameSmith.Editor
             // Check if MCP server is already running
             if (mcpClient != null && mcpClient.IsConnected)
             {
-                UnityEngine.Debug.Log("[GameSmith] MCP server is already running.");
                 AddMessageBubble("✓ MCP server is already running", false);
                 return;
             }
 
             AddMessageBubble("🔄 Starting MCP server...", false);
 
-            // Find node path asynchronously
-            EditorCoroutineRunner.StartCoroutine(FindNodeAndStartMCP());
-        }
-
-        private IEnumerator FindNodeAndStartMCP()
-        {
-            string nodePath = null;
-
-            // On Windows, try to find node.exe
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                // Try common locations first
-                string[] commonPaths = new string[]
-                {
-                    @"C:\Program Files\nodejs\node.exe",
-                    @"C:\Program Files (x86)\nodejs\node.exe",
-                    System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("ProgramFiles"), "nodejs", "node.exe"),
-                    System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("LOCALAPPDATA"), "Programs", "nodejs", "node.exe")
-                };
-
-                foreach (var path in commonPaths)
-                {
-                    if (System.IO.File.Exists(path))
-                    {
-                        nodePath = path;
-                        break;
-                    }
-                }
-
-                // If not found, try using 'where' command (but non-blocking)
-                if (string.IsNullOrEmpty(nodePath))
-                {
-                    UnityEngine.Debug.LogWarning("[GameSmith] Node.js not found in common locations. Please ensure Node.js is installed.");
-                    AddMessageBubble("❌ Node.js not found. Please install Node.js and try again.", false);
-                    yield break;
-                }
-            }
-            else
-            {
-                // On Mac/Linux, use npx directly
-                nodePath = "npx";
-            }
-
-            // Try to find or use unity-mcp
             if (mcpClient == null)
             {
                 mcpClient = new MCPClientAsync();
             }
 
+            string nodePath = "node";
             string[] args;
-            if (Application.platform == RuntimePlatform.WindowsEditor && !string.IsNullOrEmpty(nodePath))
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                // Try to use globally installed package
-                string npmPrefix = System.Environment.GetEnvironmentVariable("APPDATA");
-                if (!string.IsNullOrEmpty(npmPrefix))
+                // Use globally installed package directly
+                string appData = System.Environment.GetEnvironmentVariable("APPDATA");
+                string packagePath = System.IO.Path.Combine(appData, "npm", "node_modules", "@spark-apps", "unity-mcp", "dist", "index.js");
+
+                if (System.IO.File.Exists(packagePath))
                 {
-                    npmPrefix = System.IO.Path.GetDirectoryName(npmPrefix); // Get parent of AppData\Roaming
-                    string globalPath = System.IO.Path.Combine(npmPrefix, "AppData", "Roaming", "npm", "node_modules", "@spark-apps", "unity-mcp", "dist", "index.js");
-                    if (System.IO.File.Exists(globalPath))
-                    {
-                        args = new string[] { globalPath };
-                    }
-                    else
-                    {
-                        // Fallback to npx
-                        args = new string[] { "-c", "npx -y @spark-apps/unity-mcp" };
-                        nodePath = "cmd.exe";
-                    }
+                    args = new string[] { packagePath };
                 }
                 else
                 {
-                    args = new string[] { "-c", "npx -y @spark-apps/unity-mcp" };
-                    nodePath = "cmd.exe";
+                    UnityEngine.Debug.LogError($"[GameSmith] unity-mcp not found at {packagePath}. Please install: npm install -g @spark-apps/unity-mcp");
+                    AddMessageBubble("❌ unity-mcp not installed. Run: npm install -g @spark-apps/unity-mcp", false);
+                    return;
                 }
             }
             else
             {
+                // Unix: use npx
+                nodePath = "npx";
                 args = new string[] { "-y", "@spark-apps/unity-mcp" };
             }
 
-            // Start server asynchronously
+            // Start server without blocking
             mcpClient.StartServerAsync(nodePath, args, (success) =>
             {
-                var mcpStatus = rootVisualElement.Q<Label>("mcp-status");
+                var mcpStatus = rootVisualElement?.Q<Label>("mcp-status");
                 if (success)
                 {
                     UnityEngine.Debug.Log($"[GameSmith] MCP server connected with {mcpClient.AvailableTools.Count} tools");
@@ -221,7 +168,6 @@ namespace SparkGames.UnityGameSmith.Editor
                         mcpStatus.text = $"✓ MCP: {mcpClient.AvailableTools.Count} tools";
                         mcpStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
                     }
-
                 }
                 else
                 {
@@ -234,8 +180,6 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
                 }
             });
-
-            yield return null;
         }
 
         // OLD MCP server startup code - REMOVED
@@ -483,6 +427,16 @@ namespace SparkGames.UnityGameSmith.Editor
             // Get Unity project context
             var systemContext = @"You are a Unity AI assistant. Be concise and direct.
 
+IMPORTANT: You have access to Unity scene manipulation tools via MCP. When the user asks to modify Unity objects (create, move, scale, rotate, delete), you MUST use the available tools.
+
+Examples:
+- ""make selected cube 3x taller"" → use scale_object tool with scale {x:1, y:3, z:1}
+- ""create a sphere"" → use create_object tool with type 'Sphere'
+- ""move player forward"" → use translate_object tool
+- ""rotate camera"" → use rotate_object tool
+
+Always use tools for Unity scene modifications. Do not just explain - actually execute the tool.
+
 " + UnityProjectContext.GetProjectContext();
 
             // Get MCP tools if available
@@ -519,6 +473,16 @@ namespace SparkGames.UnityGameSmith.Editor
                         // Get tools and system context again
                         var tools = mcpClient.AvailableTools;
                         var systemContext = @"You are a Unity AI assistant. Be concise and direct.
+
+IMPORTANT: You have access to Unity scene manipulation tools via MCP. When the user asks to modify Unity objects (create, move, scale, rotate, delete), you MUST use the available tools.
+
+Examples:
+- ""make selected cube 3x taller"" → use scale_object tool with scale {x:1, y:3, z:1}
+- ""create a sphere"" → use create_object tool with type 'Sphere'
+- ""move player forward"" → use translate_object tool
+- ""rotate camera"" → use rotate_object tool
+
+Always use tools for Unity scene modifications. Do not just explain - actually execute the tool.
 
 " + UnityProjectContext.GetProjectContext();
 

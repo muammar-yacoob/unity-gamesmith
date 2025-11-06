@@ -16,6 +16,7 @@ namespace SparkGames.UnityGameSmith.Editor
         private readonly GameSmithConfig config;
         private List<object> conversationHistory = new List<object>();
         private string lastSystemContext = "";
+        private string lastToolName = "";
 
         public AIAgentClient(GameSmithConfig config)
         {
@@ -122,17 +123,65 @@ namespace SparkGames.UnityGameSmith.Editor
                     if (msgDict != null && msgDict.ContainsKey("role") && msgDict.ContainsKey("content"))
                     {
                         string role = msgDict["role"].ToString();
-                        string content = msgDict["content"].ToString();
+                        var content = msgDict["content"];
 
-                        contents.Add(new Dictionary<string, object>
+                        // Check if content is a list (parts format - can be tool results or function calls)
+                        if (content is List<object> contentList)
                         {
-                            { "role", role == "assistant" ? "model" : "user" },
-                            { "parts", new List<object>
+                            var parts = new List<object>();
+                            foreach (var item in contentList)
+                            {
+                                var itemDict = item as Dictionary<string, object>;
+                                if (itemDict != null)
                                 {
-                                    new Dictionary<string, object> { { "text", content } }
+                                    // Check for tool_result (Claude format) - convert to functionResponse
+                                    if (itemDict.ContainsKey("type") && itemDict["type"].ToString() == "tool_result")
+                                    {
+                                        // Need to get function name from somewhere - use the last tool name
+                                        parts.Add(new Dictionary<string, object>
+                                        {
+                                            { "functionResponse", new Dictionary<string, object>
+                                                {
+                                                    { "name", lastToolName ?? "unknown" },
+                                                    { "response", new Dictionary<string, object>
+                                                        {
+                                                            { "result", itemDict.ContainsKey("content") ? itemDict["content"].ToString() : "" }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                    // Already in Gemini parts format (text, functionCall, etc.) - use directly
+                                    else
+                                    {
+                                        parts.Add(itemDict);
+                                    }
                                 }
                             }
-                        });
+                            if (parts.Count > 0)
+                            {
+                                contents.Add(new Dictionary<string, object>
+                                {
+                                    { "role", role == "assistant" ? "model" : "user" },
+                                    { "parts", parts }
+                                });
+                            }
+                        }
+                        else
+                        {
+                            // Simple text content
+                            string contentText = content.ToString();
+                            contents.Add(new Dictionary<string, object>
+                            {
+                                { "role", role == "assistant" ? "model" : "user" },
+                                { "parts", new List<object>
+                                    {
+                                        new Dictionary<string, object> { { "text", contentText } }
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
 
@@ -142,6 +191,19 @@ namespace SparkGames.UnityGameSmith.Editor
                     { "temperature", config.temperature },
                     { "maxOutputTokens", config.maxTokens }
                 };
+
+                // Add tool config for Gemini to enable function calling
+                if (tools != null && tools.Count > 0)
+                {
+                    requestDict["toolConfig"] = new Dictionary<string, object>
+                    {
+                        { "functionCallingConfig", new Dictionary<string, object>
+                            {
+                                { "mode", "AUTO" }
+                            }
+                        }
+                    };
+                }
             }
             else if (isOllamaOrOpenAI)
             {
@@ -170,13 +232,26 @@ namespace SparkGames.UnityGameSmith.Editor
                 requestDict["messages"] = conversationHistory;
             }
 
-            // Add tools if available (both formats support this)
+            // Add tools if available
+            GameSmithLogger.Log($"Tools available: {tools?.Count ?? 0}");
             if (tools != null && tools.Count > 0)
             {
+                GameSmithLogger.Log($"Adding {tools.Count} tools to request for provider {config.activeProvider}");
                 var toolsArray = new List<object>();
                 foreach (var tool in tools)
                 {
-                    if (isOllamaOrOpenAI)
+                    GameSmithLogger.Log($"  Tool: {tool.Name} - {tool.Description}");
+                    if (isGemini)
+                    {
+                        // Gemini format for tools (function declarations)
+                        toolsArray.Add(new Dictionary<string, object>
+                        {
+                            { "name", tool.Name },
+                            { "description", tool.Description },
+                            { "parameters", tool.InputSchema ?? new Dictionary<string, object>() }
+                        });
+                    }
+                    else if (isOllamaOrOpenAI)
                     {
                         // OpenAI format for tools
                         toolsArray.Add(new Dictionary<string, object>
@@ -202,7 +277,27 @@ namespace SparkGames.UnityGameSmith.Editor
                         });
                     }
                 }
-                requestDict["tools"] = toolsArray;
+
+                if (isGemini)
+                {
+                    // Gemini wraps tools in a different structure
+                    requestDict["tools"] = new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            { "functionDeclarations", toolsArray }
+                        }
+                    };
+                    GameSmithLogger.Log($"Gemini tools structure created with {toolsArray.Count} function declarations");
+                }
+                else
+                {
+                    requestDict["tools"] = toolsArray;
+                }
+            }
+            else
+            {
+                GameSmithLogger.Log("No tools available for this request");
             }
 
             var requestBody = MiniJSON.Json.Serialize(requestDict);
@@ -304,7 +399,42 @@ namespace SparkGames.UnityGameSmith.Editor
                         GameSmithLogger.Log($"Response parsed successfully. Text length: {response.TextContent?.Length ?? 0}");
 
                         // Add assistant response to history
-                        if (isGemini || isOllamaOrOpenAI)
+                        if (isGemini)
+                        {
+                            // For Gemini with tool use, store the function call
+                            if (response.HasToolUse)
+                            {
+                                lastToolName = response.ToolName; // Track tool name for function response
+                                var parts = new List<object>();
+                                if (!string.IsNullOrEmpty(response.TextContent))
+                                {
+                                    parts.Add(new Dictionary<string, object> { { "text", response.TextContent } });
+                                }
+                                parts.Add(new Dictionary<string, object>
+                                {
+                                    { "functionCall", new Dictionary<string, object>
+                                        {
+                                            { "name", response.ToolName },
+                                            { "args", response.ToolInput }
+                                        }
+                                    }
+                                });
+                                conversationHistory.Add(new Dictionary<string, object>
+                                {
+                                    { "role", "assistant" },
+                                    { "content", parts }
+                                });
+                            }
+                            else
+                            {
+                                conversationHistory.Add(new Dictionary<string, object>
+                                {
+                                    { "role", "assistant" },
+                                    { "content", response.TextContent }
+                                });
+                            }
+                        }
+                        else if (isOllamaOrOpenAI)
                         {
                             conversationHistory.Add(new Dictionary<string, object>
                             {
@@ -419,9 +549,25 @@ namespace SparkGames.UnityGameSmith.Editor
                                     foreach (var part in parts)
                                     {
                                         var partDict = part as Dictionary<string, object>;
-                                        if (partDict != null && partDict.ContainsKey("text"))
+                                        if (partDict != null)
                                         {
-                                            textBuilder.Append(partDict["text"].ToString());
+                                            // Check for text content
+                                            if (partDict.ContainsKey("text"))
+                                            {
+                                                textBuilder.Append(partDict["text"].ToString());
+                                            }
+                                            // Check for function call (Gemini tool use)
+                                            else if (partDict.ContainsKey("functionCall"))
+                                            {
+                                                var functionCall = partDict["functionCall"] as Dictionary<string, object>;
+                                                if (functionCall != null)
+                                                {
+                                                    result.HasToolUse = true;
+                                                    result.ToolName = functionCall.ContainsKey("name") ? functionCall["name"].ToString() : "";
+                                                    result.ToolInput = functionCall.ContainsKey("args") ? functionCall["args"] as Dictionary<string, object> : new Dictionary<string, object>();
+                                                    result.ToolUseId = Guid.NewGuid().ToString(); // Gemini doesn't provide ID, generate one
+                                                }
+                                            }
                                         }
                                     }
                                     result.TextContent = textBuilder.ToString();

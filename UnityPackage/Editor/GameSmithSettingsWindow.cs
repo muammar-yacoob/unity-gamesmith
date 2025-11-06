@@ -235,7 +235,6 @@ namespace SparkGames.UnityGameSmith.Editor
 
             // Create a simple test request
             var testClient = new AIAgentClient(config);
-            bool verificationSuccess = false;
             string errorMessage = "";
 
             testClient.SendMessage(
@@ -245,7 +244,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 response =>
                 {
                     // Success!
-                    verificationSuccess = true;
                     GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, true);
                     verificationMessage = $"✅ API key verified successfully for {config.activeProvider}!";
                     GameSmithLogger.Log($"API key verified for {config.activeProvider}");
@@ -253,7 +251,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 error =>
                 {
                     // Failed
-                    verificationSuccess = false;
                     errorMessage = error;
                     GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
                     verificationMessage = $"❌ Verification failed: {error}";

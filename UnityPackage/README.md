@@ -8,7 +8,30 @@ Chat with AI directly in Unity Editor - ask questions, get code help, debug issu
 
 ## 🚀 Quick Start
 
-### 1. Install Package
+### 1. Add UniTask Dependency
+
+Open your project's `Packages/manifest.json` and add:
+
+```json
+{
+  "dependencies": {
+    "com.cysharp.unitask": "2.3.3",
+    ...your other dependencies
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.cysharp.unitask",
+        "com.openupm"
+      ]
+    }
+  ]
+}
+```
+
+### 2. Install GameSmith Package
 
 In Unity Package Manager: `Window → Package Manager → + → Add package from git URL`
 
@@ -16,11 +39,11 @@ In Unity Package Manager: `Window → Package Manager → + → Add package from
 https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 ```
 
-### 2. Open Chat Window
+### 3. Open Chat Window
 
 `Tools → GameSmith → Open Window` (or press **Alt+G**)
 
-### 3. Configure AI Provider
+### 4. Configure AI Provider
 
 Click **⚙️ Settings** button in the chat window, then:
 
@@ -75,11 +98,18 @@ Click **⚙️ Settings** button in the chat window, then:
 
 - Unity 2021.3 LTS or later
 - .NET Standard 2.1 or 4.x
+- **UniTask** (required dependency - install via UPM)
 - AI Provider: Ollama (free) OR API key (Claude/OpenAI/Gemini)
 
 ---
 
 ## 🔧 Troubleshooting
+
+**Compilation errors about UniTask or Cysharp?**
+- Make sure you added the UniTask dependency and scoped registry to `Packages/manifest.json` (see step 1 above)
+- Wait for Unity to finish importing dependencies (check progress in bottom-right corner)
+- Restart Unity if errors persist
+- Verify `Packages/manifest.json` contains both the dependency AND scopedRegistries sections
 
 **Package not showing?**
 - Check `Packages/manifest.json` contains the package
