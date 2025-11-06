@@ -26,6 +26,16 @@ namespace SparkGames.UnityGameSmith.Editor
         private bool showMCPTools = false;
         private System.Collections.Generic.List<MCPTool> cachedMCPTools = null;
         private bool isLoadingTools = false;
+        private Vector2 toolsScrollPosition = Vector2.zero;
+
+        // Tool categories for color coding
+        private enum ToolCategory
+        {
+            Creation,    // Green - create, add, generate
+            Modification, // Blue - update, modify, set, move, rotate, scale
+            Organization, // Orange - list, get, find, search, load
+            Destructive  // Red - delete, remove, destroy, clear
+        }
 
         [MenuItem("Tools/GameSmith/Configure Settings", false, 2)]
         public static void ShowWindow()
@@ -324,24 +334,49 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
                     else if (cachedMCPTools != null && cachedMCPTools.Count > 0)
                     {
+                        // Header with count
                         EditorGUILayout.LabelField($"Found {cachedMCPTools.Count} tool(s):", EditorStyles.miniLabel);
                         EditorGUILayout.Space(3);
 
-                        foreach (var tool in cachedMCPTools)
+                        // Group and sort tools by category
+                        var groupedTools = GroupToolsByCategory(cachedMCPTools);
+
+                        // Scrollable list view
+                        toolsScrollPosition = EditorGUILayout.BeginScrollView(toolsScrollPosition, 
+                            GUILayout.Height(Mathf.Min(300, cachedMCPTools.Count * 20 + 10)));
+
+                        foreach (var group in groupedTools)
                         {
-                            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                            EditorGUILayout.LabelField(tool.Name, EditorStyles.boldLabel);
-                            if (!string.IsNullOrEmpty(tool.Description))
+                            foreach (var tool in group.Value)
                             {
-                                EditorGUILayout.LabelField(tool.Description, EditorStyles.wordWrappedMiniLabel);
+                                // Color-coded background based on category
+                                var originalBg = GUI.backgroundColor;
+                                GUI.backgroundColor = GetCategoryColor(group.Key);
+                                
+                                EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+                                GUI.backgroundColor = originalBg;
+                                
+                                // Simple tool name only
+                                EditorGUILayout.LabelField(tool.Name, GUILayout.Height(16));
+                                
+                                EditorGUILayout.EndHorizontal();
                             }
-                            EditorGUILayout.EndVertical();
-                            EditorGUILayout.Space(2);
                         }
+
+                        EditorGUILayout.EndScrollView();
+                        
+                        // Legend
+                        EditorGUILayout.Space(5);
+                        EditorGUILayout.LabelField("Categories:", EditorStyles.miniLabel);
+                        DrawCategoryLegend();
                     }
                     else if (cachedMCPTools != null && cachedMCPTools.Count == 0)
                     {
                         EditorGUILayout.LabelField("No tools available", EditorStyles.miniLabel);
+                        if (GUILayout.Button("Refresh Tools", GUILayout.Height(20)))
+                        {
+                            LoadMCPToolsAsync().Forget();
+                        }
                     }
                     else
                     {
@@ -733,6 +768,18 @@ namespace SparkGames.UnityGameSmith.Editor
 
             try
             {
+                // Check if there's already a connected MCP client from GameSmithWindow
+                var connectedClient = GameSmithWindow.ConnectedMCPClient;
+                if (connectedClient != null && connectedClient.IsConnected)
+                {
+                    // Use the existing connected client
+                    cachedMCPTools = new System.Collections.Generic.List<MCPTool>(connectedClient.AvailableTools);
+                    GameSmithLogger.Log($"Using existing MCP connection: {cachedMCPTools.Count} tools");
+                    isLoadingTools = false;
+                    Repaint();
+                    return;
+                }
+
                 // Create a temporary MCP client to get tools list
                 var tempClient = new MCPClientAsync();
 
@@ -785,6 +832,115 @@ namespace SparkGames.UnityGameSmith.Editor
                 isLoadingTools = false;
                 Repaint();
             }
+        }
+
+        private System.Collections.Generic.Dictionary<ToolCategory, System.Collections.Generic.List<MCPTool>> GroupToolsByCategory(System.Collections.Generic.List<MCPTool> tools)
+        {
+            var grouped = new System.Collections.Generic.Dictionary<ToolCategory, System.Collections.Generic.List<MCPTool>>();
+            
+            // Initialize groups
+            foreach (ToolCategory category in System.Enum.GetValues(typeof(ToolCategory)))
+            {
+                grouped[category] = new System.Collections.Generic.List<MCPTool>();
+            }
+
+            // Categorize tools based on name patterns
+            foreach (var tool in tools)
+            {
+                var category = CategorizeToolByName(tool.Name);
+                grouped[category].Add(tool);
+            }
+
+            // Sort tools within each category alphabetically
+            foreach (var group in grouped.Values)
+            {
+                group.Sort((a, b) => string.Compare(a.Name, b.Name, System.StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Return only non-empty groups in order
+            var result = new System.Collections.Generic.Dictionary<ToolCategory, System.Collections.Generic.List<MCPTool>>();
+            var orderedCategories = new[] { ToolCategory.Creation, ToolCategory.Modification, ToolCategory.Organization, ToolCategory.Destructive };
+            
+            foreach (var category in orderedCategories)
+            {
+                if (grouped[category].Count > 0)
+                {
+                    result[category] = grouped[category];
+                }
+            }
+
+            return result;
+        }
+
+        private ToolCategory CategorizeToolByName(string toolName)
+        {
+            var name = toolName.ToLowerInvariant();
+
+            // Destructive actions (red)
+            if (name.Contains("delete") || name.Contains("remove") || name.Contains("destroy") || 
+                name.Contains("clear") || name.Contains("clean"))
+            {
+                return ToolCategory.Destructive;
+            }
+
+            // Creation actions (green)
+            if (name.Contains("create") || name.Contains("add") || name.Contains("generate") || 
+                name.Contains("spawn") || name.Contains("instantiate") || name.Contains("new") ||
+                name.Contains("build") || name.Contains("make"))
+            {
+                return ToolCategory.Creation;
+            }
+
+            // Modification actions (blue)
+            if (name.Contains("update") || name.Contains("modify") || name.Contains("set") || 
+                name.Contains("move") || name.Contains("rotate") || name.Contains("scale") ||
+                name.Contains("transform") || name.Contains("change") || name.Contains("edit") ||
+                name.Contains("apply") || name.Contains("configure"))
+            {
+                return ToolCategory.Modification;
+            }
+
+            // Default to organization (orange) - list, get, find, search, load, etc.
+            return ToolCategory.Organization;
+        }
+
+        private Color GetCategoryColor(ToolCategory category)
+        {
+            switch (category)
+            {
+                case ToolCategory.Creation:
+                    return new Color(0.7f, 1.0f, 0.7f, 0.6f); // Light green
+                case ToolCategory.Modification:
+                    return new Color(0.7f, 0.8f, 1.0f, 0.6f); // Light blue
+                case ToolCategory.Organization:
+                    return new Color(1.0f, 0.9f, 0.6f, 0.6f); // Light orange
+                case ToolCategory.Destructive:
+                    return new Color(1.0f, 0.7f, 0.7f, 0.6f); // Light red
+                default:
+                    return Color.white;
+            }
+        }
+
+        private void DrawCategoryLegend()
+        {
+            EditorGUILayout.BeginHorizontal();
+            
+            // Creation
+            var originalBg = GUI.backgroundColor;
+            GUI.backgroundColor = GetCategoryColor(ToolCategory.Creation);
+            EditorGUILayout.LabelField("Create", EditorStyles.miniLabel, GUILayout.Width(50));
+            
+            GUI.backgroundColor = GetCategoryColor(ToolCategory.Modification);
+            EditorGUILayout.LabelField("Modify", EditorStyles.miniLabel, GUILayout.Width(50));
+            
+            GUI.backgroundColor = GetCategoryColor(ToolCategory.Organization);
+            EditorGUILayout.LabelField("Info", EditorStyles.miniLabel, GUILayout.Width(40));
+            
+            GUI.backgroundColor = GetCategoryColor(ToolCategory.Destructive);
+            EditorGUILayout.LabelField("Delete", EditorStyles.miniLabel, GUILayout.Width(50));
+            
+            GUI.backgroundColor = originalBg;
+            EditorGUILayout.EndHorizontal();
         }
     }
 }

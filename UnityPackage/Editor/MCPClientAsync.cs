@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -35,6 +37,13 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
+                if (string.IsNullOrEmpty(command) || args == null)
+                {
+                    UnityEngine.Debug.LogError("[GameSmith MCP] Invalid command or arguments");
+                    callback?.Invoke(false);
+                    return;
+                }
+
                 bool success = await StartServerInternalAsync(command, args);
                 callback?.Invoke(success);
             }
@@ -80,7 +89,7 @@ namespace SparkGames.UnityGameSmith.Editor
                                 command = "node.exe";
                             }
                         }
-                        UnityEngine.Debug.Log($"[GameSmith MCP] Using provided path: {command} {args[0]}");
+                        // Using provided path
                     }
                     else
                     {
@@ -120,14 +129,17 @@ namespace SparkGames.UnityGameSmith.Editor
                         if (globalNpmPath != null && System.IO.File.Exists(globalNpmPath))
                         {
                             args = new[] { globalNpmPath };
-                            UnityEngine.Debug.Log($"[GameSmith MCP] Using direct node execution: {command} {globalNpmPath}");
+                            // Using direct node execution
                         }
                         else
                         {
                             // Fallback: use npx with full path
                             if (System.Environment.OSVersion.Platform == System.PlatformID.Win32NT)
                             {
-                                command = @"C:\Program Files\nodejs\npx.cmd";
+                                command = System.IO.Path.Combine(
+                                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles),
+                                    "nodejs", "npx.cmd"
+                                );
                                 if (!System.IO.File.Exists(command))
                                 {
                                     // Fallback to just npx.cmd
@@ -138,8 +150,27 @@ namespace SparkGames.UnityGameSmith.Editor
                             {
                                 command = "npx";
                             }
-                            args = new[] { "@spark-apps/unity-mcp" };
-                            UnityEngine.Debug.Log($"[GameSmith MCP] Using npx fallback: {command} {string.Join(" ", args)}");
+                            // Use the full global path with npx to avoid working directory issues
+                            var globalUnityMcpPath = System.IO.Path.Combine(
+                                System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                                "npm", "node_modules", "@spark-apps", "unity-mcp", "dist", "index.js"
+                            );
+                            
+                            if (System.IO.File.Exists(globalUnityMcpPath))
+                            {
+                                // Use node directly with the full path to avoid npx working directory issues
+                                command = System.IO.Path.Combine(
+                                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles),
+                                    "nodejs", "node.exe"
+                                );
+                                args = new[] { globalUnityMcpPath };
+                                    // Using direct node path
+                            }
+                            else
+                            {
+                                args = new[] { "@spark-apps/unity-mcp" };
+                                // Using npx fallback
+                            }
                         }
                     }
                 }
@@ -177,8 +208,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    WorkingDirectory = System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath) // Unity project root
+                    CreateNoWindow = true
                 };
 
                 // Add arguments
@@ -187,8 +217,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     startInfo.ArgumentList.Add(arg);
                 }
 
-                // Log the full command for debugging
-                UnityEngine.Debug.Log($"[GameSmith MCP] Starting MCP server: {command} {string.Join(" ", args)}");
+                // Starting MCP server
 
                 serverProcess = new Process { StartInfo = startInfo };
 
@@ -286,12 +315,10 @@ namespace SparkGames.UnityGameSmith.Editor
                 // Switch to main thread for JSON parsing (Unity's JsonUtility)
                 await UniTask.SwitchToMainThread();
 
-                UnityEngine.Debug.Log($"[GameSmith MCP] Init response: {response}");
-
                 var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
                 if (responseObj != null && responseObj.ContainsKey("result"))
                 {
-                    UnityEngine.Debug.Log("[GameSmith MCP] Init successful, requesting tools list...");
+                    // Init successful, requesting tools list
                     await ListToolsAsync();
                     // Success logged by caller
                     return true;
@@ -338,17 +365,14 @@ namespace SparkGames.UnityGameSmith.Editor
 
                     if (!string.IsNullOrEmpty(line))
                     {
-                        await UniTask.SwitchToMainThread();
-                        // Log all stderr output for debugging
+                        // Only log actual errors, not informational messages
                         if (line.Contains("Error") || line.Contains("error") || line.Contains("Exception"))
                         {
-                            UnityEngine.Debug.LogError($"[MCP stderr] {line}");
+                            await UniTask.SwitchToMainThread();
+                            UnityEngine.Debug.LogError($"[MCP] {line}");
+                            await UniTask.SwitchToThreadPool();
                         }
-                        else
-                        {
-                            UnityEngine.Debug.LogWarning($"[MCP stderr] {line}");
-                        }
-                        await UniTask.SwitchToThreadPool();
+                        // Ignore informational stderr messages like "Unity MCP Server initialized"
                     }
                 }
             }
@@ -414,40 +438,71 @@ namespace SparkGames.UnityGameSmith.Editor
 
                 await UniTask.SwitchToMainThread();
 
-                // Log response length for debugging
-                UnityEngine.Debug.Log($"[MCP] tools/list response length: {response.Length} chars");
-
-                // Save response to file for debugging
-                try
-                {
-                    var debugPath = System.IO.Path.Combine(UnityEngine.Application.dataPath, "..", "mcp_response.json");
-                    System.IO.File.WriteAllText(debugPath, response);
-                    UnityEngine.Debug.Log($"[MCP] Response saved to: {debugPath}");
-                }
-                catch { }
-
                 // Try to deserialize the actual response
                 object deserializedObj = null;
                 try
                 {
                     deserializedObj = MiniJSON.Json.Deserialize(response);
-                    UnityEngine.Debug.Log($"[MCP] Deserialized type: {deserializedObj?.GetType()?.ToString() ?? "null"}");
 
                     if (deserializedObj == null)
                     {
-                        // Try to find where parsing fails - test progressively smaller substrings
-                        UnityEngine.Debug.LogError("[MCP] Parsing returned null. Testing substrings...");
-
-                        // Try first 1000 chars
-                        var test1000 = response.Substring(0, Math.Min(1000, response.Length));
-                        var result1000 = MiniJSON.Json.Deserialize(test1000);
-                        UnityEngine.Debug.Log($"[MCP] First 1000 chars parse: {result1000 != null}");
-
-                        // Log first and last 200 chars
-                        UnityEngine.Debug.LogError($"[MCP] First 200: {response.Substring(0, Math.Min(200, response.Length))}");
-                        if (response.Length > 200)
+                        // MiniJSON failed, try manual extraction
+                        
+                        try
                         {
-                            UnityEngine.Debug.LogError($"[MCP] Last 200: {response.Substring(Math.Max(0, response.Length - 200))}");
+                            // Enhanced regex to extract tool names and descriptions
+                            var toolPattern = @"""name""\s*:\s*""([^""]+)""[^}]*?""description""\s*:\s*""([^""]*?)""";
+                            var toolMatches = Regex.Matches(response, toolPattern, RegexOptions.Singleline);
+                            AvailableTools.Clear();
+                            
+                            foreach (Match match in toolMatches)
+                            {
+                                if (match.Groups.Count > 2)
+                                {
+                                    var toolName = match.Groups[1].Value;
+                                    var toolDescription = match.Groups[2].Value;
+                                    
+                                    AvailableTools.Add(new MCPTool
+                                    {
+                                        Name = toolName,
+                                        Description = !string.IsNullOrEmpty(toolDescription) ? toolDescription : $"Unity MCP tool: {toolName}",
+                                        InputSchema = new Dictionary<string, object>
+                                        {
+                                            { "type", "object" },
+                                            { "properties", new Dictionary<string, object>() }
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            // Fallback: if no matches with description, try name-only
+                            if (AvailableTools.Count == 0)
+                            {
+                                var nameMatches = Regex.Matches(response, @"""name""\s*:\s*""([^""]+)""");
+                                foreach (Match match in nameMatches)
+                                {
+                                    if (match.Groups.Count > 1)
+                                    {
+                                        var toolName = match.Groups[1].Value;
+                                        AvailableTools.Add(new MCPTool
+                                        {
+                                            Name = toolName,
+                                            Description = $"Unity MCP tool: {toolName}",
+                                            InputSchema = new Dictionary<string, object>
+                                            {
+                                                { "type", "object" },
+                                                { "properties", new Dictionary<string, object>() }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            return; // Exit early since we got the tools
+                        }
+                        catch (Exception ex)
+                        {
+                            UnityEngine.Debug.LogError($"[MCP] Manual extraction failed: {ex.Message}");
                         }
                     }
                 }
@@ -476,11 +531,15 @@ namespace SparkGames.UnityGameSmith.Editor
                                     {
                                         Name = tool.ContainsKey("name") ? tool["name"].ToString() : "",
                                         Description = tool.ContainsKey("description") ? tool["description"].ToString() : "",
-                                        InputSchema = tool.ContainsKey("inputSchema") ? tool["inputSchema"] : null
+                                        InputSchema = tool.ContainsKey("inputSchema") ? tool["inputSchema"] : new Dictionary<string, object>
+                                        {
+                                            { "type", "object" },
+                                            { "properties", new Dictionary<string, object>() }
+                                        }
                                     });
                                 }
                             }
-                            UnityEngine.Debug.Log($"[MCP] Parsed {AvailableTools.Count} tools from response");
+                            UnityEngine.Debug.Log($"[MCP] Connected with {AvailableTools.Count} tools");
                         }
                         else
                         {
@@ -622,9 +681,15 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 shouldKill = serverProcess != null && !serverProcess.HasExited;
             }
+            catch (ObjectDisposedException)
+            {
+                // Process was disposed, don't kill
+                shouldKill = false;
+            }
             catch (InvalidOperationException)
             {
                 // Process was disposed, don't kill
+                shouldKill = false;
             }
 
             if (shouldKill)
@@ -632,11 +697,34 @@ namespace SparkGames.UnityGameSmith.Editor
                 try
                 {
                     stdinWriter?.Close();
-                    serverProcess.Kill();
-                    serverProcess.Dispose();
+                    serverProcess?.Kill();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Process already disposed
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process already exited or disposed
                 }
                 catch { }
             }
+
+            // Clean up resources
+            try
+            {
+                stdinWriter?.Dispose();
+                stdoutReader?.Dispose();
+                stderrReader?.Dispose();
+                serverProcess?.Dispose();
+            }
+            catch { }
+
+            // Clear references
+            stdinWriter = null;
+            stdoutReader = null;
+            stderrReader = null;
+            serverProcess = null;
         }
     }
 }

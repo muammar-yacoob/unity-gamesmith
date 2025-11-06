@@ -22,6 +22,12 @@ namespace SparkGames.UnityGameSmith.Editor
         private AIAgentClient client;
         private MCPClientAsync mcpClient;
 
+        // Static access to the connected MCP client for other windows
+        public static MCPClientAsync ConnectedMCPClient => Instance?.mcpClient;
+        
+        // Singleton instance for static access
+        private static GameSmithWindow Instance;
+
         // UI Elements
         private TextField messageInput;
         private VisualElement messagesContainer;
@@ -50,6 +56,9 @@ namespace SparkGames.UnityGameSmith.Editor
 
         public void CreateGUI()
         {
+            // Set singleton instance
+            Instance = this;
+            
             // Load config and history
             config = GameSmithConfig.GetOrCreate();
             history = ChatHistory.GetOrCreate();
@@ -151,7 +160,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 var mcpStatus = rootVisualElement?.Q<Label>("mcp-status");
                 if (success)
                 {
-                    UnityEngine.Debug.Log($"[MCP] Ready: {mcpClient.AvailableTools.Count} tools");
+                    UnityEngine.Debug.Log($"Unity-MCP Connected and ready with {mcpClient.AvailableTools.Count} tools");
                     AddMessageBubble($"MCP ready ({mcpClient.AvailableTools.Count} tools)", false);
                     if (mcpStatus != null)
                     {
@@ -514,6 +523,12 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
 
         private void AddMessageBubble(string text, bool isUser)
         {
+            if (messagesContainer == null)
+            {
+                UnityEngine.Debug.LogWarning("[GameSmith] Cannot add message bubble - messagesContainer is null");
+                return;
+            }
+
             var bubble = new VisualElement();
             bubble.AddToClassList(isUser ? "message-user" : "message-assistant");
 
@@ -526,7 +541,10 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
             // Scroll to bottom
             EditorApplication.delayCall += () =>
             {
-                chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
+                if (chatScroll != null && chatScroll.contentContainer != null)
+                {
+                    chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
+                }
             };
         }
 
