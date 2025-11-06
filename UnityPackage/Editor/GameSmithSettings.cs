@@ -51,7 +51,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     string json = File.ReadAllText(SettingsPath);
                     var settings = JsonUtility.FromJson<GameSmithSettings>(json);
-                    Debug.Log("[GameSmith] Settings loaded from " + SettingsPath);
+                    // Settings loaded silently
                     return settings;
                 }
                 catch (Exception e)

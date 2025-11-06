@@ -121,39 +121,29 @@ namespace SparkGames.UnityGameSmith.Editor
                 return;
             }
 
-            AddMessageBubble("🔄 Starting MCP server...", false);
+            AddMessageBubble("Starting MCP server...", false);
 
             if (mcpClient == null)
             {
                 mcpClient = new MCPClientAsync();
             }
 
+            // Windows only - use the direct path to the globally installed package
+            string appData = System.Environment.GetEnvironmentVariable("APPDATA");
+            string packagePath = System.IO.Path.Combine(appData, "npm", "node_modules", "@spark-apps", "unity-mcp", "dist", "index.js");
+
+            if (!System.IO.File.Exists(packagePath))
+            {
+                UnityEngine.Debug.LogError($"[GameSmith] unity-mcp not found at {packagePath}");
+                UnityEngine.Debug.LogError("[GameSmith] Please install: npm install -g @spark-apps/unity-mcp");
+                AddMessageBubble("❌ MCP not installed. Run: npm install -g @spark-apps/unity-mcp", false);
+                return;
+            }
+
             string nodePath = "node";
-            string[] args;
+            string[] args = new string[] { packagePath };
 
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                // Use globally installed package directly
-                string appData = System.Environment.GetEnvironmentVariable("APPDATA");
-                string packagePath = System.IO.Path.Combine(appData, "npm", "node_modules", "@spark-apps", "unity-mcp", "dist", "index.js");
-
-                if (System.IO.File.Exists(packagePath))
-                {
-                    args = new string[] { packagePath };
-                }
-                else
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith] unity-mcp not found at {packagePath}. Please install: npm install -g @spark-apps/unity-mcp");
-                    AddMessageBubble("❌ unity-mcp not installed. Run: npm install -g @spark-apps/unity-mcp", false);
-                    return;
-                }
-            }
-            else
-            {
-                // Unix: use npx
-                nodePath = "npx";
-                args = new string[] { "-y", "@spark-apps/unity-mcp" };
-            }
+            // Starting MCP server
 
             // Start server without blocking
             mcpClient.StartServerAsync(nodePath, args, (success) =>
@@ -161,8 +151,8 @@ namespace SparkGames.UnityGameSmith.Editor
                 var mcpStatus = rootVisualElement?.Q<Label>("mcp-status");
                 if (success)
                 {
-                    UnityEngine.Debug.Log($"[GameSmith] MCP server connected with {mcpClient.AvailableTools.Count} tools");
-                    AddMessageBubble($"✓ MCP ready ({mcpClient.AvailableTools.Count} tools)", false);
+                    UnityEngine.Debug.Log($"[MCP] Ready: {mcpClient.AvailableTools.Count} tools");
+                    AddMessageBubble($"MCP ready ({mcpClient.AvailableTools.Count} tools)", false);
                     if (mcpStatus != null)
                     {
                         mcpStatus.text = $"✓ MCP: {mcpClient.AvailableTools.Count} tools";

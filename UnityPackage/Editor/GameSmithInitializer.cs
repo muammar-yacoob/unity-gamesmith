@@ -49,7 +49,7 @@ namespace SparkGames.UnityGameSmith.Editor
             // Log success (silent, only visible in console if user looks)
             if (settings != null)
             {
-                Debug.Log("[GameSmith] ✓ Settings initialized successfully");
+                // Settings initialized
             }
         }
 

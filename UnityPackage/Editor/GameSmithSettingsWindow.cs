@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using System.Collections;
+using Cysharp.Threading.Tasks;
+using System.Diagnostics;
+using System.Threading;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -16,6 +19,14 @@ namespace SparkGames.UnityGameSmith.Editor
         private string verificationMessage = "";
         private bool showPassword = false;
 
+        // MCP installation tracking
+        private bool isInstallingMCP = false;
+        private string mcpInstallStatus = "";
+        private CancellationTokenSource mcpInstallCts;
+        private bool showMCPTools = false;
+        private System.Collections.Generic.List<MCPTool> cachedMCPTools = null;
+        private bool isLoadingTools = false;
+
         [MenuItem("Tools/GameSmith/Configure Settings", false, 2)]
         public static void ShowWindow()
         {
@@ -27,6 +38,17 @@ namespace SparkGames.UnityGameSmith.Editor
         private void OnEnable()
         {
             config = GameSmithConfig.GetOrCreate();
+        }
+
+        private void OnDisable()
+        {
+            // Cancel any ongoing MCP installation
+            if (mcpInstallCts != null)
+            {
+                mcpInstallCts.Cancel();
+                mcpInstallCts.Dispose();
+                mcpInstallCts = null;
+            }
         }
 
         private void OnGUI()
@@ -109,52 +131,54 @@ namespace SparkGames.UnityGameSmith.Editor
                 bool isVerified = GameSmithSettings.Instance.IsApiKeyVerified(config.activeProvider);
                 bool hasValidFormat = GameSmithSettings.ValidateApiKeyFormat(config.activeProvider, currentKey);
 
-                // API Key field with show/hide toggle
-                EditorGUILayout.BeginHorizontal();
-                EditorGUI.BeginChangeCheck();
-                string newKey;
-                if (showPassword)
+                // Show API key input field only if not verified
+                if (!isVerified)
                 {
-                    newKey = EditorGUILayout.TextField("API Key", currentKey);
-                }
-                else
-                {
-                    newKey = EditorGUILayout.PasswordField("API Key", currentKey);
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    config.SetApiKey(config.activeProvider, newKey);
-                    verificationMessage = ""; // Clear message when key changes
-                }
-
-                // Show/Hide toggle button
-                if (GUILayout.Button(showPassword ? "🙈" : "👁", GUILayout.Width(30), GUILayout.Height(18)))
-                {
-                    showPassword = !showPassword;
-                }
-                EditorGUILayout.EndHorizontal();
-
-                // Validation status
-                if (!string.IsNullOrEmpty(currentKey))
-                {
-                    if (isVerified)
+                    // API Key field with show/hide toggle
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUI.BeginChangeCheck();
+                    string newKey;
+                    if (showPassword)
                     {
-                        EditorGUILayout.HelpBox("✅ API key verified and working", MessageType.Info);
-                    }
-                    else if (hasValidFormat)
-                    {
-                        EditorGUILayout.HelpBox("⚠️ API key format is valid but not verified yet", MessageType.Warning);
+                        newKey = EditorGUILayout.TextField("API Key", currentKey);
                     }
                     else
                     {
-                        EditorGUILayout.HelpBox("❌ API key format appears invalid for " + config.activeProvider, MessageType.Error);
+                        newKey = EditorGUILayout.PasswordField("API Key", currentKey);
                     }
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        config.SetApiKey(config.activeProvider, newKey);
+                        verificationMessage = ""; // Clear message when key changes
+                    }
+
+                    // Show/Hide toggle button
+                    if (GUILayout.Button(showPassword ? "🙈" : "👁", GUILayout.Width(30), GUILayout.Height(18)))
+                    {
+                        showPassword = !showPassword;
+                    }
+                    EditorGUILayout.EndHorizontal();
                 }
 
-                // Show verification message if any
+                // Show API key status (single help box)
                 if (!string.IsNullOrEmpty(verificationMessage))
                 {
                     EditorGUILayout.HelpBox(verificationMessage, isVerified ? MessageType.Info : MessageType.Error);
+                }
+                else if (!string.IsNullOrEmpty(currentKey))
+                {
+                    if (isVerified)
+                    {
+                        EditorGUILayout.HelpBox("API key verified and working", MessageType.Info);
+                    }
+                    else if (hasValidFormat)
+                    {
+                        EditorGUILayout.HelpBox("API key format is valid but not verified yet", MessageType.Warning);
+                    }
+                    else
+                    {
+                        EditorGUILayout.HelpBox("API key format appears invalid for " + config.activeProvider, MessageType.Error);
+                    }
                 }
 
                 EditorGUILayout.Space(3);
@@ -184,6 +208,7 @@ namespace SparkGames.UnityGameSmith.Editor
                         // Reset verification when user wants to edit
                         GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
                         verificationMessage = "API key reset. Please verify again after editing.";
+                        showPassword = false; // Reset to password mode when editing
                         Repaint();
                     }
                 }
@@ -222,6 +247,313 @@ namespace SparkGames.UnityGameSmith.Editor
             config.maxTokens = EditorGUILayout.IntSlider("Max Tokens", config.maxTokens, 256, 8192);
 
             EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(5);
+
+            // Unity MCP Server
+            DrawMCPSection();
+        }
+
+        private void DrawMCPSection()
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Unity MCP Server", EditorStyles.boldLabel);
+            EditorGUILayout.Space(5);
+
+            string mcpVersion = GetMCPVersion();
+            bool isInstalled = !string.IsNullOrEmpty(mcpVersion);
+
+            if (isInstalled)
+            {
+                EditorGUILayout.LabelField("Status", "✓ Installed");
+                EditorGUILayout.LabelField("Version", mcpVersion);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Unity MCP Server not detected", MessageType.Warning);
+            }
+
+            // Show installation progress if running
+            if (isInstallingMCP && !string.IsNullOrEmpty(mcpInstallStatus))
+            {
+                EditorGUILayout.Space(5);
+                EditorGUILayout.HelpBox(mcpInstallStatus, MessageType.Info);
+            }
+
+            EditorGUILayout.Space(5);
+
+            GUI.enabled = !isInstallingMCP;
+
+            if (isInstalled)
+            {
+                if (GUILayout.Button(isInstallingMCP ? "⏳ Updating..." : "🔄 Update MCP Server", GUILayout.Height(28)))
+                {
+                    InstallOrUpdateMCPAsync().Forget();
+                }
+            }
+            else
+            {
+                if (GUILayout.Button(isInstallingMCP ? "⏳ Installing..." : "⬇️ Install MCP Server", GUILayout.Height(28)))
+                {
+                    InstallOrUpdateMCPAsync().Forget();
+                }
+            }
+
+            GUI.enabled = true;
+
+            // Available Tools Section (collapsible)
+            if (isInstalled)
+            {
+                EditorGUILayout.Space(5);
+
+                EditorGUI.BeginChangeCheck();
+                showMCPTools = EditorGUILayout.Foldout(showMCPTools, "Available Tools", true);
+                if (EditorGUI.EndChangeCheck() && showMCPTools && cachedMCPTools == null && !isLoadingTools)
+                {
+                    // Load tools when foldout is opened for the first time
+                    LoadMCPToolsAsync().Forget();
+                }
+
+                if (showMCPTools)
+                {
+                    EditorGUI.indentLevel++;
+
+                    if (isLoadingTools)
+                    {
+                        EditorGUILayout.LabelField("Loading tools...", EditorStyles.miniLabel);
+                    }
+                    else if (cachedMCPTools != null && cachedMCPTools.Count > 0)
+                    {
+                        EditorGUILayout.LabelField($"Found {cachedMCPTools.Count} tool(s):", EditorStyles.miniLabel);
+                        EditorGUILayout.Space(3);
+
+                        foreach (var tool in cachedMCPTools)
+                        {
+                            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                            EditorGUILayout.LabelField(tool.Name, EditorStyles.boldLabel);
+                            if (!string.IsNullOrEmpty(tool.Description))
+                            {
+                                EditorGUILayout.LabelField(tool.Description, EditorStyles.wordWrappedMiniLabel);
+                            }
+                            EditorGUILayout.EndVertical();
+                            EditorGUILayout.Space(2);
+                        }
+                    }
+                    else if (cachedMCPTools != null && cachedMCPTools.Count == 0)
+                    {
+                        EditorGUILayout.LabelField("No tools available", EditorStyles.miniLabel);
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField("Click to load tools", EditorStyles.miniLabel);
+                        if (GUILayout.Button("Refresh Tools", GUILayout.Height(20)))
+                        {
+                            LoadMCPToolsAsync().Forget();
+                        }
+                    }
+
+                    EditorGUI.indentLevel--;
+                }
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private string GetMCPVersion()
+        {
+            try
+            {
+                string appData = System.Environment.GetEnvironmentVariable("APPDATA");
+                string packagePath = System.IO.Path.Combine(appData, "npm", "node_modules", "@spark-apps", "unity-mcp", "package.json");
+
+                if (System.IO.File.Exists(packagePath))
+                {
+                    string json = System.IO.File.ReadAllText(packagePath);
+                    // Simple JSON parsing for version
+                    var versionMatch = System.Text.RegularExpressions.Regex.Match(json, @"""version""\s*:\s*""([^""]+)""");
+                    if (versionMatch.Success)
+                    {
+                        return versionMatch.Groups[1].Value;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[GameSmith] Could not check MCP version: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private async UniTaskVoid InstallOrUpdateMCPAsync()
+        {
+            if (isInstallingMCP)
+            {
+                UnityEngine.Debug.LogWarning("[GameSmith] MCP installation already in progress");
+                return;
+            }
+
+            isInstallingMCP = true;
+            mcpInstallStatus = "Starting installation...";
+            mcpInstallCts = new CancellationTokenSource();
+            Repaint();
+
+            try
+            {
+                await InstallMCPInternalAsync(mcpInstallCts.Token);
+            }
+            catch (System.Exception ex)
+            {
+                mcpInstallStatus = $"❌ Installation failed: {ex.Message}";
+                GameSmithLogger.LogError($"MCP installation error: {ex.Message}");
+
+                EditorUtility.DisplayDialog(
+                    "Installation Error",
+                    $"Failed to install Unity MCP Server:\n{ex.Message}\n\n" +
+                    "Please manually run in Command Prompt:\nnpm install -g @spark-apps/unity-mcp",
+                    "OK"
+                );
+            }
+            finally
+            {
+                isInstallingMCP = false;
+                mcpInstallCts?.Dispose();
+                mcpInstallCts = null;
+                Repaint();
+            }
+        }
+
+        private async UniTask InstallMCPInternalAsync(CancellationToken cancellationToken)
+        {
+            // Switch to thread pool for process execution
+            await UniTask.SwitchToThreadPool();
+
+            Process npmProcess = null;
+
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c npm install -g @spark-apps/unity-mcp",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                npmProcess = new Process { StartInfo = startInfo };
+
+                await UniTask.SwitchToMainThread();
+                GameSmithLogger.Log("Installing Unity MCP Server via npm...");
+                mcpInstallStatus = "⏳ Running: npm install -g @spark-apps/unity-mcp";
+                Repaint();
+                await UniTask.SwitchToThreadPool();
+
+                if (!npmProcess.Start())
+                {
+                    throw new System.Exception("Failed to start npm process");
+                }
+
+                // Read output asynchronously
+                var outputLines = new System.Collections.Generic.List<string>();
+                var errorLines = new System.Collections.Generic.List<string>();
+
+                // Start reading stdout
+                var readOutputTask = ReadProcessOutputAsync(npmProcess.StandardOutput, outputLines, cancellationToken);
+
+                // Start reading stderr
+                var readErrorTask = ReadProcessOutputAsync(npmProcess.StandardError, errorLines, cancellationToken);
+
+                // Wait for process to complete with timeout (5 minutes)
+                var processExitTask = UniTask.WaitUntil(() => npmProcess.HasExited, cancellationToken: cancellationToken);
+                var timeoutTask = UniTask.Delay(System.TimeSpan.FromMinutes(5), cancellationToken: cancellationToken);
+
+                var winIndex = await UniTask.WhenAny(processExitTask, timeoutTask);
+
+                if (winIndex != 0) // timeout occurred
+                {
+                    npmProcess.Kill();
+                    throw new System.Exception("Installation timed out after 5 minutes");
+                }
+
+                // Wait a bit for output to finish
+                await UniTask.Delay(500, cancellationToken: cancellationToken);
+
+                // Check exit code
+                if (npmProcess.ExitCode != 0)
+                {
+                    string errorOutput = string.Join("\n", errorLines);
+                    throw new System.Exception($"npm exited with code {npmProcess.ExitCode}:\n{errorOutput}");
+                }
+
+                // Success!
+                await UniTask.SwitchToMainThread();
+                string newVersion = GetMCPVersion();
+                mcpInstallStatus = $"✅ Installation successful! Version: {newVersion ?? "unknown"}";
+                GameSmithLogger.Log($"Unity MCP Server installed successfully. Version: {newVersion}");
+
+                EditorUtility.DisplayDialog(
+                    "Installation Complete",
+                    $"Unity MCP Server has been installed successfully!\n\nVersion: {newVersion ?? "unknown"}\n\n" +
+                    "Please restart Unity for changes to take effect.",
+                    "OK"
+                );
+            }
+            catch (System.OperationCanceledException)
+            {
+                await UniTask.SwitchToMainThread();
+                mcpInstallStatus = "Installation cancelled";
+                throw;
+            }
+            catch (System.Exception ex)
+            {
+                await UniTask.SwitchToMainThread();
+                throw new System.Exception($"Installation failed: {ex.Message}", ex);
+            }
+            finally
+            {
+                npmProcess?.Dispose();
+            }
+        }
+
+        private async UniTask ReadProcessOutputAsync(System.IO.StreamReader reader, System.Collections.Generic.List<string> lines, CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+                {
+                    string line = await reader.ReadLineAsync();
+                    if (!string.IsNullOrEmpty(line))
+                    {
+                        lines.Add(line);
+
+                        // Only show meaningful progress, filter out npm warnings
+                        if (!line.Contains("npm WARN") && !line.Contains("npm notice"))
+                        {
+                            // Update status with latest line on main thread
+                            await UniTask.SwitchToMainThread();
+
+                            // Show more user-friendly messages
+                            if (line.Contains("added") || line.Contains("changed") || line.Contains("removed"))
+                            {
+                                mcpInstallStatus = "⏳ Installing packages...";
+                            }
+                            else if (line.Trim().Length > 0 && line.Trim().Length < 100)
+                            {
+                                mcpInstallStatus = $"⏳ {line.Trim()}";
+                            }
+
+                            Repaint();
+                            await UniTask.SwitchToThreadPool();
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[GameSmith] Error reading process output: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -388,6 +720,70 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     return "🔴"; // Red - not configured
                 }
+            }
+        }
+
+        private async UniTaskVoid LoadMCPToolsAsync()
+        {
+            if (isLoadingTools) return;
+
+            isLoadingTools = true;
+            cachedMCPTools = null;
+            Repaint();
+
+            try
+            {
+                // Create a temporary MCP client to get tools list
+                var tempClient = new MCPClientAsync();
+
+                // Use npx.cmd on Windows
+                string command = System.Environment.OSVersion.Platform == System.PlatformID.Win32NT ? "npx.cmd" : "npx";
+
+                bool connected = false;
+                tempClient.StartServerAsync(command, new[] { "@spark-apps/unity-mcp" }, success =>
+                {
+                    connected = success;
+                });
+
+                // Wait for connection (max 10 seconds)
+                float timeout = 10f;
+                float elapsed = 0f;
+                while (!connected && elapsed < timeout)
+                {
+                    await UniTask.Delay(100);
+                    elapsed += 0.1f;
+
+                    if (tempClient.IsConnected)
+                    {
+                        connected = true;
+                        break;
+                    }
+                }
+
+                if (connected && tempClient.IsConnected)
+                {
+                    // Get tools list
+                    cachedMCPTools = new System.Collections.Generic.List<MCPTool>(tempClient.AvailableTools);
+                    GameSmithLogger.Log($"Loaded {cachedMCPTools.Count} MCP tools");
+                }
+                else
+                {
+                    cachedMCPTools = new System.Collections.Generic.List<MCPTool>();
+                    GameSmithLogger.LogWarning("Failed to connect to MCP server to get tools list");
+                }
+
+                // Cleanup
+                tempClient.Dispose();
+            }
+            catch (System.Exception ex)
+            {
+                cachedMCPTools = new System.Collections.Generic.List<MCPTool>();
+                GameSmithLogger.LogError($"Error loading MCP tools: {ex.Message}");
+            }
+            finally
+            {
+                isLoadingTools = false;
+                Repaint();
             }
         }
     }
