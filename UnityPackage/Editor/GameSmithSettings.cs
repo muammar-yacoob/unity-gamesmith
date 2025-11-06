@@ -15,7 +15,7 @@ namespace SparkGames.UnityGameSmith.Editor
         public string activeProvider = "Claude";
         public string selectedModel = "claude-sonnet-4-20250514";
         public float temperature = 0.7f;
-        public int maxTokens = 4096;
+        public int maxTokens = 512;
         public string rulesAssetPath = "";
 
         [Serializable]
@@ -23,6 +23,7 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             public string provider;
             public string apiKey;
+            public bool isVerified = false;
         }
 
         public List<ApiKeyEntry> apiKeys = new List<ApiKeyEntry>();
@@ -91,12 +92,57 @@ namespace SparkGames.UnityGameSmith.Editor
             if (entry != null)
             {
                 entry.apiKey = apiKey;
+                // Reset verification when key changes
+                entry.isVerified = false;
             }
             else
             {
-                apiKeys.Add(new ApiKeyEntry { provider = providerName, apiKey = apiKey });
+                apiKeys.Add(new ApiKeyEntry { provider = providerName, apiKey = apiKey, isVerified = false });
             }
             Save();
+        }
+
+        public bool IsApiKeyVerified(string providerName)
+        {
+            var entry = apiKeys.Find(k => k.provider == providerName);
+            return entry?.isVerified ?? false;
+        }
+
+        public void SetApiKeyVerified(string providerName, bool verified)
+        {
+            var entry = apiKeys.Find(k => k.provider == providerName);
+            if (entry != null)
+            {
+                entry.isVerified = verified;
+                Save();
+            }
+        }
+
+        /// <summary>
+        /// Validates API key format for a given provider
+        /// </summary>
+        public static bool ValidateApiKeyFormat(string providerName, string apiKey)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey)) return false;
+
+            switch (providerName)
+            {
+                case "Claude":
+                    // Claude API keys start with "sk-ant-"
+                    return apiKey.StartsWith("sk-ant-") && apiKey.Length > 20;
+
+                case "OpenAI":
+                    // OpenAI API keys start with "sk-" (but not "sk-ant-")
+                    return apiKey.StartsWith("sk-") && !apiKey.StartsWith("sk-ant-") && apiKey.Length > 20;
+
+                case "Gemini":
+                    // Gemini API keys start with "AIza"
+                    return apiKey.StartsWith("AIza") && apiKey.Length > 30;
+
+                default:
+                    // Generic validation: at least 20 characters
+                    return apiKey.Length >= 20;
+            }
         }
     }
 }

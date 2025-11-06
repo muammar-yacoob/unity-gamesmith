@@ -36,8 +36,8 @@ namespace SparkGames.UnityGameSmith.Editor
     public class ChatHistory
     {
         private const int MaxMessages = 200; // cap to prevent bloat
-        private const string ResourcesRelativePath = "Assets/Resources/GameSmith";
-        private const string JsonAssetPath = ResourcesRelativePath + "/ChatHistory.json";
+        private const string GameSmithPath = "Assets/GameSmith";
+        private const string JsonAssetPath = GameSmithPath + "/ChatHistory.json";
 
         [SerializeField]
         private List<ChatMessage> messages = new List<ChatMessage>();
@@ -83,13 +83,15 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             var history = new ChatHistory();
 
-            // Try load TextAsset from Resources
-            TextAsset ta = Resources.Load<TextAsset>("GameSmith/ChatHistory");
-            if (ta != null && !string.IsNullOrEmpty(ta.text))
+#if UNITY_EDITOR
+            EnsureFolders();
+
+            if (File.Exists(JsonAssetPath))
             {
                 try
                 {
-                    var loaded = JsonUtility.FromJson<ChatHistoryWrapper>(ta.text);
+                    string json = File.ReadAllText(JsonAssetPath);
+                    var loaded = JsonUtility.FromJson<ChatHistoryWrapper>(json);
                     if (loaded != null && loaded.messages != null)
                     {
                         history.messages = loaded.messages;
@@ -100,16 +102,12 @@ namespace SparkGames.UnityGameSmith.Editor
             }
             else
             {
-#if UNITY_EDITOR
-                EnsureFolders();
-                if (!File.Exists(JsonAssetPath))
-                {
-                    File.WriteAllText(JsonAssetPath, JsonUtility.ToJson(new ChatHistoryWrapper { messages = new List<ChatMessage>() }, true));
-                    UnityEditor.AssetDatabase.ImportAsset(JsonAssetPath);
-                    UnityEditor.AssetDatabase.SaveAssets();
-                }
-#endif
+                // Create empty history file
+                File.WriteAllText(JsonAssetPath, JsonUtility.ToJson(new ChatHistoryWrapper { messages = new List<ChatMessage>() }, true));
+                UnityEditor.AssetDatabase.ImportAsset(JsonAssetPath);
+                UnityEditor.AssetDatabase.SaveAssets();
             }
+#endif
 
             return history;
         }
@@ -123,13 +121,9 @@ namespace SparkGames.UnityGameSmith.Editor
 #if UNITY_EDITOR
         private static void EnsureFolders()
         {
-            if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources"))
+            if (!UnityEditor.AssetDatabase.IsValidFolder(GameSmithPath))
             {
-                UnityEditor.AssetDatabase.CreateFolder("Assets", "Resources");
-            }
-            if (!UnityEditor.AssetDatabase.IsValidFolder(ResourcesRelativePath))
-            {
-                UnityEditor.AssetDatabase.CreateFolder("Assets/Resources", "GameSmith");
+                UnityEditor.AssetDatabase.CreateFolder("Assets", "GameSmith");
             }
         }
 #endif

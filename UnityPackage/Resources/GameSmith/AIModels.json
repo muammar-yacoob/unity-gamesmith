@@ -18,10 +18,12 @@
     },
     {
       "name": "Gemini",
-      "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models",
+      "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
       "apiKeyUrl": "https://aistudio.google.com/app/apikey",
       "models": [
-        { "id": "gemini-1.5-pro-latest", "displayName": "Gemini 1.5 Pro", "isEnabled": true }
+        { "id": "gemini-2.0-flash-exp", "displayName": "Gemini 2.0 Flash (Exp)", "isEnabled": true },
+        { "id": "gemini-1.5-pro", "displayName": "Gemini 1.5 Pro", "isEnabled": true },
+        { "id": "gemini-1.5-flash", "displayName": "Gemini 1.5 Flash", "isEnabled": true }
       ]
     },
     {

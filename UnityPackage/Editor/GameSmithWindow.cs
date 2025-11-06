@@ -103,8 +103,14 @@ namespace SparkGames.UnityGameSmith.Editor
             InitializeUI(root);
             LoadChatHistory();
 
-            // Add MCP status message
-            AddMessageBubble("💬 Chat ready. Click 'Start MCP' button below to enable Unity scene manipulation features.", false);
+            // Auto-start MCP server
+            EditorApplication.delayCall += () =>
+            {
+                if (mcpClient == null || !mcpClient.IsConnected)
+                {
+                    StartMCPServerAsync();
+                }
+            };
 
             // Enable config updates
             EditorApplication.update += CheckConfigChanges;
@@ -205,23 +211,27 @@ namespace SparkGames.UnityGameSmith.Editor
             // Start server asynchronously
             mcpClient.StartServerAsync(nodePath, args, (success) =>
             {
+                var mcpStatus = rootVisualElement.Q<Label>("mcp-status");
                 if (success)
                 {
                     UnityEngine.Debug.Log($"[GameSmith] MCP server connected with {mcpClient.AvailableTools.Count} tools");
-                    AddMessageBubble($"✓ MCP server started ({mcpClient.AvailableTools.Count} tools available)", false);
-
-                    // Update button
-                    var mcpButton = rootVisualElement.Q<Button>("mcp-button");
-                    if (mcpButton != null)
+                    AddMessageBubble($"✓ MCP ready ({mcpClient.AvailableTools.Count} tools)", false);
+                    if (mcpStatus != null)
                     {
-                        mcpButton.text = "MCP Running";
-                        mcpButton.SetEnabled(false);
+                        mcpStatus.text = $"✓ MCP: {mcpClient.AvailableTools.Count} tools";
+                        mcpStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
                     }
+
                 }
                 else
                 {
                     UnityEngine.Debug.LogWarning("[GameSmith] Failed to start MCP server");
-                    AddMessageBubble("❌ Failed to start MCP server. Check console for details.", false);
+                    AddMessageBubble("❌ MCP failed to start. Check console for details.", false);
+                    if (mcpStatus != null)
+                    {
+                        mcpStatus.text = "❌ MCP: Failed";
+                        mcpStatus.style.color = new StyleColor(new Color(0.9f, 0.4f, 0.4f));
+                    }
                 }
             });
 
@@ -306,10 +316,14 @@ namespace SparkGames.UnityGameSmith.Editor
                 root.Insert(0, controlsContainer);
             }
 
-            var mcpButton = new Button(() => StartMCPServerAsync());
-            mcpButton.text = "Start MCP Server";
-            mcpButton.name = "mcp-button";
-            controlsContainer.Add(mcpButton);
+            // MCP status label (read-only, not a button)
+            var mcpStatus = new Label("⏳ MCP: Starting...");
+            mcpStatus.name = "mcp-status";
+            mcpStatus.style.fontSize = 11;
+            mcpStatus.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.7f));
+            mcpStatus.style.marginLeft = 10;
+            mcpStatus.style.unityTextAlign = TextAnchor.MiddleLeft;
+            controlsContainer.Add(mcpStatus);
 
             // Create model dropdown programmatically
             var modelDropdownContainer = root.Q<VisualElement>("model-dropdown-container");
@@ -366,6 +380,23 @@ namespace SparkGames.UnityGameSmith.Editor
             if (clearButton != null)
             {
                 clearButton.clicked += ClearChat;
+            }
+
+            // Add View Logs button
+            var viewLogsButton = new Button(() => GameSmithLogger.OpenLogFolder());
+            viewLogsButton.text = "📝 View Logs";
+            viewLogsButton.tooltip = "Open log folder to view detailed logs";
+            viewLogsButton.style.marginLeft = 5;
+
+            var buttonsContainer = root.Q<VisualElement>("buttons-container");
+            if (buttonsContainer != null)
+            {
+                buttonsContainer.Add(viewLogsButton);
+            }
+            else if (clearButton != null)
+            {
+                // Add after clear button if container not found
+                clearButton.parent.Add(viewLogsButton);
             }
 
             if (sendButton != null)
@@ -450,14 +481,7 @@ namespace SparkGames.UnityGameSmith.Editor
             }
 
             // Get Unity project context
-            var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context.
-
-Help with:
-- Writing C# scripts
-- Explaining Unity concepts
-- Debugging issues
-- Suggesting solutions
-- Analyzing project structure
+            var systemContext = @"You are a Unity AI assistant. Be concise and direct.
 
 " + UnityProjectContext.GetProjectContext();
 
@@ -494,14 +518,7 @@ Help with:
 
                         // Get tools and system context again
                         var tools = mcpClient.AvailableTools;
-                        var systemContext = @"You are a Unity development AI assistant. You have access to the user's Unity project context and Unity MCP tools.
-
-Help with:
-- Writing C# scripts
-- Explaining Unity concepts
-- Debugging issues
-- Suggesting solutions
-- Analyzing project structure
+                        var systemContext = @"You are a Unity AI assistant. Be concise and direct.
 
 " + UnityProjectContext.GetProjectContext();
 
