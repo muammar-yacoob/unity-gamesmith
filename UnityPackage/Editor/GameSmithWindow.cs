@@ -20,6 +20,7 @@ namespace SparkGames.UnityGameSmith.Editor
         private bool isDragging;
         private float startMouseY;
         private float startHeight;
+        public System.Action OnResize;
 
         public ResizeDividerManipulator(VisualElement target)
         {
@@ -50,7 +51,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 var height = targetElement.resolvedStyle.height;
                 if (height <= 0 || float.IsNaN(height))
                 {
-                    height = 280f; // Default height
+                    height = 80f; // Default height (half of original)
                 }
                 startHeight = height;
                 target.CaptureMouse();
@@ -65,12 +66,16 @@ namespace SparkGames.UnityGameSmith.Editor
                 float deltaY = evt.mousePosition.y - startMouseY;
                 float newHeight = startHeight - deltaY; // Inverted because dragging divider up increases input area
                 
-                // Clamp to reasonable bounds
-                newHeight = Mathf.Clamp(newHeight, 200f, 800f);
+                // Clamp to reasonable bounds (reduced minimum for smaller default)
+                newHeight = Mathf.Clamp(newHeight, 100f, 800f);
                 
                 targetElement.style.height = newHeight;
                 targetElement.style.flexGrow = 0;
                 targetElement.style.flexShrink = 0;
+                
+                // Trigger resize callback
+                OnResize?.Invoke();
+                
                 evt.StopPropagation();
             }
         }
@@ -197,6 +202,48 @@ namespace SparkGames.UnityGameSmith.Editor
 
             // Enable config updates
             EditorApplication.update += CheckConfigChanges;
+            
+            // Update input height when window is resized
+            root.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                if (messageInput != null)
+                {
+                    UpdateInputFieldHeight();
+                }
+            });
+        }
+        
+        private void UpdateInputFieldHeight()
+        {
+            if (messageInput == null) return;
+            
+            var inputArea = rootVisualElement?.Q<VisualElement>("input-area");
+            var inputFooter = rootVisualElement?.Q<VisualElement>(className: "input-footer");
+            
+            if (inputArea != null && inputFooter != null)
+            {
+                var areaHeight = inputArea.resolvedStyle.height;
+                var footerHeight = inputFooter.resolvedStyle.height;
+                
+                if (areaHeight > 0 && !float.IsNaN(areaHeight) && footerHeight > 0 && !float.IsNaN(footerHeight))
+                {
+                    var availableHeight = areaHeight - footerHeight;
+                    if (availableHeight > 30) // Reduced minimum
+                    {
+                        messageInput.style.height = availableHeight;
+                        messageInput.style.minHeight = availableHeight;
+                        messageInput.style.maxHeight = availableHeight;
+                        
+                        // Update internal text element
+                        var textElement = messageInput.Q<TextElement>();
+                        if (textElement != null)
+                        {
+                            textElement.style.height = availableHeight - 16; // Reduced padding offset
+                            textElement.style.minHeight = availableHeight - 16;
+                        }
+                    }
+                }
+            }
         }
 
         private void StartMCPServerAsync()
@@ -365,11 +412,13 @@ namespace SparkGames.UnityGameSmith.Editor
             var inputArea = root.Q<VisualElement>("input-area");
             if (resizeDivider != null && inputArea != null)
             {
-                resizeDivider.AddManipulator(new ResizeDividerManipulator(inputArea));
+                var manipulator = new ResizeDividerManipulator(inputArea);
+                manipulator.OnResize += UpdateInputFieldHeight;
+                resizeDivider.AddManipulator(manipulator);
                 // Set initial height if not set
                 if (inputArea.resolvedStyle.height <= 0 || float.IsNaN(inputArea.resolvedStyle.height))
                 {
-                    inputArea.style.height = 280;
+                    inputArea.style.height = 140;
                 }
             }
 
@@ -393,8 +442,9 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
 
                     modelDropdown = new PopupField<string>(models, currentModel);
-                    // Display human-friendly names from config while keeping ids as values
-                    modelDropdown.formatSelectedValueCallback = (val) => config.GetModelDisplayName(val);
+                    // Display only model name when closed (without details in parentheses)
+                    // Full details shown when dropdown is open
+                    modelDropdown.formatSelectedValueCallback = (val) => GetModelNameOnly(val);
                     modelDropdown.formatListItemCallback = (val) => config.GetModelDisplayName(val);
                     modelDropdown.RegisterValueChangedCallback(evt => OnModelChanged(evt.newValue));
                     modelDropdownContainer.Add(modelDropdown);
@@ -450,65 +500,28 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 // Ensure multiline is enabled and field expands properly
                 messageInput.multiline = true;
+                messageInput.style.flexGrow = 1;
+                messageInput.style.flexShrink = 1;
                 
-                // Set height to fill the resizable input area
-                void UpdateInputHeight()
-                {
-                    if (messageInput != null)
-                    {
-                        var inputArea = root.Q<VisualElement>("input-area");
-                        var inputFooter = root.Q<VisualElement>(className: "input-footer");
-                        var inputContainer = root.Q<VisualElement>(className: "input-container");
-                        
-                        if (inputArea != null && inputFooter != null && inputContainer != null)
-                        {
-                            var areaHeight = inputArea.resolvedStyle.height;
-                            var footerHeight = inputFooter.resolvedStyle.height;
-                            
-                            if (areaHeight > 0 && !float.IsNaN(areaHeight) && footerHeight > 0 && !float.IsNaN(footerHeight))
-                            {
-                                // Calculate available height: input area - footer
-                                var availableHeight = areaHeight - footerHeight;
-                                if (availableHeight > 50) // Ensure minimum height
-                                {
-                                    messageInput.style.height = availableHeight;
-                                    messageInput.style.flexGrow = 1;
-                                    messageInput.style.flexShrink = 1;
-                                }
-                            }
-                            else
-                            {
-                                // Fallback: use container height if available
-                                var containerHeight = inputContainer.resolvedStyle.height;
-                                if (containerHeight > 0 && !float.IsNaN(containerHeight))
-                                {
-                                    var fallbackHeight = containerHeight - footerHeight;
-                                    if (fallbackHeight > 50)
-                                    {
-                                        messageInput.style.height = fallbackHeight;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Update height initially and on resize
+                EditorApplication.delayCall += UpdateInputFieldHeight;
+                EditorApplication.delayCall += () => EditorApplication.delayCall += UpdateInputFieldHeight;
                 
-                // Update height initially and when input area is resized
-                EditorApplication.delayCall += UpdateInputHeight;
-                messageInput.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
+                // Register for geometry changes
+                messageInput.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputFieldHeight());
                 
                 // Also update when input area is resized
-                var inputArea = root.Q<VisualElement>("input-area");
-                if (inputArea != null)
+                var inputAreaElement = root.Q<VisualElement>("input-area");
+                if (inputAreaElement != null)
                 {
-                    inputArea.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
+                    inputAreaElement.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputFieldHeight());
                 }
                 
                 // Update when footer changes size
-                var inputFooter = root.Q<VisualElement>(className: "input-footer");
-                if (inputFooter != null)
+                var inputFooterElement = root.Q<VisualElement>(className: "input-footer");
+                if (inputFooterElement != null)
                 {
-                    inputFooter.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
+                    inputFooterElement.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputFieldHeight());
                 }
                 
                 messageInput.RegisterCallback<KeyDownEvent>(evt =>
@@ -520,6 +533,18 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
                 }, TrickleDown.TrickleDown);
             }
+        }
+
+        private string GetModelNameOnly(string modelId)
+        {
+            var fullName = config.GetModelDisplayName(modelId);
+            // Extract model name without details in parentheses
+            var parenIndex = fullName.IndexOf('(');
+            if (parenIndex > 0)
+            {
+                return fullName.Substring(0, parenIndex).Trim();
+            }
+            return fullName;
         }
 
         private void OnModelChanged(string newModel)

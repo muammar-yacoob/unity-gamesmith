@@ -5,8 +5,11 @@
       "apiUrl": "https://api.anthropic.com/v1/messages",
       "apiKeyUrl": "https://console.anthropic.com/settings/keys",
       "models": [
-        { "id": "claude-3-5-sonnet-20241022", "displayName": "Sonnet 3.5", "isEnabled": true },
-        { "id": "claude-3-5-haiku-20241022", "displayName": "Haiku 3.5", "isEnabled": true }
+        { "id": "claude-opus-4-1-20250805", "displayName": "🧠 Opus 4.1 (Most Capable – Coding & Reasoning)", "isEnabled": true },
+        { "id": "claude-sonnet-4-20250514", "displayName": "🧠 Sonnet 4 (High-Performance Reasoning)", "isEnabled": true },
+        { "id": "claude-haiku-4-5-20251001", "displayName": "Haiku 4.5 (Fast & Efficient)", "isEnabled": true },
+        { "id": "claude-3.7-sonnet-20250219", "displayName": "🧠 Sonnet 3.7 (Legacy Advanced)", "isEnabled": true },
+        { "id": "claude-3-5-haiku-20241022", "displayName": "Haiku 3.5 (Speed-Optimised)", "isEnabled": true }
       ]
     },
     {
@@ -14,8 +17,12 @@
       "apiUrl": "https://api.openai.com/v1/chat/completions",
       "apiKeyUrl": "https://platform.openai.com/api-keys",
       "models": [
-        { "id": "gpt-4o", "displayName": "GPT-4o", "isEnabled": true },
-        { "id": "o3-mini-2025-01-31", "displayName": "🧠 o3-mini", "isEnabled": true }
+        { "id": "gpt-5-codex", "displayName": "🧠 GPT-5 Codex (Top Programming Model)", "isEnabled": true },
+        { "id": "gpt-5", "displayName": "GPT-5 (Flagship)", "isEnabled": true },
+        { "id": "o3-pro", "displayName": "🧠 o3-Pro (Most Intelligent Reasoning)", "isEnabled": true },
+        { "id": "o3", "displayName": "🧠 o3 (Advanced Reasoning)", "isEnabled": true },
+        { "id": "gpt-4o", "displayName": "GPT-4o (Multimodal Model)", "isEnabled": true },
+        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini (Lightweight Multimodal)", "isEnabled": true }
       ]
     },
     {
@@ -23,8 +30,9 @@
       "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
       "apiKeyUrl": "https://aistudio.google.com/app/apikey",
       "models": [
-        { "id": "gemini-2.0-flash-thinking-exp-01-21", "displayName": "🧠 Flash Thinking", "isEnabled": true },
-        { "id": "gemini-2.0-flash-exp", "displayName": "Flash 2.0", "isEnabled": true }
+        { "id": "gemini-2.5-pro", "displayName": "🧠 Gemini 2.5 Pro (Most Intelligent + Thinking)", "isEnabled": true },
+        { "id": "gemini-2.5-flash", "displayName": "Gemini 2.5 Flash (Balanced Price-Performance)", "isEnabled": true },
+        { "id": "gemini-2.5-flash-lite", "displayName": "Gemini 2.5 Flash-Lite (Fast & Low-Cost)", "isEnabled": true }
       ]
     },
     {
