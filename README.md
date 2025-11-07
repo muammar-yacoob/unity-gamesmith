@@ -26,28 +26,20 @@
 
 ## 📥 Installation
 
-### Prerequisites
-
-**⚠️ UniTask is required** - Install it first before installing GameSmith:
-
-1. In Unity, open `Window → Package Manager → + → Add package from git URL`
-2. Enter: `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`
-3. Wait for Unity to import UniTask
-
-### Install GameSmith
-
-#### Option 1: One-Click Install (Recommended)
+### Option 1: One-Click Install (Recommended)
 
 [![Install via Needle Package Installer](https://img.shields.io/badge/Install-Unity%20Package-blue?style=for-the-badge&logo=unity)](https://package-installer.needle.tools/v1/installer/github.com/muammar-yacoob/unity-gamesmith?upmPackagePath=/UnityPackage&registry=https://github.com/muammar-yacoob/unity-gamesmith.git)
 
 Click the button above to install directly in Unity Editor.
 
-#### Option 2: Manual Git URL
+### Option 2: Manual Git URL
 
 In Unity Package Manager (UPM): `Window → Package Manager → + → Add package from git URL`
 ```
 https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 ```
+
+**Note:** Dependencies (UniTask) are installed automatically via OpenUPM.
 
 After installation, access via **Tools → Game Smith** (Alt+G) in Unity Editor.
 
@@ -229,24 +221,12 @@ Automated WebGL testing and performance profiling for Unity builds.
 
 - Unity 2021.3 LTS or later
 - .NET Standard 2.1 or 4.x
-- **UniTask** - Required dependency (async/await support)
 - AI backend: Ollama (recommended) or API key
 - **Optional**: Node.js 16+ (for MCP servers)
 
 ---
 
 ## 🔧 Troubleshooting
-
-<details>
-<summary><b>"Cysharp" or "UniTask" errors</b></summary>
-
-You need to install UniTask first:
-1. `Window → Package Manager → + → Add package from git URL`
-2. Enter: `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`
-3. Wait for import to complete
-4. GameSmith should compile successfully
-
-</details>
 
 <details>
 <summary><b>Package not showing</b></summary>

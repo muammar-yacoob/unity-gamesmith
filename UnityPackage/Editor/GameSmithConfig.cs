@@ -119,7 +119,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (data != null && data.providers != null)
                 {
                     providers = data.providers;
-                    Debug.Log($"[GameSmith] Loaded {providers.Count} AI provider(s) from package Resources");
+                    Debug.Log($"Game Smith 🗡️ ready with {providers.Count} tools. Alt+G to configure");
                 }
                 else
                 {
