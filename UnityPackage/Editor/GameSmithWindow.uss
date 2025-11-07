@@ -331,3 +331,63 @@
     color: rgb(170, 170, 170);
 }
 
+/* Thinking Bubble Styles */
+.message-thinking {
+    background-color: rgba(102, 178, 255, 0.08);
+    border-radius: 4px;
+    padding: 0;
+    margin: 4px 40px;
+    border-width: 1px;
+    border-color: rgba(102, 178, 255, 0.2);
+}
+
+.thinking-foldout {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+}
+
+.thinking-foldout > .unity-foldout__toggle {
+    background-color: transparent;
+    border-radius: 4px;
+    padding: 8px 12px;
+    border-width: 0;
+    margin: 0;
+    min-height: 32px;
+}
+
+.thinking-foldout > .unity-foldout__toggle:hover {
+    background-color: rgba(102, 178, 255, 0.05);
+}
+
+.thinking-foldout > .unity-foldout__toggle > .unity-toggle__checkmark {
+    -unity-background-image-tint-color: rgb(102, 178, 255);
+    opacity: 0.6;
+}
+
+.thinking-foldout > .unity-foldout__toggle > .unity-toggle__text {
+    color: rgb(130, 160, 200);
+    font-size: 12px;
+    -unity-font-style: italic;
+    padding-left: 4px;
+}
+
+.thinking-foldout > .unity-foldout__content {
+    padding: 0;
+    margin: 0;
+    border-top-width: 1px;
+    border-top-color: rgba(102, 178, 255, 0.15);
+}
+
+.thinking-content {
+    padding: 10px 12px;
+    background-color: rgba(102, 178, 255, 0.02);
+}
+
+.thinking-text {
+    color: rgb(160, 160, 160);
+    white-space: normal;
+    font-size: 12px;
+    opacity: 0.95;
+}
+

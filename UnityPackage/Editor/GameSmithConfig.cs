@@ -120,9 +120,9 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     providers = data.providers;
 
-                    // Count total models across all providers
-                    int totalModels = providers.Sum(p => p.models?.Count ?? 0);
-                    Debug.Log($"Game Smith 🗡️ ready with {totalModels} models. Alt+G to configure");
+                    // Count total models across all providers (excluding Ollama which loads dynamically)
+                    int totalModels = providers.Where(p => p.name != "Ollama").Sum(p => p.models?.Count ?? 0);
+                    Debug.Log($"Game Smith 🗡️ ready with {totalModels} AI models. Alt+G to configure");
                 }
                 else
                 {

@@ -227,7 +227,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     // State 2: Valid format but not verified → Show "Verify API Key"
                     if (GUILayout.Button(isVerifying ? "⏳ Verifying..." : "✓ Verify API Key", GUILayout.Height(28)))
                     {
-                        EditorCoroutineRunner.StartCoroutine(VerifyApiKey());
+                        VerifyApiKeyAsync().Forget();
                     }
                 }
                 else if (!string.IsNullOrEmpty(currentKey))
@@ -480,7 +480,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 npmProcess = new Process { StartInfo = startInfo };
 
                 await UniTask.SwitchToMainThread();
-                GameSmithLogger.Log("Installing Unity MCP Server via npm...");
                 mcpInstallStatus = "⏳ Running: npm install -g @spark-apps/unity-mcp";
                 Repaint();
                 await UniTask.SwitchToThreadPool();
@@ -526,7 +525,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 await UniTask.SwitchToMainThread();
                 string newVersion = GetMCPVersion();
                 mcpInstallStatus = $"✅ Installation successful! Version: {newVersion ?? "unknown"}";
-                GameSmithLogger.Log($"Unity MCP Server installed successfully. Version: {newVersion}");
 
                 EditorUtility.DisplayDialog(
                     "Installation Complete",
@@ -592,65 +590,77 @@ namespace SparkGames.UnityGameSmith.Editor
         }
 
         /// <summary>
-        /// Verify API key by making a test request
+        /// Verify API key by making a test request (async)
         /// </summary>
-        private IEnumerator VerifyApiKey()
+        private async UniTaskVoid VerifyApiKeyAsync()
         {
             isVerifying = true;
             verificationMessage = "Verifying API key...";
             Repaint();
 
-            // Create a simple test request
-            var testClient = new AIAgentClient(config);
-            string errorMessage = "";
+            try
+            {
+                var testClient = new AIAgentClient(config);
+                bool completed = false;
+                bool success = false;
+                string errorMessage = "";
 
-            testClient.SendMessage(
-                "Hello",
-                "You are a test assistant. Reply with 'OK' only.",
-                null,
-                response =>
+                // Send test request
+                testClient.SendMessage(
+                    "Hello",
+                    "You are a test assistant. Reply with 'OK' only.",
+                    null,
+                    response =>
+                    {
+                        completed = true;
+                        success = true;
+                    },
+                    error =>
+                    {
+                        completed = true;
+                        success = false;
+                        errorMessage = error;
+                    }
+                );
+
+                // Wait for completion with timeout
+                var cts = new CancellationTokenSource();
+                cts.CancelAfterSlim(System.TimeSpan.FromSeconds(30));
+
+                try
                 {
-                    // Success!
-                    GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, true);
-                    verificationMessage = $"✅ API key verified successfully for {config.activeProvider}!";
-                    GameSmithLogger.Log($"API key verified for {config.activeProvider}");
-                },
-                error =>
+                    await UniTask.WaitUntil(() => completed, cancellationToken: cts.Token);
+
+                    if (success)
+                    {
+                        GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, true);
+                        verificationMessage = $"✅ API key verified";
+                    }
+                    else
+                    {
+                        GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
+                        verificationMessage = $"❌ {errorMessage}";
+                        GameSmithLogger.LogError(errorMessage);
+                    }
+                }
+                catch (System.OperationCanceledException)
                 {
-                    // Failed
-                    errorMessage = error;
+                    verificationMessage = "❌ Timed out. Check your connection.";
                     GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
-                    verificationMessage = $"❌ Verification failed: {error}";
-                    GameSmithLogger.LogWarning($"API key verification failed for {config.activeProvider}: {error}");
-                }
-            );
-
-            // Wait for response (max 30 seconds)
-            float timeout = 30f;
-            float elapsed = 0f;
-
-            while (string.IsNullOrEmpty(verificationMessage.Contains("✅") ? "done" : "") &&
-                   string.IsNullOrEmpty(errorMessage) &&
-                   elapsed < timeout)
-            {
-                yield return null;
-                elapsed += 0.1f;
-
-                // Check if verification completed
-                if (verificationMessage.Contains("✅") || verificationMessage.Contains("❌"))
-                {
-                    break;
+                    GameSmithLogger.LogWarning("API key verification timed out");
                 }
             }
-
-            if (elapsed >= timeout && !verificationMessage.Contains("✅") && !verificationMessage.Contains("❌"))
+            catch (System.Exception ex)
             {
-                verificationMessage = "❌ Verification timed out. Please check your connection and try again.";
+                verificationMessage = $"❌ {ex.Message}";
                 GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
+                GameSmithLogger.LogError(ex.Message);
             }
-
-            isVerifying = false;
-            Repaint();
+            finally
+            {
+                isVerifying = false;
+                Repaint();
+            }
         }
 
         /// <summary>

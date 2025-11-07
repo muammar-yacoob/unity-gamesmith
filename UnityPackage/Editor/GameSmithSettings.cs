@@ -13,7 +13,7 @@ namespace SparkGames.UnityGameSmith.Editor
     public class GameSmithSettings
     {
         public string activeProvider = "Claude";
-        public string selectedModel = "claude-sonnet-4-5-20250929";  // Latest Sonnet 4.5
+        public string selectedModel = "claude-3-5-sonnet-20241022";  // Latest Sonnet 3.5
         public float temperature = 0.7f;
         public int maxTokens = 512;
         public string rulesAssetPath = "";

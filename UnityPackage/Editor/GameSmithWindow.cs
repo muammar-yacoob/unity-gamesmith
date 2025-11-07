@@ -160,7 +160,8 @@ namespace SparkGames.UnityGameSmith.Editor
                 var mcpStatus = rootVisualElement?.Q<Label>("mcp-status");
                 if (success)
                 {
-                    UnityEngine.Debug.Log($"Unity-MCP Connected and ready with {mcpClient.AvailableTools.Count} tools");
+                    var mcpUrl = "https://github.com/muammar-yacoob/unity-mcp";
+                    UnityEngine.Debug.Log($"Unity-MCP Connected and ready with {mcpClient.AvailableTools.Count} tools.\n for more information, visit {mcpUrl}");
                     AddMessageBubble($"MCP ready ({mcpClient.AvailableTools.Count} tools)", false);
                     if (mcpStatus != null)
                     {
@@ -449,8 +450,14 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
 
         private void HandleAIResponse(AIResponse response)
         {
-            // Display text content if any
-            if (!string.IsNullOrEmpty(response.TextContent))
+            // Display thinking content in a separate bubble if present
+            if (!string.IsNullOrEmpty(response.ThinkingContent) && !string.IsNullOrWhiteSpace(response.ThinkingContent))
+            {
+                AddThinkingBubble(response.ThinkingContent);
+            }
+
+            // Display text content if any (but not if it's a tool use)
+            if (!string.IsNullOrEmpty(response.TextContent) && !response.HasToolUse)
             {
                 AddMessageBubble(response.TextContent, false);
                 history.AddMessage(ChatMessage.Role.Assistant, response.TextContent);
@@ -459,19 +466,32 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
             // Handle tool use
             if (response.HasToolUse)
             {
-                AddMessageBubble($"[Using tool: {response.ToolName}]", false);
-
                 // Execute tool asynchronously
                 if (mcpClient != null && mcpClient.IsConnected)
                 {
                     mcpClient.CallToolAsync(response.ToolName, response.ToolInput, (toolResult) =>
                     {
-                        // Add tool result to chat
-                        AddMessageBubble($"[Tool result: {toolResult}]", false);
+                        // For Ollama and OpenAI, just display the tool result nicely and re-enable input
+                        if (client.ActiveProvider == "Ollama" || client.ActiveProvider == "OpenAI")
+                        {
+                            // Parse and format the tool result for display
+                            string formattedResult = FormatToolResult(response.ToolName, toolResult);
+                            AddMessageBubble(formattedResult, false);
+                            history.AddMessage(ChatMessage.Role.Assistant, formattedResult);
 
-                        // Get tools and system context again
-                        var tools = mcpClient.AvailableTools;
-                        var systemContext = @"You are a Unity AI assistant. Be concise and direct.
+                            // Re-enable input for next message
+                            messageInput.SetEnabled(true);
+                            if (sendButton != null)
+                            {
+                                sendButton.SetEnabled(true);
+                            }
+                            messageInput.Focus();
+                        }
+                        else
+                        {
+                            // For Claude/Gemini, continue conversation with tool result
+                            var tools = mcpClient.AvailableTools;
+                            var systemContext = @"You are a Unity AI assistant. Be concise and direct.
 
 IMPORTANT: You have access to Unity scene manipulation tools via MCP. When the user asks to modify Unity objects (create, move, scale, rotate, delete), you MUST use the available tools.
 
@@ -485,10 +505,11 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
 
 " + UnityProjectContext.GetProjectContext();
 
-                        // Send tool result back to AI to continue conversation
-                        client.SendToolResult(response.ToolUseId, toolResult, systemContext, tools,
-                            onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
-                            onError: (error) => HandleError(error));
+                            // Send tool result back to AI to continue conversation
+                            client.SendToolResult(response.ToolUseId, toolResult, systemContext, tools,
+                                onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
+                                onError: (error) => HandleError(error));
+                        }
                     });
                 }
                 else
@@ -506,6 +527,119 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
                 }
                 messageInput.Focus();
             }
+        }
+
+        private string FormatToolResult(string toolName, string toolResult)
+        {
+            // Parse the tool result and format it nicely
+            try
+            {
+                // Try to parse as JSON for better formatting
+                var resultObj = MiniJSON.Json.Deserialize(toolResult) as Dictionary<string, object>;
+                if (resultObj != null)
+                {
+                    // Format based on tool type
+                    if (toolName == "unity_get_hierarchy")
+                    {
+                        if (resultObj.ContainsKey("objects"))
+                        {
+                            var objects = resultObj["objects"] as List<object>;
+                            if (objects == null || objects.Count == 0)
+                            {
+                                return "The scene is empty.";
+                            }
+                            var objectNames = objects.Select(o =>
+                            {
+                                // Handle both string and dictionary formats
+                                if (o is Dictionary<string, object> objDict && objDict.ContainsKey("name"))
+                                    return objDict["name"].ToString();
+                                return o.ToString();
+                            }).ToArray();
+                            return $"Objects in the scene:\n• " + string.Join("\n• ", objectNames);
+                        }
+                        else
+                        {
+                            // Maybe it's a direct array result
+                            return "Scene hierarchy retrieved";
+                        }
+                    }
+                    else if (toolName.Contains("create"))
+                    {
+                        var objName = resultObj.ContainsKey("name") ? resultObj["name"].ToString() : "object";
+                        return $"✅ Created {objName} successfully";
+                    }
+                    else if (toolName.Contains("delete") || toolName.Contains("remove"))
+                    {
+                        return $"✅ Deleted object successfully";
+                    }
+                    else if (toolName.Contains("scale") || toolName.Contains("rotate") || toolName.Contains("translate") || toolName.Contains("move"))
+                    {
+                        return $"✅ Transform applied successfully";
+                    }
+
+                    // Generic format for other results
+                    if (resultObj.ContainsKey("result"))
+                    {
+                        return resultObj["result"].ToString();
+                    }
+                    if (resultObj.ContainsKey("message"))
+                    {
+                        return resultObj["message"].ToString();
+                    }
+                }
+            }
+            catch
+            {
+                // If not JSON, just return the raw result cleaned up
+            }
+
+            // Fallback: clean up the result before returning
+            if (string.IsNullOrEmpty(toolResult))
+            {
+                return $"✅ {toolName} executed successfully";
+            }
+
+            // Remove markdown code block markers if present
+            string cleanedResult = toolResult;
+            if (cleanedResult.StartsWith("```json") || cleanedResult.StartsWith("```"))
+            {
+                // Remove opening and closing code block markers
+                cleanedResult = System.Text.RegularExpressions.Regex.Replace(cleanedResult, @"^```[^\n]*\n?", "");
+                cleanedResult = System.Text.RegularExpressions.Regex.Replace(cleanedResult, @"\n?```$", "");
+
+                // Try to parse the cleaned JSON
+                try
+                {
+                    var obj = MiniJSON.Json.Deserialize(cleanedResult) as Dictionary<string, object>;
+                    if (obj != null)
+                    {
+                        // Check for common response patterns
+                        if (obj.ContainsKey("success") && (bool)obj["success"])
+                        {
+                            return $"✅ {toolName} completed successfully";
+                        }
+                        if (obj.ContainsKey("error"))
+                        {
+                            return $"❌ Error: {obj["error"]}";
+                        }
+                        // If it's a small object, format it nicely
+                        if (obj.Count <= 3)
+                        {
+                            var parts = obj.Select(kvp => $"{kvp.Key}: {kvp.Value}");
+                            return string.Join("\n", parts);
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            // If result is too long, truncate it
+            if (cleanedResult.Length > 200)
+            {
+                cleanedResult = cleanedResult.Substring(0, 197) + "...";
+            }
+
+            return cleanedResult;
         }
 
         private void HandleError(string error)
@@ -536,6 +670,48 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
             label.AddToClassList(isUser ? "message-user-text" : "message-assistant-text");
 
             bubble.Add(label);
+            messagesContainer.Add(bubble);
+
+            // Scroll to bottom
+            EditorApplication.delayCall += () =>
+            {
+                if (chatScroll != null && chatScroll.contentContainer != null)
+                {
+                    chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
+                }
+            };
+        }
+
+        private void AddThinkingBubble(string thinkingContent)
+        {
+            if (messagesContainer == null || string.IsNullOrWhiteSpace(thinkingContent))
+            {
+                return;
+            }
+
+            var bubble = new VisualElement();
+            bubble.AddToClassList("message-thinking");
+
+            var thinkingFoldout = new UnityEngine.UIElements.Foldout();
+
+            // Calculate thinking time (approximate based on content length)
+            float thinkingTime = thinkingContent.Length * 0.01f;
+            string timeText = thinkingTime < 1f ? $"{thinkingTime:F1}s" : $"{(int)thinkingTime}s";
+
+            thinkingFoldout.text = $"💭 Thinking... ({timeText})";
+            thinkingFoldout.value = false; // Collapsed by default
+            thinkingFoldout.AddToClassList("thinking-foldout");
+
+            var thinkingContentContainer = new VisualElement();
+            thinkingContentContainer.AddToClassList("thinking-content");
+
+            var thinkingLabel = new Label(thinkingContent);
+            thinkingLabel.AddToClassList("thinking-text");
+            thinkingContentContainer.Add(thinkingLabel);
+
+            thinkingFoldout.Add(thinkingContentContainer);
+            bubble.Add(thinkingFoldout);
+
             messagesContainer.Add(bubble);
 
             // Scroll to bottom

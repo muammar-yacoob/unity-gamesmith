@@ -5,8 +5,8 @@
       "apiUrl": "https://api.anthropic.com/v1/messages",
       "apiKeyUrl": "https://console.anthropic.com/settings/keys",
       "models": [
-        { "id": "claude-sonnet-4-5-20250929", "displayName": "Sonnet 4.5", "isEnabled": true },
-        { "id": "claude-haiku-4-5-20251015", "displayName": "Haiku 4.5", "isEnabled": true }
+        { "id": "claude-3-5-sonnet-20241022", "displayName": "Sonnet 3.5", "isEnabled": true },
+        { "id": "claude-3-5-haiku-20241022", "displayName": "Haiku 3.5", "isEnabled": true }
       ]
     },
     {
@@ -14,9 +14,8 @@
       "apiUrl": "https://api.openai.com/v1/chat/completions",
       "apiKeyUrl": "https://platform.openai.com/api-keys",
       "models": [
-        { "id": "gpt-5-codex", "displayName": "GPT-5 Codex", "isEnabled": true },
-        { "id": "o3", "displayName": "🧠 o3", "isEnabled": true },
-        { "id": "gpt-4o", "displayName": "GPT-4o", "isEnabled": true }
+        { "id": "gpt-4o", "displayName": "GPT-4o", "isEnabled": true },
+        { "id": "o3-mini-2025-01-31", "displayName": "🧠 o3-mini", "isEnabled": true }
       ]
     },
     {
@@ -24,8 +23,8 @@
       "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
       "apiKeyUrl": "https://aistudio.google.com/app/apikey",
       "models": [
-        { "id": "gemini-2.5-pro", "displayName": "🧠 2.5 Pro", "isEnabled": true },
-        { "id": "gemini-2.5-flash", "displayName": "2.5 Flash", "isEnabled": true }
+        { "id": "gemini-2.0-flash-thinking-exp-01-21", "displayName": "🧠 Flash Thinking", "isEnabled": true },
+        { "id": "gemini-2.0-flash-exp", "displayName": "Flash 2.0", "isEnabled": true }
       ]
     },
     {
@@ -36,6 +35,3 @@
     }
   ]
 }
-
-
-
