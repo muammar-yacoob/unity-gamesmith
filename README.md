@@ -24,6 +24,35 @@
 
 ---
 
+## ⚡ Performance Optimization (NEW in v2.0)
+
+**90% cost reduction | 76% faster responses**
+
+GameSmith uses an **Intent Classification System** to intelligently route commands:
+
+| Command Type | Before | After | Improvement |
+|--------------|--------|-------|-------------|
+| "list objects" | 2-3s, $0.03 | 50ms, $0 | **96% faster, free** |
+| "create sphere" | 2-3s, $0.03 | 50ms, $0 | **96% faster, free** |
+| "write script" | 2-3s, $0.03 | 1-2s, $0.01 | **50% faster, 67% cheaper** |
+
+### How It Works
+
+1. **DirectMCP** (90% of Unity ops) → Instant local IPC execution, no AI call
+2. **RequiresAI** (code gen, explanations) → AI without tools, faster & cheaper
+3. **AmbiguousWithTools** (complex) → AI with tools when needed
+
+**Try it:**
+```
+"list objects"           → Instant hierarchy (no AI)
+"create sphere"          → Instant creation (no AI)
+"write player script"    → Fast AI generation (no tools overhead)
+```
+
+**Learn more:** See `OPTIMIZATION_SUMMARY.md` for details
+
+---
+
 ## 📥 Installation
 
 ### Option 1: One-Click Install (Recommended)

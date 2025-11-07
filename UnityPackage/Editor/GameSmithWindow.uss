@@ -104,17 +104,6 @@
     background-color: rgba(102, 178, 255, 0.5);
 }
 
-/* Input Area - Flexible, fills remaining space */
-.input-area {
-    flex-direction: column;
-    padding: 0;
-    background-color: rgb(30, 30, 30);
-    flex-shrink: 1;
-    flex-grow: 0;
-    min-height: 200px;
-    max-height: none;
-}
-
 .messages-container {
     padding: 20px;
 }
@@ -142,7 +131,6 @@
     color: rgb(180, 180, 180);
     white-space: normal;
     -unity-text-align: middle-center;
-    line-height: 1.6;
     max-width: 500px;
 }
 
@@ -154,14 +142,12 @@
     margin: 6px 20px 6px 80px;
     align-self: flex-end;
     border-width: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .message-user-text {
     color: rgb(255, 255, 255);
     white-space: normal;
     font-size: 14px;
-    line-height: 1.5;
 }
 
 .message-assistant {
@@ -171,14 +157,12 @@
     margin: 6px 80px 6px 20px;
     border-width: 1px;
     border-color: rgba(102, 178, 255, 0.15);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .message-assistant-text {
     color: rgb(235, 235, 235);
     white-space: normal;
     font-size: 14px;
-    line-height: 1.6;
 }
 
 .message-error {
@@ -201,7 +185,6 @@
     color: rgb(255, 200, 200);
     white-space: normal;
     font-size: 14px;
-    line-height: 1.5;
 }
 
 /* Input Area - Flexible, fills remaining space */
@@ -214,6 +197,7 @@
     flex-grow: 0;
     min-height: 60px;
     max-height: none;
+    position: relative;
 }
 
 .input-container {
@@ -222,7 +206,9 @@
     flex-shrink: 1;
     padding: 0;
     margin: 0;
-    height: 100%;
+    min-height: 0;
+    position: relative;
+    justify-content: flex-end;
 }
 
 /* Input Field Container - No padding, fills space */
@@ -238,6 +224,7 @@
     flex-shrink: 1;
     min-height: 0;
     overflow: hidden;
+    position: relative;
 }
 
 .message-input {
@@ -249,15 +236,13 @@
     color: rgb(230, 230, 230);
     border-width: 0;
     font-size: 14px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: scroll;
     flex-grow: 1;
     flex-shrink: 1;
 }
 
 .message-input > TextElement {
     white-space: normal;
-    line-height: 1.6;
     overflow: hidden;
     width: 100%;
     padding: 4px 8px;
@@ -310,7 +295,7 @@
     color: rgb(120, 200, 255);
 }
 
-/* Input Footer - Minimal footer */
+/* Input Footer - Minimal footer, docked to bottom */
 .input-footer {
     flex-direction: row;
     align-items: center;
@@ -318,11 +303,14 @@
     padding: 8px 12px;
     min-height: 44px;
     max-height: 44px;
+    height: 44px;
     flex-shrink: 0;
+    flex-grow: 0;
     background-color: transparent;
     border-top-width: 1px;
     border-top-color: rgba(102, 178, 255, 0.1);
     margin: 0;
+    position: relative;
 }
 
 /* Borderless scroll-view hosting the textarea */
@@ -438,7 +426,6 @@
     margin: 6px 80px 6px 20px;
     border-width: 1px;
     border-color: rgba(102, 178, 255, 0.2);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .thinking-foldout {
@@ -490,7 +477,6 @@
     color: rgb(170, 170, 170);
     white-space: normal;
     font-size: 13px;
-    line-height: 1.6;
     opacity: 0.95;
 }
 

@@ -208,7 +208,8 @@ namespace SparkGames.UnityGameSmith.Editor
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Directory.GetCurrentDirectory() // Unity project directory
                 };
 
                 // Add arguments
@@ -579,6 +580,13 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private async UniTask<string> CallToolInternalAsync(string toolName, Dictionary<string, object> arguments)
         {
+            // Check if server is still running
+            if (!IsConnected)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith MCP] Server not connected when trying to call tool: {toolName}");
+                return "Error: MCP server is not connected";
+            }
+            
             await UniTask.SwitchToThreadPool();
 
             try

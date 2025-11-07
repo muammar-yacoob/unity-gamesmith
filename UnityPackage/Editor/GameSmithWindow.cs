@@ -649,29 +649,73 @@ namespace SparkGames.UnityGameSmith.Editor
                 sendButton.SetEnabled(false);
             }
 
-            // Get MCP tools if available - check both IsConnected and AvailableTools
-            var tools = null as List<MCPTool>;
-            if (mcpClient != null)
+            // Classify user intent to determine execution strategy
+            var intent = IntentClassifier.Classify(message);
+
+            UnityEngine.Debug.Log($"[GameSmith] Intent classified as: {intent.Type}");
+
+            // STRATEGY 1: Direct MCP Execution (no AI needed)
+            if (intent.Type == IntentClassifier.IntentType.DirectMCP)
             {
-                if (mcpClient.IsConnected && mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+                if (mcpClient == null || (!mcpClient.IsConnected && (mcpClient.AvailableTools == null || mcpClient.AvailableTools.Count == 0)))
                 {
-                    tools = mcpClient.AvailableTools;
+                    AddMessageBubble("❌ MCP tools not available. Please ensure MCP server is running.", false);
+                    messageInput.SetEnabled(true);
+                    if (sendButton != null) sendButton.SetEnabled(true);
+                    messageInput.Focus();
+                    return;
                 }
-                else if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+
+                // Show what we're executing
+                var executionDesc = IntentClassifier.GetExecutionDescription(intent);
+                if (!string.IsNullOrEmpty(executionDesc))
                 {
-                    // Tools available even if IsConnected is false (might be a timing issue)
-                    tools = mcpClient.AvailableTools;
+                    AddMessageBubble(executionDesc, false);
+                }
+
+                // Execute MCP tool directly - NO AI CALL
+                UnityEngine.Debug.Log($"[GameSmith] Executing MCP tool directly: {intent.ToolName}");
+                mcpClient.CallToolAsync(intent.ToolName, intent.Arguments, (toolResult) =>
+                {
+                    // Format and display the result
+                    string formattedResult = FormatToolResult(intent.ToolName, toolResult);
+                    AddMessageBubble(formattedResult, false);
+                    history.AddMessage(ChatMessage.Role.Assistant, formattedResult);
+
+                    // Re-enable input
+                    messageInput.SetEnabled(true);
+                    if (sendButton != null) sendButton.SetEnabled(true);
+                    messageInput.Focus();
+                });
+                return;
+            }
+
+            // STRATEGY 2 & 3: AI Required or Ambiguous - Send to AI
+            // Get MCP tools only if intent is ambiguous
+            var tools = null as List<MCPTool>;
+            if (intent.Type == IntentClassifier.IntentType.AmbiguousWithTools)
+            {
+                if (mcpClient != null)
+                {
+                    if (mcpClient.IsConnected && mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+                    {
+                        tools = mcpClient.AvailableTools;
+                    }
+                    else if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+                    {
+                        tools = mcpClient.AvailableTools;
+                    }
                 }
             }
 
-            // Log tool availability for debugging
+            // Log AI request strategy
             if (tools != null && tools.Count > 0)
             {
-                UnityEngine.Debug.Log($"[GameSmith] Sending request with {tools.Count} MCP tools available");
+                UnityEngine.Debug.Log($"[GameSmith] Sending to AI with {tools.Count} MCP tools (ambiguous intent)");
             }
             else
             {
-                UnityEngine.Debug.Log($"[GameSmith] Sending request without MCP tools. IsConnected: {mcpClient?.IsConnected}, Tools: {mcpClient?.AvailableTools?.Count ?? 0}");
+                UnityEngine.Debug.Log($"[GameSmith] Sending to AI for reasoning (no tools needed)");
             }
 
             // Build system context based on tool availability
@@ -694,14 +738,14 @@ Always use tools for Unity operations. Do not explain - execute the tool immedia
             }
             else
             {
-                systemContext = @"You are a Unity AI assistant. Currently, Unity MCP tools are not connected.
+                systemContext = @"You are a Unity AI assistant helping with game development.
 
-When users ask about Unity scene operations, inform them that the MCP server needs to be started first. They can start it using the 'Start MCP' button in the GameSmith window.
+Focus on providing clear, actionable advice for Unity development. When asked to write code, provide complete, working examples.
 
 " + UnityProjectContext.GetProjectContext();
             }
 
-            // Send to AI with tools
+            // Send to AI
             client.SendMessage(message, systemContext, tools,
                 onSuccess: (response) => HandleAIResponse(response),
                 onError: (error) => HandleError(error));
@@ -725,12 +769,12 @@ When users ask about Unity scene operations, inform them that the MCP server nee
             // Handle tool use
             if (response.HasToolUse)
             {
-                // Execute tool asynchronously
+                // Execute tool via MCP
                 if (mcpClient != null && (mcpClient.IsConnected || (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)))
                 {
                     mcpClient.CallToolAsync(response.ToolName, response.ToolInput, (toolResult) =>
                     {
-                        // For Ollama and OpenAI, just display the tool result nicely and re-enable input
+                        // For Ollama and OpenAI, display result and re-enable input
                         if (client.ActiveProvider == "Ollama" || client.ActiveProvider == "OpenAI")
                         {
                             // Parse and format the tool result for display

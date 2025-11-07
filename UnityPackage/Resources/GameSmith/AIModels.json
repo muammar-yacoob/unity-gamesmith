@@ -1,15 +1,13 @@
 {
   "providers": [
     {
-      "name": "Claude",
+      "name": "Anthropic",
       "apiUrl": "https://api.anthropic.com/v1/messages",
-      "apiKeyUrl": "https://console.anthropic.com/settings/keys",
+      "apiKeyUrl": "https://console.anthropic.com",
       "models": [
-        { "id": "claude-opus-4-1-20250805", "displayName": "🧠 Opus 4.1 (Most Capable – Coding & Reasoning)", "isEnabled": true },
-        { "id": "claude-sonnet-4-20250514", "displayName": "🧠 Sonnet 4 (High-Performance Reasoning)", "isEnabled": true },
-        { "id": "claude-haiku-4-5-20251001", "displayName": "Haiku 4.5 (Fast & Efficient)", "isEnabled": true },
-        { "id": "claude-3.7-sonnet-20250219", "displayName": "🧠 Sonnet 3.7 (Legacy Advanced)", "isEnabled": true },
-        { "id": "claude-3-5-haiku-20241022", "displayName": "Haiku 3.5 (Speed-Optimised)", "isEnabled": true }
+        { "id": "claude-sonnet-4.5", "displayName": "🧠 Claude Sonnet 4.5 (Coding & reasoning, mid-cost, balanced speed)", "isEnabled": true },
+        { "id": "claude-opus-4.1", "displayName": "🧠 Claude Opus 4.1 (Deep reasoning, high cost, slower)", "isEnabled": true },
+        { "id": "claude-haiku-4.5", "displayName": "Claude Haiku 4.5 (Quick tasks, low cost, fastest)", "isEnabled": true }
       ]
     },
     {
@@ -17,26 +15,32 @@
       "apiUrl": "https://api.openai.com/v1/chat/completions",
       "apiKeyUrl": "https://platform.openai.com/api-keys",
       "models": [
-        { "id": "gpt-5-codex", "displayName": "🧠 GPT-5 Codex (Top Programming Model)", "isEnabled": true },
-        { "id": "gpt-5", "displayName": "GPT-5 (Flagship)", "isEnabled": true },
-        { "id": "o3-pro", "displayName": "🧠 o3-Pro (Most Intelligent Reasoning)", "isEnabled": true },
-        { "id": "o3", "displayName": "🧠 o3 (Advanced Reasoning)", "isEnabled": true },
-        { "id": "gpt-4o", "displayName": "GPT-4o (Multimodal Model)", "isEnabled": true },
-        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini (Lightweight Multimodal)", "isEnabled": true }
+        { "id": "gpt-5-codex", "displayName": "🧠 GPT-5 Codex (Top for programming & system design, mid-cost)", "isEnabled": true },
+        { "id": "gpt-5", "displayName": "GPT-5 (General intelligence, balanced cost & speed)", "isEnabled": true },
+        { "id": "gpt-4o", "displayName": "GPT-4o (Multimodal, good speed, affordable)", "isEnabled": true },
+        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini (Light tasks, lowest cost, very fast)", "isEnabled": true }
       ]
     },
     {
-      "name": "Gemini",
+      "name": "Google Gemini",
       "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-      "apiKeyUrl": "https://aistudio.google.com/app/apikey",
+      "apiKeyUrl": "https://aistudio.google.com/app/api-keys",
       "models": [
-        { "id": "gemini-2.5-pro", "displayName": "🧠 Gemini 2.5 Pro (Most Intelligent + Thinking)", "isEnabled": true },
-        { "id": "gemini-2.5-flash", "displayName": "Gemini 2.5 Flash (Balanced Price-Performance)", "isEnabled": true },
-        { "id": "gemini-2.5-flash-lite", "displayName": "Gemini 2.5 Flash-Lite (Fast & Low-Cost)", "isEnabled": true }
+        { "id": "gemini-2.5-pro", "displayName": "🧠 Gemini 2.5 Pro (Reasoning + multimodal, higher cost)", "isEnabled": true },
+        { "id": "gemini-2.5-flash", "displayName": "Gemini 2.5 Flash (Fast, cost-efficient)", "isEnabled": true },
+        { "id": "gemini-2.5-flash-lite", "displayName": "Gemini 2.5 Flash-Lite (Ultra-fast, cheapest)", "isEnabled": true }
       ]
     },
     {
-      "name": "Ollama",
+      "name": "xAI Grok",
+      "apiUrl": "https://api.x.ai/v1/chat/completions",
+      "apiKeyUrl": "https://console.x.ai/",
+      "models": [
+        { "id": "grok-4", "displayName": "🧠 Grok 4 (Real-time reasoning & web search, mid-high cost)", "isEnabled": true }
+      ]
+    },
+    {
+      "name": "Ollama (local)",
       "apiUrl": "http://localhost:11434/v1/chat/completions",
       "apiKeyUrl": "",
       "models": []
