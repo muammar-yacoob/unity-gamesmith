@@ -215,35 +215,10 @@ namespace SparkGames.UnityGameSmith.Editor
         
         private void UpdateInputFieldHeight()
         {
-            if (messageInput == null) return;
-            
-            var inputArea = rootVisualElement?.Q<VisualElement>("input-area");
-            var inputFooter = rootVisualElement?.Q<VisualElement>(className: "input-footer");
-            
-            if (inputArea != null && inputFooter != null)
-            {
-                var areaHeight = inputArea.resolvedStyle.height;
-                var footerHeight = inputFooter.resolvedStyle.height;
-                
-                if (areaHeight > 0 && !float.IsNaN(areaHeight) && footerHeight > 0 && !float.IsNaN(footerHeight))
-                {
-                    var availableHeight = areaHeight - footerHeight;
-                    if (availableHeight > 30) // Reduced minimum
-                    {
-                        messageInput.style.height = availableHeight;
-                        messageInput.style.minHeight = availableHeight;
-                        messageInput.style.maxHeight = availableHeight;
-                        
-                        // Update internal text element
-                        var textElement = messageInput.Q<TextElement>();
-                        if (textElement != null)
-                        {
-                            textElement.style.height = availableHeight - 8; // Reduced padding offset (4px top + 4px bottom)
-                            textElement.style.minHeight = availableHeight - 8;
-                        }
-                    }
-                }
-            }
+            // CSS flexbox now handles layout automatically
+            // This method is kept for potential future adjustments
+            // The input-field-container flexes to fill available space
+            // The input-footer stays fixed at 44px
         }
 
         private void StartMCPServerAsync()

@@ -41,7 +41,7 @@ namespace SparkGames.UnityGameSmith.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<GameSmithSettingsWindow>("GameSmith Settings");
-            window.minSize = new Vector2(450, 400);
+            window.minSize = new Vector2(500, 400);
             window.Show();
         }
 
@@ -70,6 +70,11 @@ namespace SparkGames.UnityGameSmith.Editor
                 return;
             }
 
+            // Add horizontal padding to prevent clipping
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            EditorGUILayout.BeginVertical();
+            
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
             EditorGUILayout.Space(10);
@@ -87,6 +92,10 @@ namespace SparkGames.UnityGameSmith.Editor
 
             EditorGUILayout.Space(10);
             EditorGUILayout.EndScrollView();
+            
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(10);
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawProviderSection()
@@ -213,7 +222,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 // Left button: Get/Open API Key URL
                 if (!string.IsNullOrEmpty(apiKeyUrl))
                 {
-                    if (GUILayout.Button("Get API Key", GUILayout.Height(26)))
+                    if (GUILayout.Button("Get API Key", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
                     {
                         Application.OpenURL(apiKeyUrl);
                     }
@@ -225,7 +234,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (isVerified)
                 {
                     // State 3: Verified → Show "Edit API Key"
-                    if (GUILayout.Button("Edit API Key", GUILayout.Height(26)))
+                    if (GUILayout.Button("Edit API Key", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
                     {
                         // Reset verification when user wants to edit
                         GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
@@ -237,7 +246,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 else if (hasValidFormat && !string.IsNullOrEmpty(currentKey))
                 {
                     // State 2: Valid format but not verified → Show "Verify API Key"
-                    if (GUILayout.Button(isVerifying ? "Verifying..." : "Verify API Key", GUILayout.Height(26)))
+                    if (GUILayout.Button(isVerifying ? "Verifying..." : "Verify API Key", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
                     {
                         VerifyApiKeyAsync().Forget();
                     }
@@ -245,7 +254,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 else if (!string.IsNullOrEmpty(currentKey))
                 {
                     // State 1a: Invalid format → Show "Check Format"
-                    if (GUILayout.Button("Check Format", GUILayout.Height(26)))
+                    if (GUILayout.Button("Check Format", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
                     {
                         ShowApiKeyFormatHelp();
                     }
@@ -321,14 +330,14 @@ namespace SparkGames.UnityGameSmith.Editor
 
             if (isInstalled)
             {
-                if (GUILayout.Button(isInstallingMCP ? "Updating..." : "Update MCP Server", GUILayout.Height(26)))
+                if (GUILayout.Button(isInstallingMCP ? "Updating..." : "Update MCP Server", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
                 {
                     InstallOrUpdateMCPAsync().Forget();
                 }
             }
             else
             {
-                if (GUILayout.Button(isInstallingMCP ? "Installing..." : "Install MCP Server", GUILayout.Height(26)))
+                if (GUILayout.Button(isInstallingMCP ? "Installing..." : "Install MCP Server", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
                 {
                     InstallOrUpdateMCPAsync().Forget();
                 }
@@ -397,7 +406,9 @@ namespace SparkGames.UnityGameSmith.Editor
                             {
                                 EditorGUILayout.BeginHorizontal();
                                 GUILayout.Space(8); // Indent
-                                EditorGUILayout.LabelField(tool.Name, EditorStyles.label);
+                                var toolLabelStyle = new GUIStyle(EditorStyles.label);
+                                toolLabelStyle.wordWrap = true;
+                                EditorGUILayout.LabelField(tool.Name, toolLabelStyle, GUILayout.ExpandWidth(true));
                                 EditorGUILayout.EndHorizontal();
                             }
                             

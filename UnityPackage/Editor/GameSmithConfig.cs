@@ -165,20 +165,23 @@ namespace SparkGames.UnityGameSmith.Editor
                 .ToList();
         }
 
-        // Refresh Ollama models from local server
+        // Refresh Ollama models from local server (async)
         public void RefreshOllamaModels()
         {
-            var provider = providers.FirstOrDefault(p => p.name == "Ollama");
-            if (provider == null) return;
+            EditorCoroutineRunner.StartCoroutine(RefreshOllamaModelsAsync());
+        }
 
+        private System.Collections.IEnumerator RefreshOllamaModelsAsync()
+        {
+            var provider = providers.FirstOrDefault(p => p.name == "Ollama");
+            if (provider == null) yield break;
+
+            UnityEngine.Networking.UnityWebRequest request = null;
             try
             {
-                var request = UnityEngine.Networking.UnityWebRequest.Get("http://localhost:11434/api/tags");
-                request.timeout = 3;
-                var operation = request.SendWebRequest();
-
-                // Wait synchronously (editor only)
-                while (!operation.isDone) { }
+                request = UnityEngine.Networking.UnityWebRequest.Get("http://localhost:11434/api/tags");
+                request.timeout = 5;
+                yield return request.SendWebRequest();
 
                 if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
                 {
@@ -213,12 +216,14 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     Debug.LogWarning("Game Smith 🗡️ Ollama server not running. Start with: ollama serve");
                 }
-
-                request.Dispose();
             }
             catch (Exception ex)
             {
                 Debug.LogWarning($"Game Smith 🗡️ Could not connect to Ollama: {ex.Message}");
+            }
+            finally
+            {
+                request?.Dispose();
             }
         }
 
