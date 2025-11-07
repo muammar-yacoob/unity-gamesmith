@@ -1,14 +1,17 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <ui:VisualElement class="chat-window">
 
-        <!-- Header (fixed ~50px) -->
-        <ui:VisualElement class="header">
-            <ui:Label text="⚒️ Game Smith AI" class="header-title" />
+        <!-- Header (fixed ~56px) -->
+        <ui:VisualElement name="header" class="header">
+            <ui:VisualElement class="header-title-container">
+                <ui:Label text="⚒️ Game Smith AI" class="header-title" />
+                <ui:Label name="mcp-status" text="⚒️ MCP: Starting..." class="mcp-status" />
+            </ui:VisualElement>
             <ui:Button name="settings-button" text="⚙️" class="icon-button" tooltip="Settings" />
             <ui:Button name="clear-button" text="🗑️" class="icon-button" tooltip="Clear Chat" />
         </ui:VisualElement>
 
-        <!-- Chat Messages Area (flexible, takes ~75% of remaining space) -->
+        <!-- Chat Messages Area (flexible, takes remaining space) -->
         <ui:ScrollView name="chat-scroll" class="chat-messages">
             <ui:VisualElement name="messages-container" class="messages-container">
                 <!-- Messages will be added here dynamically -->
@@ -19,15 +22,16 @@
             </ui:VisualElement>
         </ui:ScrollView>
 
-        <!-- Input Area (fixed ~150px) -->
-        <ui:VisualElement class="input-area">
+        <!-- Resizable Divider -->
+        <ui:VisualElement name="resize-divider" class="resize-divider" />
+
+        <!-- Input Area (flexible) -->
+        <ui:VisualElement name="input-area" class="input-area">
             <ui:VisualElement class="input-container">
                 <!-- Scrollable text input area filling ~90% of bottom section -->
                 <ui:VisualElement class="input-field-container">
-                    <ui:ScrollView name="input-scroll" class="input-editor-scroll">
-                        <ui:TextField name="message-input" multiline="true" class="message-input"
-                                     placeholder-text="Ask about your Unity project..." />
-                    </ui:ScrollView>
+                    <ui:TextField name="message-input" multiline="true" class="message-input"
+                                 placeholder-text="Ask about your Unity project..." />
                 </ui:VisualElement>
 
                 <!-- Bottom Row: Model (left) + Send (right) -->

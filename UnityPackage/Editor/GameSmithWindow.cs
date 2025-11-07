@@ -12,6 +12,81 @@ using UnityEngine.UIElements;
 namespace SparkGames.UnityGameSmith.Editor
 {
     /// <summary>
+    /// Manipulator for resizing the divider between chat and input areas
+    /// </summary>
+    public class ResizeDividerManipulator : MouseManipulator
+    {
+        private VisualElement targetElement;
+        private bool isDragging;
+        private float startMouseY;
+        private float startHeight;
+
+        public ResizeDividerManipulator(VisualElement target)
+        {
+            targetElement = target;
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
+        }
+
+        protected override void RegisterCallbacksOnTarget()
+        {
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        protected override void UnregisterCallbacksFromTarget()
+        {
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        private void OnMouseDown(MouseDownEvent evt)
+        {
+            if (CanStartManipulation(evt))
+            {
+                isDragging = true;
+                startMouseY = evt.mousePosition.y;
+                var height = targetElement.resolvedStyle.height;
+                if (height <= 0 || float.IsNaN(height))
+                {
+                    height = 280f; // Default height
+                }
+                startHeight = height;
+                target.CaptureMouse();
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnMouseMove(MouseMoveEvent evt)
+        {
+            if (isDragging && targetElement != null)
+            {
+                float deltaY = evt.mousePosition.y - startMouseY;
+                float newHeight = startHeight - deltaY; // Inverted because dragging divider up increases input area
+                
+                // Clamp to reasonable bounds
+                newHeight = Mathf.Clamp(newHeight, 200f, 800f);
+                
+                targetElement.style.height = newHeight;
+                targetElement.style.flexGrow = 0;
+                targetElement.style.flexShrink = 0;
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnMouseUp(MouseUpEvent evt)
+        {
+            if (isDragging)
+            {
+                isDragging = false;
+                target.ReleaseMouse();
+                evt.StopPropagation();
+            }
+        }
+    }
+
+    /// <summary>
     /// Simple AI chat window for Unity development
     /// </summary>
     public class GameSmithWindow : EditorWindow
@@ -35,6 +110,9 @@ namespace SparkGames.UnityGameSmith.Editor
         private PopupField<string> modelDropdown;
         private Label providerStatus;
         private Button sendButton;
+
+        // Store last user message for retry functionality
+        private string lastUserMessage = "";
 
         [MenuItem("Tools/GameSmith/GameSmith AI &g", false, 1)]
         public static void ShowWindow()
@@ -123,10 +201,26 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private void StartMCPServerAsync()
         {
+            // Update status label to show starting
+            var mcpStatus = rootVisualElement?.Q<Label>("mcp-status");
+            if (mcpStatus != null)
+            {
+                mcpStatus.text = "⚒️ MCP: Starting...";
+                mcpStatus.style.color = new StyleColor(new Color(0.75f, 0.75f, 0.75f));
+                mcpStatus.RemoveFromClassList("mcp-status-success");
+                mcpStatus.RemoveFromClassList("mcp-status-error");
+            }
+
             // Check if MCP server is already running
             if (mcpClient != null && mcpClient.IsConnected)
             {
-                AddMessageBubble("✓ MCP server is already running", false);
+                // Update status to show tools count
+                if (mcpStatus != null)
+                {
+                    mcpStatus.text = $"⚒️ MCP: {mcpClient.AvailableTools.Count} tools";
+                    mcpStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
+                    mcpStatus.AddToClassList("mcp-status-success");
+                }
                 return;
             }
 
@@ -165,8 +259,10 @@ namespace SparkGames.UnityGameSmith.Editor
                     AddMessageBubble($"MCP ready ({mcpClient.AvailableTools.Count} tools)", false);
                     if (mcpStatus != null)
                     {
-                        mcpStatus.text = $"✓ MCP: {mcpClient.AvailableTools.Count} tools";
+                        mcpStatus.text = $"⚒️ MCP: {mcpClient.AvailableTools.Count} tools";
                         mcpStatus.style.color = new StyleColor(new Color(0.6f, 0.9f, 0.6f));
+                        mcpStatus.RemoveFromClassList("mcp-status-error");
+                        mcpStatus.AddToClassList("mcp-status-success");
                     }
                 }
                 else
@@ -175,8 +271,10 @@ namespace SparkGames.UnityGameSmith.Editor
                     AddMessageBubble("❌ MCP failed to start. Check console for details.", false);
                     if (mcpStatus != null)
                     {
-                        mcpStatus.text = "❌ MCP: Failed";
+                        mcpStatus.text = "⚒️ MCP: Failed";
                         mcpStatus.style.color = new StyleColor(new Color(0.9f, 0.4f, 0.4f));
+                        mcpStatus.RemoveFromClassList("mcp-status-success");
+                        mcpStatus.AddToClassList("mcp-status-error");
                     }
                 }
             });
@@ -248,26 +346,32 @@ namespace SparkGames.UnityGameSmith.Editor
             providerStatus = root.Q<Label>("provider-status");
             sendButton = root.Q<Button>("send-button");
 
-            // Add MCP control button
-            var controlsContainer = root.Q<VisualElement>("controls-container");
-            if (controlsContainer == null)
+            // Get header element and add View Logs button
+            var header = root.Q<VisualElement>("header");
+            if (header == null)
             {
-                // Create controls container if it doesn't exist
-                controlsContainer = new VisualElement();
-                controlsContainer.style.flexDirection = FlexDirection.Row;
-                controlsContainer.style.marginTop = 5;
-                controlsContainer.style.marginBottom = 5;
-                root.Insert(0, controlsContainer);
+                header = root.Q<VisualElement>(className: "header");
             }
 
-            // MCP status label (read-only, not a button)
-            var mcpStatus = new Label("⏳ MCP: Starting...");
-            mcpStatus.name = "mcp-status";
-            mcpStatus.style.fontSize = 11;
-            mcpStatus.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.7f));
-            mcpStatus.style.marginLeft = 10;
-            mcpStatus.style.unityTextAlign = TextAnchor.MiddleLeft;
-            controlsContainer.Add(mcpStatus);
+            // Find or get MCP status label (already in UXML)
+            var mcpStatus = root.Q<Label>("mcp-status");
+            if (mcpStatus != null)
+            {
+                mcpStatus.AddToClassList("mcp-status");
+            }
+
+            // Setup resizable divider
+            var resizeDivider = root.Q<VisualElement>("resize-divider");
+            var inputArea = root.Q<VisualElement>("input-area");
+            if (resizeDivider != null && inputArea != null)
+            {
+                resizeDivider.AddManipulator(new ResizeDividerManipulator(inputArea));
+                // Set initial height if not set
+                if (inputArea.resolvedStyle.height <= 0 || float.IsNaN(inputArea.resolvedStyle.height))
+                {
+                    inputArea.style.height = 280;
+                }
+            }
 
             // Create model dropdown programmatically
             var modelDropdownContainer = root.Q<VisualElement>("model-dropdown-container");
@@ -326,21 +430,14 @@ namespace SparkGames.UnityGameSmith.Editor
                 clearButton.clicked += ClearChat;
             }
 
-            // Add View Logs button
-            var viewLogsButton = new Button(() => GameSmithLogger.OpenLogFolder());
-            viewLogsButton.text = "📝 View Logs";
-            viewLogsButton.tooltip = "Open log folder to view detailed logs";
-            viewLogsButton.style.marginLeft = 5;
-
-            var buttonsContainer = root.Q<VisualElement>("buttons-container");
-            if (buttonsContainer != null)
+            // Add View Logs button to header (icon-only)
+            if (header != null)
             {
-                buttonsContainer.Add(viewLogsButton);
-            }
-            else if (clearButton != null)
-            {
-                // Add after clear button if container not found
-                clearButton.parent.Add(viewLogsButton);
+                var viewLogsButton = new Button(() => GameSmithLogger.OpenLogFolder());
+                viewLogsButton.text = "📝";
+                viewLogsButton.tooltip = "View Logs";
+                viewLogsButton.AddToClassList("icon-button");
+                header.Add(viewLogsButton);
             }
 
             if (sendButton != null)
@@ -351,6 +448,46 @@ namespace SparkGames.UnityGameSmith.Editor
             // Enter to send (Return and KeypadEnter), Shift+Enter inserts newline
             if (messageInput != null)
             {
+                // Ensure multiline is enabled and field expands properly
+                messageInput.multiline = true;
+                
+                // Set height to fill the resizable input area
+                void UpdateInputHeight()
+                {
+                    if (messageInput != null)
+                    {
+                        var inputArea = root.Q<VisualElement>("input-area");
+                        var inputFooter = root.Q<VisualElement>(className: "input-footer");
+                        
+                        if (inputArea != null && inputFooter != null)
+                        {
+                            var areaHeight = inputArea.resolvedStyle.height;
+                            var footerHeight = inputFooter.resolvedStyle.height;
+                            
+                            if (areaHeight > 0 && !float.IsNaN(areaHeight) && footerHeight > 0 && !float.IsNaN(footerHeight))
+                            {
+                                // Calculate available height: input area - footer - container padding
+                                var availableHeight = areaHeight - footerHeight - 32; // 32px for container padding
+                                if (availableHeight > 100) // Ensure minimum height
+                                {
+                                    messageInput.style.height = availableHeight;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Update height initially and when input area is resized
+                EditorApplication.delayCall += UpdateInputHeight;
+                messageInput.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
+                
+                // Also update when input area is resized
+                var inputArea = root.Q<VisualElement>("input-area");
+                if (inputArea != null)
+                {
+                    inputArea.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
+                }
+                
                 messageInput.RegisterCallback<KeyDownEvent>(evt =>
                 {
                     if (!evt.shiftKey && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter))
@@ -407,14 +544,54 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
+        private bool IsRetryCommand(string messageLower)
+        {
+            // Detect common retry/continue phrases
+            return messageLower == "try again" ||
+                   messageLower == "retry" ||
+                   messageLower == "continue" ||
+                   messageLower == "again" ||
+                   messageLower == "resend" ||
+                   messageLower == "repeat";
+        }
+
         private void SendMessage()
         {
             var message = messageInput.value;
             if (string.IsNullOrWhiteSpace(message)) return;
 
-            // Add user message
-            AddMessageBubble(message, true);
-            history.AddMessage(ChatMessage.Role.User, message);
+            // Check for retry/continue commands
+            var messageLower = message.Trim().ToLower();
+            if (IsRetryCommand(messageLower))
+            {
+                if (!string.IsNullOrEmpty(lastUserMessage))
+                {
+                    // Show retry indicator
+                    AddMessageBubble("🔄 Retrying last message...", false);
+
+                    // Use the last message instead
+                    message = lastUserMessage;
+                }
+                else
+                {
+                    // No previous message to retry
+                    AddMessageBubble("No previous message to retry.", false);
+                    messageInput.value = "";
+                    return;
+                }
+            }
+            else
+            {
+                // Store this as the last user message for future retries
+                lastUserMessage = message;
+            }
+
+            // Add user message (unless it was a retry command, then we already showed the retry indicator)
+            if (!IsRetryCommand(messageLower))
+            {
+                AddMessageBubble(message, true);
+                history.AddMessage(ChatMessage.Role.User, message);
+            }
 
             // Clear input and disable during processing
             messageInput.value = "";
@@ -424,23 +601,57 @@ namespace SparkGames.UnityGameSmith.Editor
                 sendButton.SetEnabled(false);
             }
 
-            // Get Unity project context
-            var systemContext = @"You are a Unity AI assistant. Be concise and direct.
+            // Get MCP tools if available - check both IsConnected and AvailableTools
+            var tools = null as List<MCPTool>;
+            if (mcpClient != null)
+            {
+                if (mcpClient.IsConnected && mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+                {
+                    tools = mcpClient.AvailableTools;
+                }
+                else if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+                {
+                    // Tools available even if IsConnected is false (might be a timing issue)
+                    tools = mcpClient.AvailableTools;
+                }
+            }
 
-IMPORTANT: You have access to Unity scene manipulation tools via MCP. When the user asks to modify Unity objects (create, move, scale, rotate, delete), you MUST use the available tools.
+            // Log tool availability for debugging
+            if (tools != null && tools.Count > 0)
+            {
+                UnityEngine.Debug.Log($"[GameSmith] Sending request with {tools.Count} MCP tools available");
+            }
+            else
+            {
+                UnityEngine.Debug.Log($"[GameSmith] Sending request without MCP tools. IsConnected: {mcpClient?.IsConnected}, Tools: {mcpClient?.AvailableTools?.Count ?? 0}");
+            }
+
+            // Build system context based on tool availability
+            string systemContext;
+            if (tools != null && tools.Count > 0)
+            {
+                systemContext = @"You are a Unity AI assistant with access to Unity scene manipulation tools via MCP.
+
+IMPORTANT: When the user asks about Unity objects or scene information, ALWAYS use the available tools. DO NOT say the MCP server is unavailable - tools are ready to use.
 
 Examples:
-- ""make selected cube 3x taller"" → use scale_object tool with scale {x:1, y:3, z:1}
+- ""list objects"" → use unity_get_hierarchy tool
 - ""create a sphere"" → use create_object tool with type 'Sphere'
+- ""make selected cube 3x taller"" → use scale_object tool with scale {x:1, y:3, z:1}
 - ""move player forward"" → use translate_object tool
-- ""rotate camera"" → use rotate_object tool
 
-Always use tools for Unity scene modifications. Do not just explain - actually execute the tool.
+Always use tools for Unity operations. Do not explain - execute the tool immediately.
 
 " + UnityProjectContext.GetProjectContext();
+            }
+            else
+            {
+                systemContext = @"You are a Unity AI assistant. Currently, Unity MCP tools are not connected.
 
-            // Get MCP tools if available
-            var tools = mcpClient != null && mcpClient.IsConnected ? mcpClient.AvailableTools : null;
+When users ask about Unity scene operations, inform them that the MCP server needs to be started first. They can start it using the 'Start MCP' button in the GameSmith window.
+
+" + UnityProjectContext.GetProjectContext();
+            }
 
             // Send to AI with tools
             client.SendMessage(message, systemContext, tools,
@@ -467,7 +678,7 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
             if (response.HasToolUse)
             {
                 // Execute tool asynchronously
-                if (mcpClient != null && mcpClient.IsConnected)
+                if (mcpClient != null && (mcpClient.IsConnected || (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)))
                 {
                     mcpClient.CallToolAsync(response.ToolName, response.ToolInput, (toolResult) =>
                     {
@@ -490,23 +701,17 @@ Always use tools for Unity scene modifications. Do not just explain - actually e
                         else
                         {
                             // For Claude/Gemini, continue conversation with tool result
-                            var tools = mcpClient.AvailableTools;
-                            var systemContext = @"You are a Unity AI assistant. Be concise and direct.
+                            var continuationTools = mcpClient.AvailableTools;
+                            var continuationContext = @"You are a Unity AI assistant with access to Unity scene manipulation tools via MCP.
 
-IMPORTANT: You have access to Unity scene manipulation tools via MCP. When the user asks to modify Unity objects (create, move, scale, rotate, delete), you MUST use the available tools.
+The tool has been executed. Review the result and provide a clear, concise summary to the user.
 
-Examples:
-- ""make selected cube 3x taller"" → use scale_object tool with scale {x:1, y:3, z:1}
-- ""create a sphere"" → use create_object tool with type 'Sphere'
-- ""move player forward"" → use translate_object tool
-- ""rotate camera"" → use rotate_object tool
-
-Always use tools for Unity scene modifications. Do not just explain - actually execute the tool.
+If the result indicates success, acknowledge it briefly. If there's an error or the result needs clarification, explain it clearly.
 
 " + UnityProjectContext.GetProjectContext();
 
                             // Send tool result back to AI to continue conversation
-                            client.SendToolResult(response.ToolUseId, toolResult, systemContext, tools,
+                            client.SendToolResult(response.ToolUseId, toolResult, continuationContext, continuationTools,
                                 onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
                                 onError: (error) => HandleError(error));
                         }

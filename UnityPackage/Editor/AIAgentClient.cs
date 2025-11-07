@@ -26,6 +26,21 @@ namespace SparkGames.UnityGameSmith.Editor
             this.config = config;
         }
 
+        // Helper to decode Unicode escape sequences (u003c -> <, u003e -> >, etc.)
+        private string DecodeUnicodeEscapes(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            // Replace common Unicode escapes
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u003c", "<");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u003e", ">");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u0026", "&");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u0027", "'");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u0022", "\"");
+
+            return text;
+        }
+
         public void SendMessage(string userMessage, string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
@@ -669,6 +684,16 @@ namespace SparkGames.UnityGameSmith.Editor
                         else
                         {
                             result.TextContent = fullContent;
+                        }
+
+                        // Decode Unicode escapes (common in Ollama responses)
+                        if (!string.IsNullOrEmpty(result.TextContent))
+                        {
+                            result.TextContent = DecodeUnicodeEscapes(result.TextContent);
+                        }
+                        if (!string.IsNullOrEmpty(result.ThinkingContent))
+                        {
+                            result.ThinkingContent = DecodeUnicodeEscapes(result.ThinkingContent);
                         }
 
                         // Check if Ollama returned a tool call as JSON string in content
