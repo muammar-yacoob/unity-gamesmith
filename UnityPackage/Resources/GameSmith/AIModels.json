@@ -5,9 +5,8 @@
       "apiUrl": "https://api.anthropic.com/v1/messages",
       "apiKeyUrl": "https://console.anthropic.com/settings/keys",
       "models": [
-        { "id": "claude-sonnet-4-5-20250929", "displayName": "Sonnet 4.5 (Best for Coding)", "isEnabled": true },
-        { "id": "claude-opus-4-1-20250805", "displayName": "Opus 4.1 (Advanced Reasoning)", "isEnabled": true },
-        { "id": "claude-haiku-4-5-20251015", "displayName": "Haiku 4.5 (Fast & Efficient)", "isEnabled": true }
+        { "id": "claude-sonnet-4-5-20250929", "displayName": "Sonnet 4.5", "isEnabled": true },
+        { "id": "claude-haiku-4-5-20251015", "displayName": "Haiku 4.5", "isEnabled": true }
       ]
     },
     {
@@ -15,11 +14,9 @@
       "apiUrl": "https://api.openai.com/v1/chat/completions",
       "apiKeyUrl": "https://platform.openai.com/api-keys",
       "models": [
-        { "id": "gpt-5", "displayName": "GPT-5 (Latest Flagship)", "isEnabled": true },
-        { "id": "o3-pro", "displayName": "o3-pro (Most Intelligent)", "isEnabled": true },
-        { "id": "o3", "displayName": "o3 (Advanced Reasoning)", "isEnabled": true },
-        { "id": "o3-mini", "displayName": "o3-mini (Fast Reasoning)", "isEnabled": true },
-        { "id": "gpt-4o", "displayName": "GPT-4o (Multimodal)", "isEnabled": true }
+        { "id": "gpt-5-codex", "displayName": "GPT-5 Codex", "isEnabled": true },
+        { "id": "o3", "displayName": "🧠 o3", "isEnabled": true },
+        { "id": "gpt-4o", "displayName": "GPT-4o", "isEnabled": true }
       ]
     },
     {
@@ -27,10 +24,8 @@
       "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
       "apiKeyUrl": "https://aistudio.google.com/app/apikey",
       "models": [
-        { "id": "gemini-2.5-pro", "displayName": "2.5 Pro (Most Intelligent + Thinking)", "isEnabled": true },
-        { "id": "gemini-2.5-flash-preview-09-2025", "displayName": "2.5 Flash (Latest Preview)", "isEnabled": true },
-        { "id": "gemini-2.5-flash", "displayName": "2.5 Flash (Efficient)", "isEnabled": true },
-        { "id": "gemini-2.5-flash-lite", "displayName": "2.5 Flash-Lite (Fast & Low-Cost)", "isEnabled": true }
+        { "id": "gemini-2.5-pro", "displayName": "🧠 2.5 Pro", "isEnabled": true },
+        { "id": "gemini-2.5-flash", "displayName": "2.5 Flash", "isEnabled": true }
       ]
     },
     {
