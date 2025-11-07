@@ -13,7 +13,7 @@ namespace SparkGames.UnityGameSmith.Editor
     public class GameSmithSettings
     {
         public string activeProvider = "Claude";
-        public string selectedModel = "claude-sonnet-4-20250514";
+        public string selectedModel = "claude-sonnet-4-5-20250929";  // Latest Sonnet 4.5
         public float temperature = 0.7f;
         public int maxTokens = 512;
         public string rulesAssetPath = "";
@@ -132,8 +132,22 @@ namespace SparkGames.UnityGameSmith.Editor
                     return apiKey.StartsWith("sk-ant-") && apiKey.Length > 20;
 
                 case "OpenAI":
-                    // OpenAI API keys start with "sk-" (but not "sk-ant-")
-                    return apiKey.StartsWith("sk-") && !apiKey.StartsWith("sk-ant-") && apiKey.Length > 20;
+                    // OpenAI API keys formats:
+                    // - Legacy: sk-... (48-51 chars)
+                    // - Project: sk-proj-... (longer)
+                    // - Service Account: sk-svcacct-...
+                    // All start with "sk-" but not "sk-ant-" (which is Claude)
+                    if (!apiKey.StartsWith("sk-") || apiKey.StartsWith("sk-ant-"))
+                        return false;
+
+                    // Validate minimum length (OpenAI keys are at least 40 characters)
+                    if (apiKey.Length < 40)
+                        return false;
+
+                    // Check for valid OpenAI key patterns
+                    return apiKey.StartsWith("sk-proj-") ||
+                           apiKey.StartsWith("sk-svcacct-") ||
+                           (apiKey.StartsWith("sk-") && apiKey.Length >= 48);  // Legacy format
 
                 case "Gemini":
                     // Gemini API keys start with "AIza"

@@ -31,13 +31,13 @@ namespace SparkGames.UnityGameSmith.Editor
     }
 
     /// <summary>
-    /// Lightweight JSON-backed chat history stored as a TextAsset
+    /// Lightweight JSON-backed chat history stored in Logs directory
     /// </summary>
     public class ChatHistory
     {
         private const int MaxMessages = 200; // cap to prevent bloat
-        private const string GameSmithPath = "Assets/GameSmith";
-        private const string JsonAssetPath = GameSmithPath + "/ChatHistory.json";
+        private static string LogsPath => System.IO.Path.Combine("Logs", "GameSmith");
+        private static string JsonFilePath => System.IO.Path.Combine(LogsPath, "ChatHistory.json");
 
         [SerializeField]
         private List<ChatMessage> messages = new List<ChatMessage>();
@@ -61,12 +61,14 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             var wrapper = new ChatHistoryWrapper { messages = messages };
             var json = JsonUtility.ToJson(wrapper, prettyPrint: true);
-#if UNITY_EDITOR
-            EnsureFolders();
-            File.WriteAllText(JsonAssetPath, json);
-            UnityEditor.AssetDatabase.ImportAsset(JsonAssetPath);
-            UnityEditor.AssetDatabase.SaveAssets();
-#endif
+
+            // Ensure Logs/GameSmith directory exists
+            if (!Directory.Exists(LogsPath))
+            {
+                Directory.CreateDirectory(LogsPath);
+            }
+
+            File.WriteAllText(JsonFilePath, json);
         }
 
         private void TrimToLimit()
@@ -83,14 +85,17 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             var history = new ChatHistory();
 
-#if UNITY_EDITOR
-            EnsureFolders();
+            // Ensure Logs/GameSmith directory exists
+            if (!Directory.Exists(LogsPath))
+            {
+                Directory.CreateDirectory(LogsPath);
+            }
 
-            if (File.Exists(JsonAssetPath))
+            if (File.Exists(JsonFilePath))
             {
                 try
                 {
-                    string json = File.ReadAllText(JsonAssetPath);
+                    string json = File.ReadAllText(JsonFilePath);
                     var loaded = JsonUtility.FromJson<ChatHistoryWrapper>(json);
                     if (loaded != null && loaded.messages != null)
                     {
@@ -98,16 +103,16 @@ namespace SparkGames.UnityGameSmith.Editor
                         history.TrimToLimit();
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[GameSmith] Failed to load chat history: {ex.Message}");
+                }
             }
             else
             {
                 // Create empty history file
-                File.WriteAllText(JsonAssetPath, JsonUtility.ToJson(new ChatHistoryWrapper { messages = new List<ChatMessage>() }, true));
-                UnityEditor.AssetDatabase.ImportAsset(JsonAssetPath);
-                UnityEditor.AssetDatabase.SaveAssets();
+                File.WriteAllText(JsonFilePath, JsonUtility.ToJson(new ChatHistoryWrapper { messages = new List<ChatMessage>() }, true));
             }
-#endif
 
             return history;
         }
@@ -117,15 +122,5 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             public List<ChatMessage> messages;
         }
-
-#if UNITY_EDITOR
-        private static void EnsureFolders()
-        {
-            if (!UnityEditor.AssetDatabase.IsValidFolder(GameSmithPath))
-            {
-                UnityEditor.AssetDatabase.CreateFolder("Assets", "GameSmith");
-            }
-        }
-#endif
     }
 }

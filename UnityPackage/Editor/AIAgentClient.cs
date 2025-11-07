@@ -590,66 +590,117 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
+                GameSmithLogger.Log("[OpenAI Parser] Starting to parse response");
                 var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
-                if (response == null) return null;
+
+                if (response == null)
+                {
+                    GameSmithLogger.LogError("[OpenAI Parser] Failed to deserialize JSON - response is null");
+                    return null;
+                }
+
+                GameSmithLogger.Log($"[OpenAI Parser] Response deserialized, keys: {string.Join(", ", response.Keys)}");
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (response.ContainsKey("choices"))
+                if (!response.ContainsKey("choices"))
                 {
-                    var choices = response["choices"] as List<object>;
-                    if (choices != null && choices.Count > 0)
+                    GameSmithLogger.LogError("[OpenAI Parser] Response missing 'choices' key");
+                    return null;
+                }
+
+                var choices = response["choices"] as List<object>;
+                if (choices == null || choices.Count == 0)
+                {
+                    GameSmithLogger.LogError("[OpenAI Parser] Choices is null or empty");
+                    return null;
+                }
+
+                GameSmithLogger.Log($"[OpenAI Parser] Found {choices.Count} choice(s)");
+
+                var firstChoice = choices[0] as Dictionary<string, object>;
+                if (firstChoice == null)
+                {
+                    GameSmithLogger.LogError("[OpenAI Parser] First choice is not a dictionary");
+                    return null;
+                }
+
+                GameSmithLogger.Log($"[OpenAI Parser] First choice keys: {string.Join(", ", firstChoice.Keys)}");
+
+                if (!firstChoice.ContainsKey("message"))
+                {
+                    GameSmithLogger.LogError("[OpenAI Parser] First choice missing 'message' key");
+                    return null;
+                }
+
+                var message = firstChoice["message"] as Dictionary<string, object>;
+                if (message == null)
+                {
+                    GameSmithLogger.LogError("[OpenAI Parser] Message is not a dictionary");
+                    return null;
+                }
+
+                GameSmithLogger.Log($"[OpenAI Parser] Message keys: {string.Join(", ", message.Keys)}");
+
+                // Get text content - handle both string and null content
+                if (message.ContainsKey("content"))
+                {
+                    var content = message["content"];
+                    if (content != null)
                     {
-                        var firstChoice = choices[0] as Dictionary<string, object>;
-                        if (firstChoice != null && firstChoice.ContainsKey("message"))
+                        result.TextContent = content.ToString();
+                        GameSmithLogger.Log($"[OpenAI Parser] Extracted text content: '{result.TextContent}'");
+                    }
+                    else
+                    {
+                        result.TextContent = "";
+                        GameSmithLogger.Log("[OpenAI Parser] Content is null, using empty string");
+                    }
+                }
+                else
+                {
+                    GameSmithLogger.LogWarning("[OpenAI Parser] Message missing 'content' key");
+                    result.TextContent = "";
+                }
+
+                // Check for tool calls (function calls in OpenAI format)
+                if (message.ContainsKey("tool_calls"))
+                {
+                    GameSmithLogger.Log("[OpenAI Parser] Found tool_calls in message");
+                    var toolCalls = message["tool_calls"] as List<object>;
+                    if (toolCalls != null && toolCalls.Count > 0)
+                    {
+                        var firstToolCall = toolCalls[0] as Dictionary<string, object>;
+                        if (firstToolCall != null && firstToolCall.ContainsKey("function"))
                         {
-                            var message = firstChoice["message"] as Dictionary<string, object>;
-                            if (message != null)
+                            var function = firstToolCall["function"] as Dictionary<string, object>;
+                            if (function != null)
                             {
-                                // Get text content
-                                if (message.ContainsKey("content"))
-                                {
-                                    result.TextContent = message["content"]?.ToString() ?? "";
-                                }
+                                result.HasToolUse = true;
+                                result.ToolUseId = firstToolCall.ContainsKey("id") ? firstToolCall["id"].ToString() : "";
+                                result.ToolName = function.ContainsKey("name") ? function["name"].ToString() : "";
 
-                                // Check for tool calls (function calls in OpenAI format)
-                                if (message.ContainsKey("tool_calls"))
+                                if (function.ContainsKey("arguments"))
                                 {
-                                    var toolCalls = message["tool_calls"] as List<object>;
-                                    if (toolCalls != null && toolCalls.Count > 0)
-                                    {
-                                        var firstToolCall = toolCalls[0] as Dictionary<string, object>;
-                                        if (firstToolCall != null && firstToolCall.ContainsKey("function"))
-                                        {
-                                            var function = firstToolCall["function"] as Dictionary<string, object>;
-                                            if (function != null)
-                                            {
-                                                result.HasToolUse = true;
-                                                result.ToolUseId = firstToolCall.ContainsKey("id") ? firstToolCall["id"].ToString() : "";
-                                                result.ToolName = function.ContainsKey("name") ? function["name"].ToString() : "";
-
-                                                if (function.ContainsKey("arguments"))
-                                                {
-                                                    var argsString = function["arguments"].ToString();
-                                                    result.ToolInput = MiniJSON.Json.Deserialize(argsString) as Dictionary<string, object> ?? new Dictionary<string, object>();
-                                                }
-                                            }
-                                        }
-                                    }
+                                    var argsString = function["arguments"].ToString();
+                                    result.ToolInput = MiniJSON.Json.Deserialize(argsString) as Dictionary<string, object> ?? new Dictionary<string, object>();
                                 }
+                                GameSmithLogger.Log($"[OpenAI Parser] Parsed tool call: {result.ToolName}");
                             }
                         }
                     }
                 }
 
+                GameSmithLogger.Log($"[OpenAI Parser] Successfully parsed response. TextContent length: {result.TextContent?.Length ?? 0}, HasToolUse: {result.HasToolUse}");
                 return result;
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogError($"[GameSmith] Failed to parse OpenAI response: {ex.Message}");
+                GameSmithLogger.LogError($"[OpenAI Parser] Exception during parsing: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                UnityEngine.Debug.LogError($"[GameSmith] Failed to parse OpenAI response: {ex.Message}\n{ex.StackTrace}");
                 return null;
             }
         }

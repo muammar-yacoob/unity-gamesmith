@@ -99,93 +99,37 @@ namespace SparkGames.UnityGameSmith.Editor
             GameSmithSettings.Instance.SetApiKey(provider, key);
         }
 
-        // Load providers from AIModels.json
+        // Load providers from AIModels.json in package Resources
         public void LoadProviders()
         {
-            // First, ensure AIModels.json exists in user's Assets/GameSmith/
-            string userGameSmithPath = "Assets/GameSmith";
-            string userModelsPath = System.IO.Path.Combine(userGameSmithPath, "AIModels.json");
-
-            if (!System.IO.File.Exists(userModelsPath))
-            {
-                // Create default AIModels.json in user's project
-                CreateDefaultAIModels(userGameSmithPath, userModelsPath);
-            }
-
-            // Load directly from file
-            if (!System.IO.File.Exists(userModelsPath))
-            {
-                Debug.LogError("[GameSmith] AIModels.json not found in Assets/GameSmith/");
-                return;
-            }
-
             try
             {
-                string json = System.IO.File.ReadAllText(userModelsPath);
+                // Load from package Resources folder
+                var aiModelsAsset = Resources.Load<TextAsset>("GameSmith/AIModels");
+
+                if (aiModelsAsset == null)
+                {
+                    Debug.LogError("[GameSmith] AIModels.json not found in package Resources/GameSmith/. Please ensure the package is properly installed.");
+                    return;
+                }
+
+                string json = aiModelsAsset.text;
                 var data = JsonUtility.FromJson<ProvidersJson>(json);
+
                 if (data != null && data.providers != null)
                 {
                     providers = data.providers;
+                    Debug.Log($"[GameSmith] Loaded {providers.Count} AI provider(s) from package Resources");
+                }
+                else
+                {
+                    Debug.LogError("[GameSmith] Failed to parse AIModels.json - invalid format");
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"[GameSmith] Failed to parse AIModels.json: {e.Message}");
+                Debug.LogError($"[GameSmith] Failed to load AIModels.json: {e.Message}");
             }
-        }
-
-        private void CreateDefaultAIModels(string resourcesPath, string modelsPath)
-        {
-            // Create directory if it doesn't exist
-            if (!System.IO.Directory.Exists(resourcesPath))
-            {
-                System.IO.Directory.CreateDirectory(resourcesPath);
-            }
-
-            // Default AI models configuration
-            string defaultJson = @"{
-  ""providers"": [
-    {
-      ""name"": ""Claude"",
-      ""apiUrl"": ""https://api.anthropic.com/v1/messages"",
-      ""apiKeyUrl"": ""https://console.anthropic.com/settings/keys"",
-      ""models"": [
-        { ""id"": ""claude-3-5-sonnet-20241022"", ""displayName"": ""Claude 3.5 Sonnet"", ""isEnabled"": true }
-      ]
-    },
-    {
-      ""name"": ""OpenAI"",
-      ""apiUrl"": ""https://api.openai.com/v1/chat/completions"",
-      ""apiKeyUrl"": ""https://platform.openai.com/api-keys"",
-      ""models"": [
-        { ""id"": ""gpt-4o"", ""displayName"": ""GPT-4o"", ""isEnabled"": true }
-      ]
-    },
-    {
-      ""name"": ""Gemini"",
-      ""apiUrl"": ""https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"",
-      ""apiKeyUrl"": ""https://aistudio.google.com/app/apikey"",
-      ""models"": [
-        { ""id"": ""gemini-2.0-flash-exp"", ""displayName"": ""Gemini 2.0 Flash (Exp)"", ""isEnabled"": true },
-        { ""id"": ""gemini-1.5-pro"", ""displayName"": ""Gemini 1.5 Pro"", ""isEnabled"": true },
-        { ""id"": ""gemini-1.5-flash"", ""displayName"": ""Gemini 1.5 Flash"", ""isEnabled"": true }
-      ]
-    },
-    {
-      ""name"": ""Ollama"",
-      ""apiUrl"": ""http://localhost:11434/v1/chat/completions"",
-      ""apiKeyUrl"": """",
-      ""models"": [
-        { ""id"": ""qwen3:8b"", ""displayName"": ""Qwen3 8B"", ""isEnabled"": true },
-        { ""id"": ""deepseek-coder-v2:16b"", ""displayName"": ""DeepSeek Coder V2 16B"", ""isEnabled"": true }
-      ]
-    }
-  ]
-}";
-
-            System.IO.File.WriteAllText(modelsPath, defaultJson);
-            UnityEditor.AssetDatabase.Refresh();
-            Debug.Log($"[GameSmith] Created default AIModels.json at {modelsPath}");
         }
 
         // Get list of provider names
