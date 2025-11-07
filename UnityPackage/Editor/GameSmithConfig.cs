@@ -119,7 +119,10 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (data != null && data.providers != null)
                 {
                     providers = data.providers;
-                    Debug.Log($"Game Smith 🗡️ ready with {providers.Count} tools. Alt+G to configure");
+
+                    // Count total models across all providers
+                    int totalModels = providers.Sum(p => p.models?.Count ?? 0);
+                    Debug.Log($"Game Smith 🗡️ ready with {totalModels} models. Alt+G to configure");
                 }
                 else
                 {
@@ -149,11 +152,74 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             var provider = GetActiveProviderData();
             if (provider == null || provider.models == null) return new List<string>();
-            
+
+            // For Ollama, dynamically fetch models if list is empty
+            if (provider.name == "Ollama" && provider.models.Count == 0)
+            {
+                RefreshOllamaModels();
+            }
+
             return provider.models
                 .Where(m => m.isEnabled)
                 .Select(m => m.id)
                 .ToList();
+        }
+
+        // Refresh Ollama models from local server
+        public void RefreshOllamaModels()
+        {
+            var provider = providers.FirstOrDefault(p => p.name == "Ollama");
+            if (provider == null) return;
+
+            try
+            {
+                var request = UnityEngine.Networking.UnityWebRequest.Get("http://localhost:11434/api/tags");
+                request.timeout = 3;
+                var operation = request.SendWebRequest();
+
+                // Wait synchronously (editor only)
+                while (!operation.isDone) { }
+
+                if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+                {
+                    var response = request.downloadHandler.text;
+                    var data = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
+
+                    if (data != null && data.ContainsKey("models"))
+                    {
+                        var models = data["models"] as List<object>;
+                        if (models != null)
+                        {
+                            provider.models.Clear();
+                            foreach (var model in models)
+                            {
+                                var modelDict = model as Dictionary<string, object>;
+                                if (modelDict != null && modelDict.ContainsKey("name"))
+                                {
+                                    string modelName = modelDict["name"].ToString();
+                                    provider.models.Add(new ModelJson
+                                    {
+                                        id = modelName,
+                                        displayName = modelName,
+                                        isEnabled = true
+                                    });
+                                }
+                            }
+                            Debug.Log($"Game Smith 🗡️ detected {provider.models.Count} Ollama models");
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("Game Smith 🗡️ Ollama server not running. Start with: ollama serve");
+                }
+
+                request.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Game Smith 🗡️ Could not connect to Ollama: {ex.Message}");
+            }
         }
 
         // Get display name for a model
