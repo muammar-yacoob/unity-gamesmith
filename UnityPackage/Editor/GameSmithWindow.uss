@@ -1,428 +1,333 @@
-/* Game Smith Window - Modern UI Toolkit Styles */
+/* Game Smith - Simple AI Chat Styles */
 
-/* Root container */
-.root-container {
+.chat-window {
     flex-grow: 1;
+    flex-direction: column;
     background-color: rgb(32, 32, 32);
+    height: 100%;
 }
 
-/* Header section */
+/* Header - Fixed height */
 .header {
-    background-color: rgb(38, 38, 38);
-    padding: 10px;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding: 10px 15px;
+    background-color: rgb(45, 45, 45);
     border-bottom-width: 2px;
-    border-bottom-color: rgb(60, 60, 60);
-    min-height: 45px;
+    border-bottom-color: rgb(102, 178, 255);
+    flex-shrink: 0;
+    min-height: 50px;
+    max-height: 50px;
 }
 
 .header-title {
-    font-size: 20px;
+    font-size: 18px;
     -unity-font-style: bold;
-    color: rgb(230, 230, 230);
-}
-
-.header-button {
-    width: 30px;
-    height: 30px;
-    background-color: rgb(60, 60, 60);
-    border-radius: 15px;
-    border-width: 0;
-}
-
-.header-button:hover {
-    background-color: rgb(80, 80, 80);
-}
-
-/* Tab toolbar */
-.tab-toolbar {
-    flex-direction: row;
-    border-bottom-width: 1px;
-    border-bottom-color: rgb(60, 60, 60);
-    background-color: rgb(40, 40, 40);
-}
-
-.tab-button {
-    flex-grow: 1;
-    padding: 12px;
-    background-color: rgb(40, 40, 40);
-    border-width: 0;
-    color: rgb(180, 180, 180);
-    -unity-font-style: normal;
-}
-
-.tab-button:hover {
-    background-color: rgb(50, 50, 50);
-}
-
-.tab-button--selected {
-    background-color: rgb(60, 60, 60);
-    color: rgb(255, 255, 255);
-    -unity-font-style: bold;
-    border-bottom-width: 3px;
-    border-bottom-color: rgb(102, 178, 255);
-}
-
-/* Content area */
-.content-area {
-    flex-grow: 1;
-    padding: 15px;
-}
-
-.scroll-view {
+    color: rgb(240, 240, 240);
     flex-grow: 1;
 }
 
-/* Section boxes */
-.section-box {
-    background-color: rgb(45, 45, 45);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-width: 1px;
-    border-color: rgb(60, 60, 60);
-}
-
-.section-header {
-    font-size: 14px;
-    -unity-font-style: bold;
-    color: rgb(255, 255, 255);
-    margin-bottom: 10px;
-}
-
-/* AI Configuration */
-.config-row {
-    flex-direction: row;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.config-label {
-    width: 120px;
-    color: rgb(200, 200, 200);
-}
-
-.config-field {
-    flex-grow: 1;
-    background-color: rgb(60, 60, 60);
-    border-color: rgb(80, 80, 80);
-    border-radius: 4px;
-    padding: 6px;
-    color: rgb(255, 255, 255);
-}
-
-/* Provider dropdown */
-.provider-dropdown {
-    background-color: rgb(60, 60, 60);
-    border-color: rgb(80, 80, 80);
-    border-radius: 4px;
-    color: rgb(255, 255, 255);
-}
-
-/* Command interface */
-.command-input {
-    min-height: 80px;
-    background-color: rgb(50, 50, 50);
-    border-radius: 6px;
-    padding: 10px;
-    color: rgb(255, 255, 255);
-    border-width: 1px;
-    border-color: rgb(70, 70, 70);
-    -unity-font-style: normal;
-}
-
-.command-input:focus {
-    border-color: rgb(102, 178, 255);
-}
-
-/* Buttons */
-.primary-button {
-    height: 35px;
-    background-color: rgb(102, 178, 255);
-    border-radius: 6px;
-    border-width: 0;
-    color: rgb(255, 255, 255);
-    -unity-font-style: bold;
-    padding: 8px 16px;
-    margin-top: 8px;
-}
-
-.primary-button:hover {
-    background-color: rgb(120, 190, 255);
-}
-
-.primary-button:active {
-    background-color: rgb(80, 160, 240);
-}
-
-.primary-button:disabled {
-    background-color: rgb(80, 80, 80);
-    color: rgb(150, 150, 150);
-}
-
-.secondary-button {
-    height: 30px;
-    background-color: rgb(60, 60, 60);
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: rgb(80, 80, 80);
-    color: rgb(255, 255, 255);
-    padding: 6px 12px;
-}
-
-.secondary-button:hover {
-    background-color: rgb(70, 70, 70);
-    border-color: rgb(100, 100, 100);
-}
-
-/* Template cards */
-.template-card {
-    background-color: rgb(50, 50, 50);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-width: 1px;
-    border-color: rgb(70, 70, 70);
-}
-
-.template-card:hover {
-    border-color: rgb(102, 178, 255);
+.icon-button {
+    width: 32px;
+    height: 32px;
+    margin-left: 8px;
     background-color: rgb(55, 55, 55);
+    border-radius: 4px;
+    border-width: 0;
+    font-size: 14px;
 }
 
-.template-title {
-    font-size: 13px;
-    -unity-font-style: bold;
-    color: rgb(255, 255, 255);
-    margin-bottom: 6px;
+.icon-button:hover {
+    background-color: rgb(75, 75, 75);
 }
 
-.template-description {
-    font-size: 11px;
-    color: rgb(180, 180, 180);
-    white-space: normal;
-    margin-bottom: 8px;
+/* Chat Messages - Takes remaining space (flexible, ~50%) */
+.chat-messages {
+    flex-grow: 1;
+    flex-shrink: 1;
+    background-color: rgb(38, 38, 38);
+    min-height: 150px;
+    overflow: hidden;
 }
 
-.template-meta {
-    flex-direction: row;
+.messages-container {
+    padding: 15px;
+}
+
+.welcome-message {
+    padding: 40px 20px;
     align-items: center;
-    margin-bottom: 8px;
 }
 
-.template-category {
-    font-size: 10px;
-    color: rgb(150, 150, 150);
-    margin-right: 10px;
+.welcome-title {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: rgb(240, 240, 240);
+    margin-bottom: 10px;
 }
 
-.template-actions {
-    flex-direction: row;
-    justify-content: space-between;
+.welcome-text {
+    font-size: 13px;
+    color: rgb(160, 160, 160);
+    white-space: normal;
+    -unity-text-align: middle-center;
 }
 
-.template-button {
-    height: 26px;
-    flex-grow: 1;
-    margin-right: 5px;
-    background-color: rgb(70, 70, 70);
+/* Message Bubbles - Compact, less rounded, better contrast */
+.message-user {
+    background-color: rgb(70, 140, 220);
     border-radius: 4px;
-    border-width: 0;
+    padding: 6px 10px;
+    margin: 4px 15px 4px 100px;
+    align-self: flex-end;
+}
+
+.message-user-text {
     color: rgb(255, 255, 255);
+    white-space: normal;
+    font-size: 13px;
 }
 
-.template-button:hover {
-    background-color: rgb(90, 90, 90);
-}
-
-.favorite-button {
-    width: 30px;
-    height: 26px;
-    background-color: rgb(70, 70, 70);
+.message-assistant {
+    background-color: rgb(56, 56, 56);
     border-radius: 4px;
-    border-width: 0;
-    font-size: 16px;
-}
-
-.favorite-button--active {
-    background-color: rgb(255, 200, 0);
-}
-
-/* Quick actions grid */
-.quick-actions-grid {
-    flex-direction: row;
-    flex-wrap: wrap;
-}
-
-.quick-action-button {
-    height: 40px;
-    flex-grow: 1;
-    margin: 4px;
-    background-color: rgb(60, 60, 60);
-    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 4px 100px 4px 15px;
     border-width: 1px;
-    border-color: rgb(80, 80, 80);
-    color: rgb(255, 255, 255);
+    border-color: rgb(85, 85, 85);
 }
 
-.quick-action-button:hover {
-    background-color: rgb(70, 70, 70);
-    border-color: rgb(102, 178, 255);
+.message-assistant-text {
+    color: rgb(240, 240, 240);
+    white-space: normal;
+    font-size: 13px;
 }
 
-/* Response output */
-.response-output {
-    min-height: 200px;
-    background-color: rgb(40, 40, 40);
-    border-radius: 6px;
-    padding: 12px;
+.message-error {
+    background-color: rgb(140, 45, 45);
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin: 4px 100px 4px 15px;
+    border-width: 1px;
+    border-color: rgb(200, 70, 70);
+    cursor: link;
+    transition: background-color 0.2s;
+}
+
+.message-error:hover {
+    background-color: rgb(160, 55, 55);
+    border-color: rgb(220, 90, 90);
+}
+
+.message-error-text {
+    color: rgb(255, 210, 210);
+    white-space: normal;
+    font-size: 13px;
+}
+
+/* Input Area - Sized for 10 lines + dropdown footer */
+.input-area {
+    flex-direction: column;
+    padding: 0;
+    background-color: rgb(38, 38, 38);
+    border-top-width: 1px;
+    border-top-color: rgb(55, 55, 55);
+    flex-shrink: 0;
+    min-height: 240px;
+    max-height: 240px;
+}
+
+.input-container {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 0;
+    margin: 0;
+}
+
+/* Input Field Container - 10 lines tall (18px * 10 = 180px + padding) */
+.input-field-container {
+    flex-direction: row;
+    align-items: stretch;
+    background-color: transparent;
+    border-radius: 0;
+    border-width: 0;
+    padding: 8px;
+    margin: 0;
+    flex-shrink: 0;
+    min-height: 196px;
+    max-height: 196px;
+}
+
+.message-input {
+    flex-grow: 1;
+    flex-shrink: 1;
+    background-color: rgb(45, 45, 45);
+    border-radius: 4px;
+    padding: 8px;
     color: rgb(220, 220, 220);
     border-width: 1px;
     border-color: rgb(60, 60, 60);
+    font-size: 14px;
+}
+
+.message-input > TextElement {
     white-space: normal;
 }
 
-/* Help message footer */
-.footer {
-    background-color: rgb(45, 45, 45);
-    padding: 12px;
+.message-input:focus { background-color: transparent; border-width: 0; }
+
+/* Send Button - Ultra Minimal */
+.send-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    margin: 4px 6px 4px 0;
+    background-color: transparent;
+    border-radius: 4px;
+    border-width: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.send-button:hover {
+    background-color: rgb(60, 60, 60);
+}
+
+.send-button:active {
+    background-color: rgb(70, 70, 70);
+}
+
+.send-button:disabled {
+    opacity: 0.3;
+}
+
+.send-icon {
+    font-size: 14px;
+    color: rgb(160, 160, 160);
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+}
+
+.send-button:hover .send-icon {
+    color: rgb(220, 220, 220);
+}
+
+/* Input Footer - Model & Status (fixed at bottom) */
+.input-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: 44px;
+    max-height: 44px;
+    flex-shrink: 0;
+    background-color: rgb(32, 32, 32);
     border-top-width: 1px;
-    border-top-color: rgb(60, 60, 60);
+    border-top-color: rgb(55, 55, 55);
+}
+
+/* Borderless scroll-view hosting the textarea */
+.input-editor-scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+}
+
+.input-editor-scroll > .unity-scroll-view__content-and-vertical-scroll-container,
+.input-editor-scroll > .unity-scroll-view__content-container,
+.input-editor-scroll > .unity-scroll-view__viewport {
+    background-color: transparent;
+}
+
+.input-editor-scroll .unity-vertical-scroller,
+.input-editor-scroll .unity-horizontal-scroller {
+    opacity: 0.6;
+}
+
+.input-footer-right {
     flex-direction: row;
     align-items: center;
 }
 
-.help-message {
-    font-size: 11px;
-    color: rgb(180, 180, 180);
+.model-selector-compact {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
     flex-grow: 1;
+    min-height: 30px;
 }
 
-/* Search bar */
-.search-bar {
-    flex-direction: row;
+.model-dropdown-container {
+    flex-shrink: 0;
+    flex-grow: 1;
+    min-width: 180px;
+    max-width: 350px;
+}
+
+.model-dropdown-container > .unity-base-popup-field {
+    font-size: 12px;
+    min-height: 30px;
+    height: 30px;
     background-color: rgb(50, 50, 50);
-    border-radius: 6px;
-    padding: 8px;
-    margin-bottom: 10px;
     border-width: 1px;
     border-color: rgb(70, 70, 70);
+    border-radius: 4px;
+    padding: 0 8px;
+    margin: 0;
 }
 
-.search-field {
-    flex-grow: 1;
+.model-dropdown-container > .unity-base-popup-field:hover {
+    background-color: rgb(55, 55, 55);
+    border-color: rgb(102, 178, 255);
+}
+
+/* Ensure inner input matches background */
+.model-dropdown-container .unity-base-popup-field__input {
     background-color: transparent;
     border-width: 0;
-    color: rgb(255, 255, 255);
-    padding: 4px;
+    padding: 0;
 }
 
-.search-icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 8px;
-    -unity-text-align: middle-center;
+.model-dropdown-container .unity-base-popup-field__label {
+    background-color: transparent;
+    color: rgb(220, 220, 220);
+    padding: 4px 6px;
+    font-size: 12px;
+    -unity-text-align: middle-left;
+    -unity-font-style: normal;
 }
 
-/* Pagination */
-.pagination {
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
+.model-dropdown-container > .unity-base-popup-field > .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(150, 150, 150);
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
 }
 
-.pagination-button {
-    width: 40px;
-    height: 30px;
-    background-color: rgb(60, 60, 60);
-    border-radius: 4px;
-    border-width: 0;
-    color: rgb(255, 255, 255);
+.model-dropdown-container > .unity-base-popup-field:hover > .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(200, 200, 200);
 }
 
-.pagination-button:hover {
-    background-color: rgb(80, 80, 80);
+.provider-status-compact {
+    font-size: 11px;
+    color: rgb(130, 130, 130);
+    margin-left: auto;
+    cursor: link;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding-left: 12px;
 }
 
-.pagination-button:disabled {
-    background-color: rgb(50, 50, 50);
-    color: rgb(100, 100, 100);
+.provider-status-compact:hover {
+    color: rgb(170, 170, 170);
 }
 
-.pagination-label {
-    margin: 0 15px;
-    color: rgb(200, 200, 200);
-}
-
-/* Foldout */
-.foldout-header {
-    background-color: rgb(50, 50, 50);
-    padding: 8px;
-    border-radius: 4px;
-    margin-bottom: 8px;
-}
-
-/* Help boxes */
-.help-box {
-    background-color: rgb(60, 90, 120);
-    border-radius: 6px;
-    padding: 10px;
-    margin: 8px 0;
-    border-left-width: 4px;
-    border-left-color: rgb(102, 178, 255);
-}
-
-.help-box--warning {
-    background-color: rgb(120, 90, 40);
-    border-left-color: rgb(255, 200, 50);
-}
-
-.help-box--error {
-    background-color: rgb(120, 40, 40);
-    border-left-color: rgb(255, 100, 100);
-}
-
-.help-box--success {
-    background-color: rgb(40, 120, 60);
-    border-left-color: rgb(100, 255, 150);
-}
-
-/* Utility classes */
-.mt-10 {
-    margin-top: 10px;
-}
-
-.mb-10 {
-    margin-bottom: 10px;
-}
-
-.mr-5 {
-    margin-right: 5px;
-}
-
-.ml-5 {
-    margin-left: 5px;
-}
-
-.flex-row {
-    flex-direction: row;
-}
-
-.flex-column {
-    flex-direction: column;
-}
-
-.flex-grow {
-    flex-grow: 1;
-}
-
-.text-center {
-    -unity-text-align: middle-center;
-}
-
-.text-bold {
-    -unity-font-style: bold;
-}

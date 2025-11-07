@@ -1,17 +1,9 @@
 {
   "mcpServers": {
-    "chrome-devtools": {
-      "type": "stdio",
+    "unity-mcp": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@chromedevtools/chrome-devtools-mcp",
-        "--",
-        "--headless=new",
-        "--use-angle=vulkan",
-        "--enable-features=Vulkan",
-        "--no-sandbox"
-      ]
+      "args": ["-y", "@spark-apps/unity-mcp"],
+      "description": "Unity MCP Server - Control Unity Editor through Model Context Protocol"
     }
   }
 }
