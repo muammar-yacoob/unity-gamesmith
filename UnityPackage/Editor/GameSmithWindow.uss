@@ -224,14 +224,14 @@
     height: 100%;
 }
 
-/* Input Field Container - Taller, borderless, flexible */
+/* Input Field Container - No padding, fills space */
 .input-field-container {
     flex-direction: row;
     align-items: stretch;
     background-color: transparent;
     border-radius: 0;
     border-width: 0;
-    padding: 16px;
+    padding: 0;
     margin: 0;
     flex-grow: 1;
     flex-shrink: 1;
@@ -241,13 +241,13 @@
 
 .message-input {
     width: 100%;
+    height: 100%;
     background-color: transparent;
     border-radius: 0;
-    padding: 14px 16px;
+    padding: 12px;
     color: rgb(230, 230, 230);
     border-width: 0;
     font-size: 14px;
-    min-height: 100px;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -255,7 +255,6 @@
 .message-input > TextElement {
     white-space: normal;
     line-height: 1.6;
-    min-height: 100px;
     overflow: hidden;
 }
 

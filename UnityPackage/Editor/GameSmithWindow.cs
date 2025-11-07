@@ -458,19 +458,35 @@ namespace SparkGames.UnityGameSmith.Editor
                     {
                         var inputArea = root.Q<VisualElement>("input-area");
                         var inputFooter = root.Q<VisualElement>(className: "input-footer");
+                        var inputContainer = root.Q<VisualElement>(className: "input-container");
                         
-                        if (inputArea != null && inputFooter != null)
+                        if (inputArea != null && inputFooter != null && inputContainer != null)
                         {
                             var areaHeight = inputArea.resolvedStyle.height;
                             var footerHeight = inputFooter.resolvedStyle.height;
                             
                             if (areaHeight > 0 && !float.IsNaN(areaHeight) && footerHeight > 0 && !float.IsNaN(footerHeight))
                             {
-                                // Calculate available height: input area - footer - container padding
-                                var availableHeight = areaHeight - footerHeight - 32; // 32px for container padding
-                                if (availableHeight > 100) // Ensure minimum height
+                                // Calculate available height: input area - footer
+                                var availableHeight = areaHeight - footerHeight;
+                                if (availableHeight > 50) // Ensure minimum height
                                 {
                                     messageInput.style.height = availableHeight;
+                                    messageInput.style.flexGrow = 1;
+                                    messageInput.style.flexShrink = 1;
+                                }
+                            }
+                            else
+                            {
+                                // Fallback: use container height if available
+                                var containerHeight = inputContainer.resolvedStyle.height;
+                                if (containerHeight > 0 && !float.IsNaN(containerHeight))
+                                {
+                                    var fallbackHeight = containerHeight - footerHeight;
+                                    if (fallbackHeight > 50)
+                                    {
+                                        messageInput.style.height = fallbackHeight;
+                                    }
                                 }
                             }
                         }
@@ -486,6 +502,13 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (inputArea != null)
                 {
                     inputArea.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
+                }
+                
+                // Update when footer changes size
+                var inputFooter = root.Q<VisualElement>(className: "input-footer");
+                if (inputFooter != null)
+                {
+                    inputFooter.RegisterCallback<GeometryChangedEvent>(evt => UpdateInputHeight());
                 }
                 
                 messageInput.RegisterCallback<KeyDownEvent>(evt =>
