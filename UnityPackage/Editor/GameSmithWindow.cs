@@ -51,7 +51,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 var height = targetElement.resolvedStyle.height;
                 if (height <= 0 || float.IsNaN(height))
                 {
-                    height = 80f; // Default height (half of original)
+                    height = 60f; // Very compact default - divider positioned high
                 }
                 startHeight = height;
                 target.CaptureMouse();
@@ -67,7 +67,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 float newHeight = startHeight - deltaY; // Inverted because dragging divider up increases input area
                 
                 // Clamp to reasonable bounds (reduced minimum for smaller default)
-                newHeight = Mathf.Clamp(newHeight, 100f, 800f);
+                newHeight = Mathf.Clamp(newHeight, 60f, 800f);
                 
                 targetElement.style.height = newHeight;
                 targetElement.style.flexGrow = 0;
@@ -238,8 +238,8 @@ namespace SparkGames.UnityGameSmith.Editor
                         var textElement = messageInput.Q<TextElement>();
                         if (textElement != null)
                         {
-                            textElement.style.height = availableHeight - 16; // Reduced padding offset
-                            textElement.style.minHeight = availableHeight - 16;
+                            textElement.style.height = availableHeight - 8; // Reduced padding offset (4px top + 4px bottom)
+                            textElement.style.minHeight = availableHeight - 8;
                         }
                     }
                 }
@@ -412,14 +412,14 @@ namespace SparkGames.UnityGameSmith.Editor
             var inputArea = root.Q<VisualElement>("input-area");
             if (resizeDivider != null && inputArea != null)
             {
+                // Set initial height immediately to control space division
+                inputArea.style.height = 60; // Very compact - divider positioned high
+                inputArea.style.flexGrow = 0;
+                inputArea.style.flexShrink = 0;
+                
                 var manipulator = new ResizeDividerManipulator(inputArea);
                 manipulator.OnResize += UpdateInputFieldHeight;
                 resizeDivider.AddManipulator(manipulator);
-                // Set initial height if not set
-                if (inputArea.resolvedStyle.height <= 0 || float.IsNaN(inputArea.resolvedStyle.height))
-                {
-                    inputArea.style.height = 140;
-                }
             }
 
             // Create model dropdown programmatically
