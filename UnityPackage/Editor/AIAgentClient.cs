@@ -315,6 +315,15 @@ namespace SparkGames.UnityGameSmith.Editor
                 else
                 {
                     requestDict["tools"] = toolsArray;
+
+                    // For Claude, encourage tool use
+                    if (!isOllamaOrOpenAI)
+                    {
+                        requestDict["tool_choice"] = new Dictionary<string, object>
+                        {
+                            { "type", "auto" }
+                        };
+                    }
                 }
             }
 
