@@ -4,10 +4,12 @@
       "name": "Anthropic",
       "apiUrl": "https://api.anthropic.com/v1/messages",
       "apiKeyUrl": "https://console.anthropic.com",
+      "apiVersion": "2023-06-01",
       "models": [
-        { "id": "claude-sonnet-4.5", "displayName": "🧠 Claude Sonnet 4.5 (Coding & reasoning, mid-cost, balanced speed)", "isEnabled": true },
-        { "id": "claude-opus-4.1", "displayName": "🧠 Claude Opus 4.1 (Deep reasoning, high cost, slower)", "isEnabled": true },
-        { "id": "claude-haiku-4.5", "displayName": "Claude Haiku 4.5 (Quick tasks, low cost, fastest)", "isEnabled": true }
+        { "id": "claude-sonnet-4-5-20250929", "displayName": "🧠 Claude Sonnet 4.5 (Coding & reasoning, mid-cost, balanced speed)", "isEnabled": true },
+        { "id": "claude-opus-4-1-20250805", "displayName": "🧠 Claude Opus 4.1 (Deep reasoning, high cost, slower)", "isEnabled": true },
+        { "id": "claude-haiku-4-5-20251001", "displayName": "Claude Haiku 4.5 (Quick tasks, low cost, fastest)", "isEnabled": true },
+        { "id": "claude-3-5-sonnet-20241022", "displayName": "Claude 3.5 Sonnet (Legacy, Oct 2024)", "isEnabled": false }
       ]
     },
     {
@@ -15,10 +17,11 @@
       "apiUrl": "https://api.openai.com/v1/chat/completions",
       "apiKeyUrl": "https://platform.openai.com/api-keys",
       "models": [
-        { "id": "gpt-5-codex", "displayName": "🧠 GPT-5 Codex (Top for programming & system design, mid-cost)", "isEnabled": true },
-        { "id": "gpt-5", "displayName": "GPT-5 (General intelligence, balanced cost & speed)", "isEnabled": true },
-        { "id": "gpt-4o", "displayName": "GPT-4o (Multimodal, good speed, affordable)", "isEnabled": true },
-        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini (Light tasks, lowest cost, very fast)", "isEnabled": true }
+        { "id": "gpt-4o", "displayName": "🧠 GPT-4o (Multimodal, coding, good speed, affordable)", "isEnabled": true },
+        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini (Light tasks, lowest cost, very fast)", "isEnabled": true },
+        { "id": "gpt-4-turbo", "displayName": "GPT-4 Turbo (Legacy, powerful reasoning)", "isEnabled": true },
+        { "id": "o1-preview", "displayName": "🧠 o1 Preview (Advanced reasoning, slow, expensive)", "isEnabled": false },
+        { "id": "o1-mini", "displayName": "o1 Mini (Fast reasoning, coding tasks)", "isEnabled": false }
       ]
     },
     {
@@ -36,7 +39,8 @@
       "apiUrl": "https://api.x.ai/v1/chat/completions",
       "apiKeyUrl": "https://console.x.ai/",
       "models": [
-        { "id": "grok-4", "displayName": "🧠 Grok 4 (Real-time reasoning & web search, mid-high cost)", "isEnabled": true }
+        { "id": "grok-beta", "displayName": "🧠 Grok Beta (Latest model, auto-updates)", "isEnabled": true },
+        { "id": "grok-2-1212", "displayName": "Grok 2 (Dec 2024, stable)", "isEnabled": true }
       ]
     },
     {

@@ -634,6 +634,19 @@ namespace SparkGames.UnityGameSmith.Editor
                 await UniTask.SwitchToMainThread();
 
                 var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
+                
+                // Check for MCP-level errors first
+                if (responseObj != null && responseObj.ContainsKey("error"))
+                {
+                    var error = responseObj["error"] as Dictionary<string, object>;
+                    if (error != null && error.ContainsKey("message"))
+                    {
+                        return $"MCP Error: {error["message"]}";
+                    }
+                    return "MCP Error: Unknown error";
+                }
+                
+                // Parse successful result
                 if (responseObj != null && responseObj.ContainsKey("result"))
                 {
                     var result = responseObj["result"] as Dictionary<string, object>;
@@ -645,13 +658,35 @@ namespace SparkGames.UnityGameSmith.Editor
                             var firstContent = contentList[0] as Dictionary<string, object>;
                             if (firstContent != null && firstContent.ContainsKey("text"))
                             {
-                                return firstContent["text"].ToString();
+                                string textContent = firstContent["text"].ToString();
+                                
+                                // Check if the text content is JSON with an error
+                                try
+                                {
+                                    var toolResult = MiniJSON.Json.Deserialize(textContent) as Dictionary<string, object>;
+                                    if (toolResult != null && toolResult.ContainsKey("error"))
+                                    {
+                                        return $"Tool Error: {toolResult["error"]}";
+                                    }
+                                    if (toolResult != null && toolResult.ContainsKey("success") && 
+                                        toolResult["success"].ToString().ToLower() == "false" && 
+                                        toolResult.ContainsKey("error"))
+                                    {
+                                        return $"Tool Error: {toolResult["error"]}";
+                                    }
+                                }
+                                catch
+                                {
+                                    // Not JSON, return as-is
+                                }
+                                
+                                return textContent;
                             }
                         }
                     }
                 }
 
-                return "Tool execution failed";
+                return "Tool execution failed - invalid response format";
             }
             catch (Exception ex)
             {

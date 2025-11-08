@@ -5,6 +5,7 @@
     flex-direction: column;
     background-color: rgb(30, 30, 30);
     height: 100%;
+    position: relative; /* Make it the positioning context for footer */
 }
 
 /* Header - Modern unified design */
@@ -198,9 +199,8 @@
     background-color: rgb(30, 30, 30);
     flex-shrink: 0;
     flex-grow: 0;
-    min-height: 104px; /* 60px text input + 44px footer */
+    min-height: 100px; /* Increased min height for text input */
     max-height: none;
-    position: relative;
 }
 
 .input-container {
@@ -210,18 +210,17 @@
     padding: 0;
     margin: 0;
     min-height: 0;
-    position: relative;
     width: 100%;
     height: 100%;
 }
 
-/* Input Field Container - Absolutely positioned to fill space above footer */
+/* Input Field Container - Fills entire input area */
 .input-field-container {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 44px; /* Leave space for footer */
+    bottom: 0; /* Fill entire input-area (footer is now outside) */
     flex-direction: column;
     align-items: stretch;
     justify-content: stretch;
@@ -349,19 +348,15 @@
     color: rgb(120, 200, 255);
 }
 
-/* Input Footer - Absolutely positioned at bottom */
+/* Input Footer - Fixed at bottom of chat window */
 .input-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    min-height: 44px;
-    max-height: 44px;
-    height: 44px;
+    padding: 4px 12px;
+    min-height: 40px;
+    max-height: 40px;
+    height: 40px;
     flex-shrink: 0;
     flex-grow: 0;
     background-color: rgb(30, 30, 30);

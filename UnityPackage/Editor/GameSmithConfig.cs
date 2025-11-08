@@ -25,6 +25,7 @@ namespace SparkGames.UnityGameSmith.Editor
             public string name;
             public string apiUrl;
             public string apiKeyUrl;
+            public string apiVersion; // Optional: API version header (e.g., "2023-06-01" for Anthropic)
             public List<ModelJson> models;
         }
 
@@ -93,7 +94,8 @@ namespace SparkGames.UnityGameSmith.Editor
         // Convenience properties
         public string apiUrl => GetActiveProviderData()?.apiUrl ?? "";
         public string apiKey => GameSmithSettings.Instance.GetApiKey(activeProvider);
-        
+        public string apiVersion => GetActiveProviderData()?.apiVersion ?? "";
+
         public void SetApiKey(string provider, string key)
         {
             GameSmithSettings.Instance.SetApiKey(provider, key);
@@ -122,7 +124,7 @@ namespace SparkGames.UnityGameSmith.Editor
 
                     // Count total models across all providers (excluding Ollama which loads dynamically)
                     int totalModels = providers.Where(p => !p.name.Contains("Ollama")).Sum(p => p.models?.Count ?? 0);
-                    Debug.Log($"Game Smith 🗡️ ready with {totalModels} AI models. Alt+G to configure");
+                    Debug.Log($"Game Smith 🗡️ ready. Alt+G to configure");
                 }
                 else
                 {
@@ -209,7 +211,7 @@ namespace SparkGames.UnityGameSmith.Editor
                                     });
                                 }
                             }
-                            Debug.Log($"Game Smith 🗡️ detected {provider.models.Count} Ollama models");
+                            // Debug.Log($"Game Smith 🗡️ detected {provider.models.Count} Ollama models");
                         }
                     }
                 }

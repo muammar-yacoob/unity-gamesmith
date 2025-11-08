@@ -68,7 +68,7 @@ namespace SparkGames.UnityGameSmith.Editor
             Action<AIResponse> onSuccess, Action<string> onError)
         {
             // Add tool result to history based on provider
-            if (config.activeProvider == "OpenAI")
+            if (config.activeProvider.Contains("OpenAI"))
             {
                 // OpenAI format: tool message with tool_call_id
                 conversationHistory.Add(new Dictionary<string, object>
@@ -104,8 +104,8 @@ namespace SparkGames.UnityGameSmith.Editor
         private IEnumerator SendWebRequest(string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
-            bool isOllamaOrOpenAI = config.activeProvider == "Ollama" || config.activeProvider == "OpenAI";
-            bool isGemini = config.activeProvider == "Gemini";
+            bool isOllamaOrOpenAI = config.activeProvider.Contains("Ollama") || config.activeProvider.Contains("OpenAI") || config.activeProvider.Contains("Grok");
+            bool isGemini = config.activeProvider.Contains("Gemini");
 
             // For Ollama on localhost, normalize the URL
 
@@ -346,20 +346,26 @@ namespace SparkGames.UnityGameSmith.Editor
                 request.SetRequestHeader("Content-Type", "application/json");
 
                 // Set headers based on provider
-                if (config.activeProvider == "Claude")
+                if (config.activeProvider.Contains("Anthropic"))
                 {
-                    request.SetRequestHeader("anthropic-version", "2024-10-01");
+                    // Use version from config, fallback to 2023-06-01 if not specified
+                    string apiVersion = !string.IsNullOrEmpty(config.apiVersion) ? config.apiVersion : "2023-06-01";
+                    request.SetRequestHeader("anthropic-version", apiVersion);
                     request.SetRequestHeader("x-api-key", config.apiKey);
                 }
-                else if (config.activeProvider == "OpenAI")
+                else if (config.activeProvider.Contains("OpenAI"))
                 {
                     request.SetRequestHeader("Authorization", $"Bearer {config.apiKey}");
                 }
-                else if (config.activeProvider == "Gemini")
+                else if (config.activeProvider.Contains("Gemini"))
                 {
                     // API key is in URL parameter
                 }
-                else if (config.activeProvider == "Ollama")
+                else if (config.activeProvider.Contains("Grok"))
+                {
+                    request.SetRequestHeader("Authorization", $"Bearer {config.apiKey}");
+                }
+                else if (config.activeProvider.Contains("Ollama"))
                 {
                     // No authentication required
                 }
@@ -511,7 +517,7 @@ namespace SparkGames.UnityGameSmith.Editor
                         errorDetails += "\nDiagnostic: Connection failed - server may not be running or reachable";
 
                         // For Ollama, add specific checks
-                        if (config.activeProvider == "Ollama")
+                        if (config.activeProvider.Contains("Ollama"))
                         {
                             errorDetails += $"\nOllama URL: {config.apiUrl}";
                             errorDetails += "\nPlease verify:";
@@ -621,7 +627,7 @@ namespace SparkGames.UnityGameSmith.Editor
 
                 if (response == null)
                 {
-                    GameSmithLogger.LogError("Failed to parse response JSON");
+                    GameSmithLogger.LogError($"Failed to parse response JSON. Input was: {json?.Substring(0, Math.Min(json?.Length ?? 0, 200))}...");
                     return null;
                 }
 

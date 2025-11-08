@@ -28,24 +28,24 @@
         <!-- Input Area (flexible) -->
         <ui:VisualElement name="input-area" class="input-area">
             <ui:VisualElement class="input-container">
-                <!-- Scrollable text input area filling ~90% of bottom section -->
+                <!-- Scrollable text input area -->
                 <ui:VisualElement class="input-field-container">
                     <ui:TextField name="message-input" multiline="true" class="message-input"
                                  placeholder-text="Ask about your Unity project..." />
                 </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
 
-                <!-- Bottom Row: Model (left) + Send (right) -->
-                <ui:VisualElement class="input-footer">
-                    <ui:VisualElement class="model-selector-compact">
-                        <ui:VisualElement name="model-dropdown-container" class="model-dropdown-container" />
-                    </ui:VisualElement>
-                    <ui:VisualElement class="input-footer-right">
-                        <ui:Label name="provider-status" text="" class="provider-status-compact" />
-                        <ui:Button name="send-button" class="send-button" tooltip="Send message">
-                            <ui:Label text="➤" class="send-icon" />
-                        </ui:Button>
-                    </ui:VisualElement>
-                </ui:VisualElement>
+        <!-- Footer with Model selector and Send button (fixed at bottom) -->
+        <ui:VisualElement class="input-footer">
+            <ui:VisualElement class="model-selector-compact">
+                <ui:VisualElement name="model-dropdown-container" class="model-dropdown-container" />
+            </ui:VisualElement>
+            <ui:VisualElement class="input-footer-right">
+                <ui:Label name="provider-status" text="" class="provider-status-compact" />
+                <ui:Button name="send-button" class="send-button" tooltip="Send message">
+                    <ui:Label text="➤" class="send-icon" />
+                </ui:Button>
             </ui:VisualElement>
         </ui:VisualElement>
 
