@@ -107,9 +107,15 @@ node_modules/
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
 /MCP Test
-.cursor
-.claude
-.vscode
 /MCPTest
+
+# Editor/IDE sensitive settings (may contain API keys)
+.cursor/
+.cursor
+.claude/
+.claude
+*.local.json
+settings.local.json
+.vscode/
