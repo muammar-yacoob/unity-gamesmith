@@ -41,13 +41,20 @@ namespace SparkGames.UnityGameSmith.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<GameSmithSettingsWindow>("GameSmith Settings");
-            window.minSize = new Vector2(500, 400);
+            window.minSize = new Vector2(550, 450);
+            window.maxSize = new Vector2(800, 1000);
             window.Show();
         }
 
         private void OnEnable()
         {
             config = GameSmithConfig.GetOrCreate();
+
+            // Auto-detect Ollama models if Ollama is the active provider
+            if (config != null && config.activeProvider.ToLower().Contains("ollama"))
+            {
+                config.RefreshOllamaModels();
+            }
         }
 
         private void OnDisable()
@@ -70,32 +77,40 @@ namespace SparkGames.UnityGameSmith.Editor
                 return;
             }
 
-            // Add horizontal padding to prevent clipping
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(10);
-            EditorGUILayout.BeginVertical();
-            
+            // Set consistent label width for alignment
+            float originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 120;
+
+            // Scroll view with max width constraint
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
-            EditorGUILayout.Space(10);
-            
+            // Content container with padding and max width
+            EditorGUILayout.BeginVertical(GUILayout.MaxWidth(position.width - 20));
+            GUILayout.Space(15);
+
             // Title
             var titleStyle = new GUIStyle(EditorStyles.boldLabel);
             titleStyle.fontSize = 16;
-            titleStyle.margin = new RectOffset(0, 0, 0, 10);
+            titleStyle.margin = new RectOffset(10, 10, 0, 10);
             EditorGUILayout.LabelField("GameSmith Configuration", titleStyle);
-            
+
             EditorGUILayout.Space(5);
 
             // Provider Selection
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            EditorGUILayout.BeginVertical();
             DrawProviderSection();
-
-            EditorGUILayout.Space(10);
-            EditorGUILayout.EndScrollView();
-            
             EditorGUILayout.EndVertical();
             GUILayout.Space(10);
             EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(15);
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndScrollView();
+
+            // Restore original label width
+            EditorGUIUtility.labelWidth = originalLabelWidth;
         }
 
         private void DrawProviderSection()
@@ -125,6 +140,13 @@ namespace SparkGames.UnityGameSmith.Editor
             if (EditorGUI.EndChangeCheck() && newProviderIndex >= 0)
             {
                 config.activeProvider = providerNames[newProviderIndex];
+
+                // Auto-refresh Ollama models when switching to Ollama
+                if (config.activeProvider.ToLower().Contains("ollama"))
+                {
+                    config.RefreshOllamaModels();
+                }
+
                 // Reset to first model when changing provider
                 var providerModels = config.GetModelsList();
                 if (providerModels.Count > 0)
@@ -133,24 +155,68 @@ namespace SparkGames.UnityGameSmith.Editor
                 }
             }
 
-            // Model dropdown
+            // Model dropdown with Ollama refresh button
             var models = config.GetModelsList();
-            if (models.Count > 0)
-            {
-                var modelDisplayNames = models.Select(m => config.GetModelDisplayName(m)).ToArray();
-                int currentModelIndex = models.IndexOf(config.selectedModel);
-                if (currentModelIndex < 0) currentModelIndex = 0;
 
-                EditorGUI.BeginChangeCheck();
-                int newModelIndex = EditorGUILayout.Popup("Model", currentModelIndex, modelDisplayNames);
-                if (EditorGUI.EndChangeCheck() && newModelIndex >= 0)
+            // For Ollama, show refresh button next to model dropdown
+            if (config.activeProvider.ToLower().Contains("ollama"))
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                if (models.Count > 0)
                 {
-                    config.selectedModel = models[newModelIndex];
+                    var modelDisplayNames = models.Select(m => config.GetModelDisplayName(m)).ToArray();
+                    int currentModelIndex = models.IndexOf(config.selectedModel);
+                    if (currentModelIndex < 0) currentModelIndex = 0;
+
+                    EditorGUI.BeginChangeCheck();
+                    int newModelIndex = EditorGUILayout.Popup("Model", currentModelIndex, modelDisplayNames);
+                    if (EditorGUI.EndChangeCheck() && newModelIndex >= 0)
+                    {
+                        config.selectedModel = models[newModelIndex];
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.LabelField("Model", "No models found");
+                }
+
+                // Refresh button for Ollama
+                if (GUILayout.Button("🔄", GUILayout.Width(32), GUILayout.Height(20)))
+                {
+                    config.RefreshOllamaModels();
+                    Repaint(); // Force window refresh to show new models
+                }
+
+                EditorGUILayout.EndHorizontal();
+
+                if (models.Count == 0)
+                {
+                    var helpBoxStyle = new GUIStyle(EditorStyles.helpBox);
+                    helpBoxStyle.wordWrap = true;
+                    EditorGUILayout.HelpBox("No Ollama models detected. Ensure Ollama is running with installed models.\n\nStart: ollama serve\nInstall: ollama pull codellama", MessageType.Warning);
                 }
             }
             else
             {
-                EditorGUILayout.HelpBox("No models available for this provider.", MessageType.Warning);
+                // Non-Ollama providers - regular model dropdown
+                if (models.Count > 0)
+                {
+                    var modelDisplayNames = models.Select(m => config.GetModelDisplayName(m)).ToArray();
+                    int currentModelIndex = models.IndexOf(config.selectedModel);
+                    if (currentModelIndex < 0) currentModelIndex = 0;
+
+                    EditorGUI.BeginChangeCheck();
+                    int newModelIndex = EditorGUILayout.Popup("Model", currentModelIndex, modelDisplayNames);
+                    if (EditorGUI.EndChangeCheck() && newModelIndex >= 0)
+                    {
+                        config.selectedModel = models[newModelIndex];
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("No models available for this provider.", MessageType.Warning);
+                }
             }
 
             EditorGUILayout.Space(5);
@@ -184,7 +250,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
 
                     // Show/Hide toggle button
-                    if (GUILayout.Button(showPassword ? "Hide" : "Show", GUILayout.Width(50), GUILayout.Height(18)))
+                    if (GUILayout.Button(showPassword ? "🙈" : "👁️", GUILayout.Width(32), GUILayout.Height(20)))
                     {
                         showPassword = !showPassword;
                     }
@@ -218,14 +284,16 @@ namespace SparkGames.UnityGameSmith.Editor
                 var apiKeyUrl = config.GetApiKeyUrl();
 
                 EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
 
                 // Left button: Get/Open API Key URL
                 if (!string.IsNullOrEmpty(apiKeyUrl))
                 {
-                    if (GUILayout.Button("Get API Key", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button("Get API Key", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         Application.OpenURL(apiKeyUrl);
                     }
+                    GUILayout.Space(5);
                 }
 
                 // Right button: Dynamic based on state
@@ -234,7 +302,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (isVerified)
                 {
                     // State 3: Verified → Show "Edit API Key"
-                    if (GUILayout.Button("Edit API Key", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button("Edit API Key", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         // Reset verification when user wants to edit
                         GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
@@ -246,7 +314,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 else if (hasValidFormat && !string.IsNullOrEmpty(currentKey))
                 {
                     // State 2: Valid format but not verified → Show "Verify API Key"
-                    if (GUILayout.Button(isVerifying ? "Verifying..." : "Verify API Key", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button(isVerifying ? "Verifying..." : "Verify API Key", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         VerifyApiKeyAsync().Forget();
                     }
@@ -254,12 +322,13 @@ namespace SparkGames.UnityGameSmith.Editor
                 else if (!string.IsNullOrEmpty(currentKey))
                 {
                     // State 1a: Invalid format → Show "Check Format"
-                    if (GUILayout.Button("Check Format", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button("Check Format", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         ShowApiKeyFormatHelp();
                     }
                 }
 
+                GUILayout.FlexibleSpace();
                 GUI.enabled = true;
                 EditorGUILayout.EndHorizontal();
             }
@@ -328,20 +397,24 @@ namespace SparkGames.UnityGameSmith.Editor
 
             GUI.enabled = !isInstallingMCP;
 
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
             if (isInstalled)
             {
-                if (GUILayout.Button(isInstallingMCP ? "Updating..." : "Update MCP Server", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button(isInstallingMCP ? "Updating..." : "Update MCP Server", GUILayout.Height(26), GUILayout.MinWidth(180), GUILayout.MaxWidth(250)))
                 {
                     InstallOrUpdateMCPAsync().Forget();
                 }
             }
             else
             {
-                if (GUILayout.Button(isInstallingMCP ? "Installing..." : "Install MCP Server", GUILayout.Height(26), GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button(isInstallingMCP ? "Installing..." : "Install MCP Server", GUILayout.Height(26), GUILayout.MinWidth(180), GUILayout.MaxWidth(250)))
                 {
                     InstallOrUpdateMCPAsync().Forget();
                 }
             }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
 
             GUI.enabled = true;
 

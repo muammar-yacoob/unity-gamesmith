@@ -121,7 +121,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     providers = data.providers;
 
                     // Count total models across all providers (excluding Ollama which loads dynamically)
-                    int totalModels = providers.Where(p => p.name != "Ollama").Sum(p => p.models?.Count ?? 0);
+                    int totalModels = providers.Where(p => !p.name.Contains("Ollama")).Sum(p => p.models?.Count ?? 0);
                     Debug.Log($"Game Smith 🗡️ ready with {totalModels} AI models. Alt+G to configure");
                 }
                 else
@@ -154,7 +154,7 @@ namespace SparkGames.UnityGameSmith.Editor
             if (provider == null || provider.models == null) return new List<string>();
 
             // For Ollama, dynamically fetch models if list is empty
-            if (provider.name == "Ollama" && provider.models.Count == 0)
+            if (provider.name.Contains("Ollama") && provider.models.Count == 0)
             {
                 RefreshOllamaModels();
             }
@@ -165,23 +165,24 @@ namespace SparkGames.UnityGameSmith.Editor
                 .ToList();
         }
 
-        // Refresh Ollama models from local server (async)
+        // Refresh Ollama models from local server
         public void RefreshOllamaModels()
         {
-            EditorCoroutineRunner.StartCoroutine(RefreshOllamaModelsAsync());
-        }
+            var provider = providers.FirstOrDefault(p => p.name.Contains("Ollama"));
+            if (provider == null)
+            {
+                Debug.LogWarning("[GameSmith] Ollama provider not found in configuration");
+                return;
+            }
 
-        private System.Collections.IEnumerator RefreshOllamaModelsAsync()
-        {
-            var provider = providers.FirstOrDefault(p => p.name == "Ollama");
-            if (provider == null) yield break;
-
-            UnityEngine.Networking.UnityWebRequest request = null;
             try
             {
-                request = UnityEngine.Networking.UnityWebRequest.Get("http://localhost:11434/api/tags");
+                var request = UnityEngine.Networking.UnityWebRequest.Get("http://localhost:11434/api/tags");
                 request.timeout = 5;
-                yield return request.SendWebRequest();
+                var operation = request.SendWebRequest();
+
+                // Wait synchronously (editor only - quick operation)
+                while (!operation.isDone) { }
 
                 if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
                 {
@@ -216,14 +217,12 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     Debug.LogWarning("Game Smith 🗡️ Ollama server not running. Start with: ollama serve");
                 }
+
+                request.Dispose();
             }
             catch (Exception ex)
             {
                 Debug.LogWarning($"Game Smith 🗡️ Could not connect to Ollama: {ex.Message}");
-            }
-            finally
-            {
-                request?.Dispose();
             }
         }
 

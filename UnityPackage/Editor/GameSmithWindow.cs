@@ -141,11 +141,17 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             // Set singleton instance
             Instance = this;
-            
+
             // Load config and history
             config = GameSmithConfig.GetOrCreate();
             history = ChatHistory.GetOrCreate();
             client = new AIAgentClient(config);
+
+            // Auto-detect Ollama models if Ollama is the active provider
+            if (config != null && config.activeProvider.ToLower().Contains("ollama"))
+            {
+                config.RefreshOllamaModels();
+            }
 
             // Load UXML - try multiple possible paths
             string[] uiPaths = new string[]
