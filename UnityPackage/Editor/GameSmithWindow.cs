@@ -122,7 +122,7 @@ namespace SparkGames.UnityGameSmith.Editor
         [MenuItem("Tools/GameSmith/GameSmith AI &g", false, 1)]
         public static void ShowWindow()
         {
-            GetWindow<GameSmithWindow>("GameSmith AI");
+            GetWindow<GameSmithWindow>("GameSmith AI", true, typeof(SceneView));
         }
 
         // Note: MenuItem for Configure Settings is in GameSmithSettingsWindow.cs
