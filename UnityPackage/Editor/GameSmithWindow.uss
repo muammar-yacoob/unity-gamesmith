@@ -206,28 +206,27 @@
     flex-shrink: 1;
     padding: 0;
     margin: 0;
-    padding-bottom: 44px; /* Space for absolutely positioned footer */
     min-height: 0;
     position: relative;
     width: 100%;
     height: 100%;
 }
 
-/* Input Field Container - Fills space above footer */
+/* Input Field Container - Absolutely positioned to fill space above footer */
 .input-field-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 44px; /* Leave space for footer */
     flex-direction: row;
     align-items: stretch;
     background-color: transparent;
     border-radius: 0;
     border-width: 0;
-    padding: 8px 12px;
+    padding: 0;
     margin: 0;
-    flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: auto;
-    min-height: 30px;
     overflow: hidden;
-    position: relative;
 }
 
 .message-input {
@@ -251,7 +250,7 @@
     overflow: hidden;
     width: 100%;
     height: 100%;
-    padding: 8px 12px;
+    padding: 4px 8px;
     margin: 0;
     flex-grow: 1;
     flex-shrink: 1;
