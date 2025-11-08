@@ -556,8 +556,36 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
-                if (response == null) return null;
+                object deserializedObj = MiniJSON.Json.Deserialize(json);
+
+                if (deserializedObj == null)
+                {
+                    UnityEngine.Debug.LogWarning("[GameSmith] MiniJSON.Deserialize returned null for Gemini response, attempting manual parse");
+                    // Log first 500 chars for debugging
+                    string preview = json?.Length > 500 ? json.Substring(0, 500) + "..." : json;
+                    UnityEngine.Debug.Log($"[GameSmith] JSON preview: {preview}");
+
+                    // Try to extract text content using regex
+                    // Pattern matches: "text":"content" in Gemini's parts array
+                    var textMatch = System.Text.RegularExpressions.Regex.Match(json, @"""text""\s*:\s*""([^""\\]*(?:\\.[^""\\]*)*)""");
+                    if (textMatch.Success)
+                    {
+                        return new AIResponse
+                        {
+                            TextContent = textMatch.Groups[1].Value,
+                            ContentBlocks = new List<object>()
+                        };
+                    }
+                    GameSmithLogger.LogError($"Failed to parse Gemini response even with fallback. Input length: {json?.Length}");
+                    return null;
+                }
+
+                var response = deserializedObj as Dictionary<string, object>;
+                if (response == null)
+                {
+                    UnityEngine.Debug.LogError($"[GameSmith] Deserialized Gemini object is not a Dictionary. Type: {deserializedObj.GetType()}");
+                    return null;
+                }
 
                 var result = new AIResponse
                 {
@@ -623,11 +651,34 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
+                object deserializedObj = MiniJSON.Json.Deserialize(json);
 
+                if (deserializedObj == null)
+                {
+                    UnityEngine.Debug.LogWarning("[GameSmith] MiniJSON.Deserialize returned null, attempting manual parse");
+                    // Log first 500 chars for debugging
+                    string preview = json?.Length > 500 ? json.Substring(0, 500) + "..." : json;
+                    UnityEngine.Debug.Log($"[GameSmith] JSON preview: {preview}");
+
+                    // Try to extract just the content we need using simple string parsing
+                    // Pattern matches: "content":"text" or "content": "text"
+                    var contentMatch = System.Text.RegularExpressions.Regex.Match(json, @"""content""\s*:\s*""([^""\\]*(?:\\.[^""\\]*)*)""");
+                    if (contentMatch.Success)
+                    {
+                        return new AIResponse
+                        {
+                            TextContent = contentMatch.Groups[1].Value,
+                            ContentBlocks = new List<object>()
+                        };
+                    }
+                    GameSmithLogger.LogError($"Failed to parse response JSON even with fallback. Input length: {json?.Length}");
+                    return null;
+                }
+
+                var response = deserializedObj as Dictionary<string, object>;
                 if (response == null)
                 {
-                    GameSmithLogger.LogError($"Failed to parse response JSON. Input was: {json?.Substring(0, Math.Min(json?.Length ?? 0, 200))}...");
+                    UnityEngine.Debug.LogError($"[GameSmith] Deserialized object is not a Dictionary. Type: {deserializedObj.GetType()}");
                     return null;
                 }
 
@@ -817,8 +868,36 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
-                if (response == null) return null;
+                object deserializedObj = MiniJSON.Json.Deserialize(json);
+
+                if (deserializedObj == null)
+                {
+                    UnityEngine.Debug.LogWarning("[GameSmith] MiniJSON.Deserialize returned null for Claude response, attempting manual parse");
+                    // Log first 500 chars for debugging
+                    string preview = json?.Length > 500 ? json.Substring(0, 500) + "..." : json;
+                    UnityEngine.Debug.Log($"[GameSmith] JSON preview: {preview}");
+
+                    // Try to extract text content using regex
+                    // Pattern matches: "type":"text","text":"content" allowing for whitespace and escaped quotes
+                    var textMatch = System.Text.RegularExpressions.Regex.Match(json, @"""type""\s*:\s*""text""[^}]*""text""\s*:\s*""([^""\\]*(?:\\.[^""\\]*)*)""");
+                    if (textMatch.Success)
+                    {
+                        return new AIResponse
+                        {
+                            TextContent = textMatch.Groups[1].Value,
+                            ContentBlocks = new List<object>()
+                        };
+                    }
+                    GameSmithLogger.LogError($"Failed to parse Claude response even with fallback. Input length: {json?.Length}");
+                    return null;
+                }
+
+                var response = deserializedObj as Dictionary<string, object>;
+                if (response == null)
+                {
+                    UnityEngine.Debug.LogError($"[GameSmith] Deserialized Claude object is not a Dictionary. Type: {deserializedObj.GetType()}");
+                    return null;
+                }
 
                 var result = new AIResponse
                 {

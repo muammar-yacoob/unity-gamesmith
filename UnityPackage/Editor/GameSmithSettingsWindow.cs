@@ -81,32 +81,23 @@ namespace SparkGames.UnityGameSmith.Editor
             float originalLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 120;
 
-            // Scroll view with max width constraint
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
-            // Content container with padding and max width
-            EditorGUILayout.BeginVertical(GUILayout.MaxWidth(position.width - 20));
-            GUILayout.Space(15);
+            EditorGUILayout.Space(10);
 
             // Title
             var titleStyle = new GUIStyle(EditorStyles.boldLabel);
             titleStyle.fontSize = 16;
-            titleStyle.margin = new RectOffset(10, 10, 0, 10);
+            titleStyle.margin = new RectOffset(0, 0, 0, 10);
             EditorGUILayout.LabelField("GameSmith Configuration", titleStyle);
 
             EditorGUILayout.Space(5);
 
-            // Provider Selection
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(10);
-            EditorGUILayout.BeginVertical();
+            // Provider Selection and subsequent sections
             DrawProviderSection();
-            EditorGUILayout.EndVertical();
-            GUILayout.Space(10);
-            EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(15);
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(10);
+
             EditorGUILayout.EndScrollView();
 
             // Restore original label width
@@ -481,7 +472,7 @@ namespace SparkGames.UnityGameSmith.Editor
                                 GUILayout.Space(8); // Indent
                                 var toolLabelStyle = new GUIStyle(EditorStyles.label);
                                 toolLabelStyle.wordWrap = true;
-                                EditorGUILayout.LabelField(tool.Name, toolLabelStyle, GUILayout.ExpandWidth(true));
+                                EditorGUILayout.LabelField(tool.Name, toolLabelStyle);
                                 EditorGUILayout.EndHorizontal();
                             }
                             
@@ -1079,41 +1070,40 @@ namespace SparkGames.UnityGameSmith.Editor
             var labelStyle = EditorStyles.miniLabel;
             
             // Creation
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(70));
             var createColor = GetCategoryAccentColor(ToolCategory.Creation);
             var createRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
             EditorGUI.DrawRect(createRect, createColor);
             GUILayout.Space(4);
             EditorGUILayout.LabelField("Create", labelStyle);
-            EditorGUILayout.EndHorizontal();
+            
+            GUILayout.Space(10);
             
             // Modification
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(70));
             var modifyColor = GetCategoryAccentColor(ToolCategory.Modification);
             var modifyRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
             EditorGUI.DrawRect(modifyRect, modifyColor);
             GUILayout.Space(4);
             EditorGUILayout.LabelField("Modify", labelStyle);
-            EditorGUILayout.EndHorizontal();
+            
+            GUILayout.Space(10);
             
             // Organization
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(60));
             var infoColor = GetCategoryAccentColor(ToolCategory.Organization);
             var infoRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
             EditorGUI.DrawRect(infoRect, infoColor);
             GUILayout.Space(4);
             EditorGUILayout.LabelField("Info", labelStyle);
-            EditorGUILayout.EndHorizontal();
+            
+            GUILayout.Space(10);
             
             // Destructive
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(70));
             var deleteColor = GetCategoryAccentColor(ToolCategory.Destructive);
             var deleteRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
             EditorGUI.DrawRect(deleteRect, deleteColor);
             GUILayout.Space(4);
             EditorGUILayout.LabelField("Delete", labelStyle);
-            EditorGUILayout.EndHorizontal();
             
+            GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }
     }
