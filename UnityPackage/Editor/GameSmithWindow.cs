@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Text.RegularExpressions;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -683,26 +684,13 @@ namespace SparkGames.UnityGameSmith.Editor
             // Classify user intent to determine execution strategy
             var intent = IntentClassifier.Classify(message);
 
-            UnityEngine.Debug.Log($"[GameSmith] Intent classified as: {intent.Type}");
-
             // STRATEGY 1: Direct MCP Execution (no AI needed)
             if (intent.Type == IntentClassifier.IntentType.DirectMCP)
             {
-                // Detailed diagnostic check
-                bool clientNull = mcpClient == null;
-                bool connected = mcpClient != null && mcpClient.IsConnected;
-                int toolCount = mcpClient?.AvailableTools?.Count ?? 0;
-
-                UnityEngine.Debug.Log($"[GameSmith] MCP Status: Client={!clientNull}, Connected={connected}, Tools={toolCount}");
-
+                // Check MCP availability
                 if (mcpClient == null || (!mcpClient.IsConnected && (mcpClient.AvailableTools == null || mcpClient.AvailableTools.Count == 0)))
                 {
-                    string detailMsg = clientNull ? "MCP client not initialized" :
-                                      !connected ? "MCP server not connected" :
-                                      "No tools available";
-
-                    UnityEngine.Debug.LogWarning($"[GameSmith] {detailMsg}. Attempting to restart MCP server...");
-                    AddMessageBubble($"❌ {detailMsg}. Restarting MCP server...", false);
+                    AddMessageBubble("❌ MCP server not ready. Restarting...", false);
 
                     // Try to restart MCP server
                     StartMCPServerAsync();
@@ -722,7 +710,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 }
 
                 // Execute MCP tool directly - NO AI CALL
-                UnityEngine.Debug.Log($"[GameSmith] Executing MCP tool directly: {intent.ToolName}");
                 mcpClient.CallToolAsync(intent.ToolName, intent.Arguments, (toolResult) =>
                 {
                     // Format and display the result
@@ -738,49 +725,26 @@ namespace SparkGames.UnityGameSmith.Editor
                 return;
             }
 
-            // STRATEGY 2 & 3: AI Required or Ambiguous - Send to AI
-            // Get MCP tools only if intent is ambiguous
+            // STRATEGY 2 & 3: AI Required or Ambiguous - Send to AI with tools
             var tools = null as List<MCPTool>;
-            if (intent.Type == IntentClassifier.IntentType.AmbiguousWithTools)
+            if (mcpClient != null && mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
             {
-                if (mcpClient != null)
-                {
-                    if (mcpClient.IsConnected && mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
-                    {
-                        tools = mcpClient.AvailableTools;
-                    }
-                    else if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
-                    {
-                        tools = mcpClient.AvailableTools;
-                    }
-                }
-            }
-
-            // Log AI request strategy
-            if (tools != null && tools.Count > 0)
-            {
-                UnityEngine.Debug.Log($"[GameSmith] Sending to AI with {tools.Count} MCP tools (ambiguous intent)");
-            }
-            else
-            {
-                UnityEngine.Debug.Log($"[GameSmith] Sending to AI for reasoning (no tools needed)");
+                tools = mcpClient.AvailableTools;
             }
 
             // Build system context based on tool availability
             string systemContext;
             if (tools != null && tools.Count > 0)
             {
-                systemContext = @"You are a Unity AI assistant with access to Unity scene manipulation tools via MCP.
+                systemContext = @"You are a Unity AI assistant with real-time access to the Unity Editor via MCP tools.
 
-IMPORTANT: When the user asks about Unity objects or scene information, ALWAYS use the available tools. DO NOT say the MCP server is unavailable - tools are ready to use.
+CRITICAL RULES:
+1. The Unity MCP server IS RUNNING and tools ARE AVAILABLE - never say otherwise
+2. When asked about scene objects, hierarchy, or Unity data: USE THE TOOLS IMMEDIATELY
+3. Do not provide manual code or explanations - execute the appropriate tool
+4. Tools have been verified and are ready to use
 
-Examples:
-- ""list objects"" → use unity_get_hierarchy tool
-- ""create a sphere"" → use create_object tool with type 'Sphere'
-- ""make selected cube 3x taller"" → use scale_object tool with scale {x:1, y:3, z:1}
-- ""move player forward"" → use translate_object tool
-
-Always use tools for Unity operations. Do not explain - execute the tool immediately.
+Example: ""list objects"" → Call unity_get_hierarchy tool right now
 
 " + UnityProjectContext.GetProjectContext();
             }

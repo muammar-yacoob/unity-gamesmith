@@ -444,9 +444,11 @@ namespace SparkGames.UnityGameSmith.Editor
                         // Group and sort tools by category
                         var groupedTools = GroupToolsByCategory(cachedMCPTools);
 
-                        // Scrollable list view
-                        toolsScrollPosition = EditorGUILayout.BeginScrollView(toolsScrollPosition, 
-                            GUILayout.Height(Mathf.Min(300, cachedMCPTools.Count * 20 + groupedTools.Count * 30 + 10)));
+                        // Scrollable list view with max height
+                        toolsScrollPosition = EditorGUILayout.BeginScrollView(
+                            toolsScrollPosition,
+                            GUILayout.MaxHeight(250)
+                        );
 
                         foreach (var group in groupedTools)
                         {

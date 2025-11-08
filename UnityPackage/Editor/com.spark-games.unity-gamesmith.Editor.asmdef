@@ -2,7 +2,8 @@
     "name": "com.spark-games.unity-gamesmith.Editor",
     "rootNamespace": "SparkGames.UnityGameSmith.Editor",
     "references": [
-        "UniTask"
+        "UniTask",
+        "Newtonsoft.Json"
     ],
     "includePlatforms": [
         "Editor"

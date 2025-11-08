@@ -5,6 +5,8 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEditor;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -316,7 +318,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 }
             }
 
-            var requestBody = MiniJSON.Json.Serialize(requestDict);
+            var requestBody = JsonConvert.SerializeObject(requestDict);
 
             // Build URL (replace {model} placeholder for Gemini)
             string requestUrl = config.apiUrl;
@@ -556,83 +558,50 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                object deserializedObj = MiniJSON.Json.Deserialize(json);
-
-                if (deserializedObj == null)
-                {
-                    UnityEngine.Debug.LogWarning("[GameSmith] MiniJSON.Deserialize returned null for Gemini response, attempting manual parse");
-                    // Log first 500 chars for debugging
-                    string preview = json?.Length > 500 ? json.Substring(0, 500) + "..." : json;
-                    UnityEngine.Debug.Log($"[GameSmith] JSON preview: {preview}");
-
-                    // Try to extract text content using regex
-                    // Pattern matches: "text":"content" in Gemini's parts array
-                    var textMatch = System.Text.RegularExpressions.Regex.Match(json, @"""text""\s*:\s*""([^""\\]*(?:\\.[^""\\]*)*)""");
-                    if (textMatch.Success)
-                    {
-                        return new AIResponse
-                        {
-                            TextContent = textMatch.Groups[1].Value,
-                            ContentBlocks = new List<object>()
-                        };
-                    }
-                    GameSmithLogger.LogError($"Failed to parse Gemini response even with fallback. Input length: {json?.Length}");
-                    return null;
-                }
-
-                var response = deserializedObj as Dictionary<string, object>;
-                if (response == null)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith] Deserialized Gemini object is not a Dictionary. Type: {deserializedObj.GetType()}");
-                    return null;
-                }
+                var response = JObject.Parse(json);
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (response.ContainsKey("candidates"))
+                var candidates = response["candidates"];
+                if (candidates != null && candidates.HasValues)
                 {
-                    var candidates = response["candidates"] as List<object>;
-                    if (candidates != null && candidates.Count > 0)
+                    var firstCandidate = candidates[0];
+                    if (firstCandidate != null)
                     {
-                        var firstCandidate = candidates[0] as Dictionary<string, object>;
-                        if (firstCandidate != null && firstCandidate.ContainsKey("content"))
+                        var content = firstCandidate["content"];
+                        if (content != null)
                         {
-                            var content = firstCandidate["content"] as Dictionary<string, object>;
-                            if (content != null && content.ContainsKey("parts"))
+                            var parts = content["parts"];
+                            if (parts != null && parts.HasValues)
                             {
-                                var parts = content["parts"] as List<object>;
-                                if (parts != null && parts.Count > 0)
+                                var textBuilder = new StringBuilder();
+                                foreach (var part in parts)
                                 {
-                                    var textBuilder = new StringBuilder();
-                                    foreach (var part in parts)
+                                    // Check for text content
+                                    var text = part["text"];
+                                    if (text != null)
                                     {
-                                        var partDict = part as Dictionary<string, object>;
-                                        if (partDict != null)
+                                        textBuilder.Append(text.ToString());
+                                    }
+                                    // Check for function call (Gemini tool use)
+                                    else
+                                    {
+                                        var functionCall = part["functionCall"];
+                                        if (functionCall != null)
                                         {
-                                            // Check for text content
-                                            if (partDict.ContainsKey("text"))
-                                            {
-                                                textBuilder.Append(partDict["text"].ToString());
-                                            }
-                                            // Check for function call (Gemini tool use)
-                                            else if (partDict.ContainsKey("functionCall"))
-                                            {
-                                                var functionCall = partDict["functionCall"] as Dictionary<string, object>;
-                                                if (functionCall != null)
-                                                {
-                                                    result.HasToolUse = true;
-                                                    result.ToolName = functionCall.ContainsKey("name") ? functionCall["name"].ToString() : "";
-                                                    result.ToolInput = functionCall.ContainsKey("args") ? functionCall["args"] as Dictionary<string, object> : new Dictionary<string, object>();
-                                                    result.ToolUseId = Guid.NewGuid().ToString(); // Gemini doesn't provide ID, generate one
-                                                }
-                                            }
+                                            result.HasToolUse = true;
+                                            result.ToolName = functionCall["name"]?.ToString() ?? "";
+
+                                            var args = functionCall["args"];
+                                            result.ToolInput = args != null ? args.ToObject<Dictionary<string, object>>() : new Dictionary<string, object>();
+                                            result.ToolUseId = Guid.NewGuid().ToString(); // Gemini doesn't provide ID, generate one
                                         }
                                     }
-                                    result.TextContent = textBuilder.ToString();
                                 }
+                                result.TextContent = textBuilder.ToString();
                             }
                         }
                     }
@@ -651,77 +620,36 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                object deserializedObj = MiniJSON.Json.Deserialize(json);
-
-                if (deserializedObj == null)
-                {
-                    UnityEngine.Debug.LogWarning("[GameSmith] MiniJSON.Deserialize returned null, attempting manual parse");
-                    // Log first 500 chars for debugging
-                    string preview = json?.Length > 500 ? json.Substring(0, 500) + "..." : json;
-                    UnityEngine.Debug.Log($"[GameSmith] JSON preview: {preview}");
-
-                    // Try to extract just the content we need using simple string parsing
-                    // Pattern matches: "content":"text" or "content": "text"
-                    var contentMatch = System.Text.RegularExpressions.Regex.Match(json, @"""content""\s*:\s*""([^""\\]*(?:\\.[^""\\]*)*)""");
-                    if (contentMatch.Success)
-                    {
-                        return new AIResponse
-                        {
-                            TextContent = contentMatch.Groups[1].Value,
-                            ContentBlocks = new List<object>()
-                        };
-                    }
-                    GameSmithLogger.LogError($"Failed to parse response JSON even with fallback. Input length: {json?.Length}");
-                    return null;
-                }
-
-                var response = deserializedObj as Dictionary<string, object>;
-                if (response == null)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith] Deserialized object is not a Dictionary. Type: {deserializedObj.GetType()}");
-                    return null;
-                }
+                var response = JObject.Parse(json);
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (!response.ContainsKey("choices"))
+                var choices = response["choices"];
+                if (choices == null || !choices.HasValues)
                 {
                     return null;
                 }
 
-                var choices = response["choices"] as List<object>;
-                if (choices == null || choices.Count == 0)
-                {
-                    return null;
-                }
-
-                var firstChoice = choices[0] as Dictionary<string, object>;
+                var firstChoice = choices[0];
                 if (firstChoice == null)
                 {
                     return null;
                 }
 
-                if (!firstChoice.ContainsKey("message"))
-                {
-                    return null;
-                }
-
-                var message = firstChoice["message"] as Dictionary<string, object>;
+                var message = firstChoice["message"];
                 if (message == null)
                 {
                     return null;
                 }
 
                 // Get text content - handle both string and null content
-                if (message.ContainsKey("content"))
+                var content = message["content"];
+                if (content != null && content.Type != JTokenType.Null)
                 {
-                    var content = message["content"];
-                    if (content != null)
-                    {
-                        string fullContent = content.ToString();
+                    string fullContent = content.ToString();
 
                         // Extract thinking content from <think> tags
                         var thinkPattern = @"<think>(.*?)</think>";
@@ -758,24 +686,24 @@ namespace SparkGames.UnityGameSmith.Editor
                         {
                             try
                             {
-                                var toolCallJson = MiniJSON.Json.Deserialize(result.TextContent) as Dictionary<string, object>;
-                                if (toolCallJson != null && toolCallJson.ContainsKey("name"))
+                                var toolCallJson = JObject.Parse(result.TextContent);
+                                if (toolCallJson["name"] != null)
                                 {
                                     // This is a tool call from Ollama
                                     result.HasToolUse = true;
                                     result.ToolName = toolCallJson["name"].ToString();
                                     result.ToolUseId = System.Guid.NewGuid().ToString();
 
-                                    if (toolCallJson.ContainsKey("arguments"))
+                                    var args = toolCallJson["arguments"];
+                                    if (args != null)
                                     {
-                                        var args = toolCallJson["arguments"];
-                                        if (args is Dictionary<string, object>)
+                                        if (args.Type == JTokenType.Object)
                                         {
-                                            result.ToolInput = args as Dictionary<string, object>;
+                                            result.ToolInput = args.ToObject<Dictionary<string, object>>();
                                         }
-                                        else if (args is string argsStr)
+                                        else if (args.Type == JTokenType.String)
                                         {
-                                            result.ToolInput = MiniJSON.Json.Deserialize(argsStr) as Dictionary<string, object> ?? new Dictionary<string, object>();
+                                            result.ToolInput = JObject.Parse(args.ToString()).ToObject<Dictionary<string, object>>();
                                         }
                                         else
                                         {
@@ -801,47 +729,40 @@ namespace SparkGames.UnityGameSmith.Editor
                     {
                         result.TextContent = "";
                     }
-                }
-                else
-                {
-                    result.TextContent = "";
-                }
 
                 // Check for tool calls (function calls in OpenAI format)
-                if (message.ContainsKey("tool_calls"))
+                var toolCalls = message["tool_calls"];
+                if (toolCalls != null && toolCalls.HasValues)
                 {
-                    var toolCalls = message["tool_calls"] as List<object>;
-                    if (toolCalls != null && toolCalls.Count > 0)
+                    var firstToolCall = toolCalls[0];
+                    if (firstToolCall != null)
                     {
-                        var firstToolCall = toolCalls[0] as Dictionary<string, object>;
-                        if (firstToolCall != null && firstToolCall.ContainsKey("function"))
+                        var function = firstToolCall["function"];
+                        if (function != null)
                         {
-                            var function = firstToolCall["function"] as Dictionary<string, object>;
-                            if (function != null)
-                            {
-                                result.HasToolUse = true;
-                                result.ToolUseId = firstToolCall.ContainsKey("id") ? firstToolCall["id"].ToString() : "";
-                                result.ToolName = function.ContainsKey("name") ? function["name"].ToString() : "";
+                            result.HasToolUse = true;
+                            result.ToolUseId = firstToolCall["id"]?.ToString() ?? "";
+                            result.ToolName = function["name"]?.ToString() ?? "";
 
-                                if (function.ContainsKey("arguments"))
+                            var argsToken = function["arguments"];
+                            if (argsToken != null)
+                            {
+                                var argsString = argsToken.ToString();
+                                try
                                 {
-                                    var argsString = function["arguments"].ToString();
-                                    try
+                                    // Arguments might be an empty string "{}" or a JSON string
+                                    if (!string.IsNullOrEmpty(argsString))
                                     {
-                                        // Arguments might be an empty string "{}" or a JSON string
-                                        if (!string.IsNullOrEmpty(argsString))
-                                        {
-                                            result.ToolInput = MiniJSON.Json.Deserialize(argsString) as Dictionary<string, object> ?? new Dictionary<string, object>();
-                                        }
-                                        else
-                                        {
-                                            result.ToolInput = new Dictionary<string, object>();
-                                        }
+                                        result.ToolInput = JObject.Parse(argsString).ToObject<Dictionary<string, object>>();
                                     }
-                                    catch
+                                    else
                                     {
                                         result.ToolInput = new Dictionary<string, object>();
                                     }
+                                }
+                                catch
+                                {
+                                    result.ToolInput = new Dictionary<string, object>();
                                 }
                             }
                         }
@@ -868,72 +789,46 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                object deserializedObj = MiniJSON.Json.Deserialize(json);
-
-                if (deserializedObj == null)
-                {
-                    UnityEngine.Debug.LogWarning("[GameSmith] MiniJSON.Deserialize returned null for Claude response, attempting manual parse");
-                    // Log first 500 chars for debugging
-                    string preview = json?.Length > 500 ? json.Substring(0, 500) + "..." : json;
-                    UnityEngine.Debug.Log($"[GameSmith] JSON preview: {preview}");
-
-                    // Try to extract text content using regex
-                    // Pattern matches: "type":"text","text":"content" allowing for whitespace and escaped quotes
-                    var textMatch = System.Text.RegularExpressions.Regex.Match(json, @"""type""\s*:\s*""text""[^}]*""text""\s*:\s*""([^""\\]*(?:\\.[^""\\]*)*)""");
-                    if (textMatch.Success)
-                    {
-                        return new AIResponse
-                        {
-                            TextContent = textMatch.Groups[1].Value,
-                            ContentBlocks = new List<object>()
-                        };
-                    }
-                    GameSmithLogger.LogError($"Failed to parse Claude response even with fallback. Input length: {json?.Length}");
-                    return null;
-                }
-
-                var response = deserializedObj as Dictionary<string, object>;
-                if (response == null)
-                {
-                    UnityEngine.Debug.LogError($"[GameSmith] Deserialized Claude object is not a Dictionary. Type: {deserializedObj.GetType()}");
-                    return null;
-                }
+                var response = JObject.Parse(json);
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (response.ContainsKey("content"))
+                var content = response["content"];
+                if (content != null && content.HasValues)
                 {
-                    var content = response["content"] as List<object>;
-                    if (content != null)
+                    foreach (var item in content)
                     {
-                        foreach (var item in content)
+                        result.ContentBlocks.Add(item.ToObject<object>());
+
+                        var type = item["type"]?.ToString() ?? "";
+
+                        if (type == "text")
                         {
-                            var block = item as Dictionary<string, object>;
-                            if (block != null)
+                            var text = item["text"];
+                            if (text != null)
                             {
-                                result.ContentBlocks.Add(block);
-
-                                var type = block.ContainsKey("type") ? block["type"].ToString() : "";
-
-                                if (type == "text" && block.ContainsKey("text"))
-                                {
-                                    result.TextContent += block["text"].ToString();
-                                }
-                                else if (type == "thinking" && block.ContainsKey("thinking"))
-                                {
-                                    result.ThinkingContent += block["thinking"].ToString();
-                                }
-                                else if (type == "tool_use")
-                                {
-                                    result.HasToolUse = true;
-                                    result.ToolUseId = block.ContainsKey("id") ? block["id"].ToString() : "";
-                                    result.ToolName = block.ContainsKey("name") ? block["name"].ToString() : "";
-                                    result.ToolInput = block.ContainsKey("input") ? block["input"] as Dictionary<string, object> : new Dictionary<string, object>();
-                                }
+                                result.TextContent += text.ToString();
                             }
+                        }
+                        else if (type == "thinking")
+                        {
+                            var thinking = item["thinking"];
+                            if (thinking != null)
+                            {
+                                result.ThinkingContent += thinking.ToString();
+                            }
+                        }
+                        else if (type == "tool_use")
+                        {
+                            result.HasToolUse = true;
+                            result.ToolUseId = item["id"]?.ToString() ?? "";
+                            result.ToolName = item["name"]?.ToString() ?? "";
+
+                            var input = item["input"];
+                            result.ToolInput = input != null ? input.ToObject<Dictionary<string, object>>() : new Dictionary<string, object>();
                         }
                     }
                 }
@@ -959,21 +854,22 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 try
                 {
-                    var errorJson = MiniJSON.Json.Deserialize(responseBody) as Dictionary<string, object>;
-                    if (errorJson != null && errorJson.ContainsKey("error"))
-                    {
-                        var errorObj = errorJson["error"];
+                    var errorJson = JObject.Parse(responseBody);
+                    var errorObj = errorJson["error"];
 
-                        // Handle error as dictionary with message field
-                        if (errorObj is Dictionary<string, object> errDict && errDict.ContainsKey("message"))
+                    if (errorObj != null)
+                    {
+                        // Handle error as object with message field
+                        var message = errorObj["message"];
+                        if (message != null)
                         {
-                            return errDict["message"].ToString();
+                            return message.ToString();
                         }
 
                         // Handle error as direct string
-                        if (errorObj is string errStr && !string.IsNullOrEmpty(errStr))
+                        if (errorObj.Type == JTokenType.String)
                         {
-                            return errStr;
+                            return errorObj.ToString();
                         }
                     }
                 }

@@ -151,18 +151,18 @@ namespace SparkGames.UnityGameSmith.Editor
 
             var trimmedInput = userInput.Trim();
 
-            // 1. Check for direct MCP operation patterns
-            foreach (var pattern in DirectPatterns)
-            {
-                var match = pattern.Key.Match(trimmedInput);
-                if (match.Success)
-                {
-                    var result = pattern.Value(match);
-                    result.Type = IntentType.DirectMCP;
-                    result.UserMessage = userInput;
-                    return result;
-                }
-            }
+            // 1. Direct MCP disabled - Unity Editor bridge not installed
+            // foreach (var pattern in DirectPatterns)
+            // {
+            //     var match = pattern.Key.Match(trimmedInput);
+            //     if (match.Success)
+            //     {
+            //         var result = pattern.Value(match);
+            //         result.Type = IntentType.DirectMCP;
+            //         result.UserMessage = userInput;
+            //         return result;
+            //     }
+            // }
 
             // 2. Check if AI reasoning is explicitly required
             foreach (var aiPattern in AIRequiredPatterns)
