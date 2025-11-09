@@ -1,6 +1,6 @@
 # Unity GameSmith
 
-**AI-powered code generation and template library for Unity Editor**  
+**AI-powered code generation, chat, and MCP tooling for the Unity Editor**  
 🎮 Free, open-source alternative to Unity Muse
 
 ---
@@ -16,11 +16,12 @@
 
 | Feature | Description |
 |---------|-------------|
-| ![](https://img.shields.io/badge/🤖%20-5865F2?style=for-the-badge) ![AI Code Generation](https://img.shields.io/badge/AI%20Code%20Generation%20-7289DA?style=for-the-badge) | Natural language to Unity C# scripts |
-| ![](https://img.shields.io/badge/📚%20-57F287?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-3BA55D?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, etc.) |
-| ![](https://img.shields.io/badge/🔌%20-ED4245?style=for-the-badge) ![Multi-AI Support](https://img.shields.io/badge/Multi--AI%20Support%20-E67E22?style=for-the-badge) | Claude (recommended), Ollama (local/free), OpenAI, custom endpoints |
-| ![](https://img.shields.io/badge/🔒%20-5865F2?style=for-the-badge) ![Privacy-First](https://img.shields.io/badge/Privacy--First%20-3498DB?style=for-the-badge) | Run locally with Ollama, no telemetry |
-| ![](https://img.shields.io/badge/📴%20-1ABC9C?style=for-the-badge) ![Works Offline](https://img.shields.io/badge/Works%20Offline%20-16A085?style=for-the-badge) | Templates and local AI work without internet |
+| ![](https://img.shields.io/badge/💬%20-5865F2?style=for-the-badge) ![AI Assistant Chat](https://img.shields.io/badge/AI%20Assistant%20Chat%20-7289DA?style=for-the-badge) | Dockable chat window with anchored model selector, retry support, and real-time tool execution |
+| ![](https://img.shields.io/badge/📚%20-57F287?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-3BA55D?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, combat, FX) ready to drop into your project |
+| ![](https://img.shields.io/badge/⚙️%20-ED4245?style=for-the-badge) ![Unified Settings](https://img.shields.io/badge/Unified%20Settings%20-E67E22?style=for-the-badge) | Modern settings panel for provider selection (Ollama, Claude, OpenAI, custom) and MCP tooling |
+| ![](https://img.shields.io/badge/🔌%20-1ABC9C?style=for-the-badge) ![Unity MCP Tools](https://img.shields.io/badge/Unity%20MCP%20Tools%20-16A085?style=for-the-badge) | One-click access to 30+ Unity Editor operations via the open-source [unity-mcp](https://github.com/muammar-yacoob/unity-mcp)[^unity-mcp] |
+
+[^unity-mcp]: Unity GameSmith ships with and depends on the open-source `unity-mcp` server for MCP interoperability [unity-mcp](https://github.com/muammar-yacoob/unity-mcp).
 
 ---
 

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Text.RegularExpressions;
@@ -710,8 +711,10 @@ namespace SparkGames.UnityGameSmith.Editor
                 }
 
                 // Execute MCP tool directly - NO AI CALL
+                UnityEngine.Debug.Log($"[GameSmith] Calling MCP tool: {intent.ToolName} with args: {MiniJSON.Json.Serialize(intent.Arguments)}");
                 mcpClient.CallToolAsync(intent.ToolName, intent.Arguments, (toolResult) =>
                 {
+                    UnityEngine.Debug.Log($"[GameSmith] Tool result: {toolResult}");
                     // Format and display the result
                     string formattedResult = FormatToolResult(intent.ToolName, toolResult);
                     AddMessageBubble(formattedResult, false);

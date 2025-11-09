@@ -119,3 +119,16 @@ node_modules/
 *.local.json
 settings.local.json
 .vscode/
+.claude/
+.cursor/
+.taskmaster
+ProjectSettings
+
+# Internal documentation/planning (do not commit)
+docs/
+.taskmaster/
+UnityPackage/Documentation/
+UnityPackage/ENHANCED_FEATURES.md
+UnityPackage/INSTALLATION.md
+UnityPackage/WINDOWS_MCP_SETUP.md
+UnityPackage/README.md

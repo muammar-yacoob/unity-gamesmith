@@ -541,6 +541,12 @@ namespace SparkGames.UnityGameSmith.Editor
                                 }
                             }
                             UnityEngine.Debug.Log($"[MCP] Connected with {AvailableTools.Count} tools");
+                            // Log tool names for debugging
+                            if (AvailableTools.Count > 0)
+                            {
+                                var toolNames = string.Join(", ", AvailableTools.Select(t => t.Name).Take(10));
+                                UnityEngine.Debug.Log($"[MCP] Available tools (first 10): {toolNames}");
+                            }
                         }
                         else
                         {
@@ -599,6 +605,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     toolName,
                     argsJson
                 );
+                UnityEngine.Debug.Log($"[GameSmith MCP] Sending: {json}");
                 stdinWriter.WriteLine(json);
                 stdinWriter.Flush();
 
@@ -631,6 +638,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     return "No response";
                 }
 
+                UnityEngine.Debug.Log($"[GameSmith MCP] Received: {response}");
                 await UniTask.SwitchToMainThread();
 
                 var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
