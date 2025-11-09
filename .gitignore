@@ -10,6 +10,8 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
+*.meta
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
@@ -132,3 +134,4 @@ UnityPackage/ENHANCED_FEATURES.md
 UnityPackage/INSTALLATION.md
 UnityPackage/WINDOWS_MCP_SETUP.md
 UnityPackage/README.md
+package-lock.json
