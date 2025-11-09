@@ -333,7 +333,27 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     var mcpUrl = "https://github.com/muammar-yacoob/unity-mcp";
                     UnityEngine.Debug.Log($"[GameSmith] ✓ MCP ready with {toolCount} tools. Visit {mcpUrl}");
-                    AddMessageBubble($"✓ MCP ready ({toolCount} tools)", false);
+
+                    // Check if Unity MCP Bridge is installed
+                    if (!UnityMCPInstaller.IsInstalled())
+                    {
+                        UnityEngine.Debug.LogWarning("[GameSmith] Unity MCP Bridge not installed. Tools will fail to execute.");
+                        AddMessageBubble($"⚠️ MCP server ready ({toolCount} tools) but Unity Bridge not installed.\nClick 'Install Unity MCP Bridge' below.", false);
+
+                        if (EditorUtility.DisplayDialog("Unity MCP Bridge Required",
+                            "Node.js MCP server is running with 33 tools, but the Unity Editor bridge component is not installed.\n\n" +
+                            "Without it, tools will fail with: 'Unity Editor MCP server is not running'\n\n" +
+                            "Install now?",
+                            "Install", "Later"))
+                        {
+                            UnityMCPInstaller.InstallBridge();
+                        }
+                    }
+                    else
+                    {
+                        AddMessageBubble($"✓ MCP ready ({toolCount} tools)", false);
+                    }
+
                     if (mcpStatus != null)
                     {
                         mcpStatus.text = $"⚒️ MCP: {toolCount} tools";
@@ -688,10 +708,16 @@ namespace SparkGames.UnityGameSmith.Editor
             // STRATEGY 1: Direct MCP Execution (no AI needed)
             if (intent.Type == IntentClassifier.IntentType.DirectMCP)
             {
+                // Diagnostic logging
+                UnityEngine.Debug.Log($"[GameSmith] DirectMCP check: client={mcpClient != null}, connected={mcpClient?.IsConnected}, tools={mcpClient?.AvailableTools?.Count ?? 0}");
+
                 // Check MCP availability
-                if (mcpClient == null || (!mcpClient.IsConnected && (mcpClient.AvailableTools == null || mcpClient.AvailableTools.Count == 0)))
+                if (mcpClient == null || !mcpClient.IsConnected || mcpClient.AvailableTools == null || mcpClient.AvailableTools.Count == 0)
                 {
-                    AddMessageBubble("❌ MCP server not ready. Restarting...", false);
+                    string reason = mcpClient == null ? "client not initialized" :
+                                   !mcpClient.IsConnected ? "not connected" :
+                                   mcpClient.AvailableTools == null || mcpClient.AvailableTools.Count == 0 ? "no tools" : "unknown";
+                    AddMessageBubble($"❌ MCP not ready ({reason}). Restarting...", false);
 
                     // Try to restart MCP server
                     StartMCPServerAsync();
@@ -1080,5 +1106,91 @@ If the result indicates success, acknowledge it briefly. If there's an error or 
                 }
             }
         }
+
+        #region MCP Testing and Diagnostics
+
+        [MenuItem("Tools/GameSmith/Test MCP Connection", false, 100)]
+        public static void TestMCPConnection()
+        {
+            var mcpClient = ConnectedMCPClient;
+
+            if (mcpClient == null)
+            {
+                UnityEngine.Debug.LogError("[MCP Test] MCP client is null - window may not be open");
+                EditorUtility.DisplayDialog("MCP Test", "MCP client not found. Please open GameSmith window first.", "OK");
+                return;
+            }
+
+            UnityEngine.Debug.Log("[MCP Test] ===== MCP Connection Test =====");
+            UnityEngine.Debug.Log($"[MCP Test] IsConnected: {mcpClient.IsConnected}");
+            UnityEngine.Debug.Log($"[MCP Test] Tools Count: {mcpClient.AvailableTools?.Count ?? 0}");
+
+            if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+            {
+                UnityEngine.Debug.Log($"[MCP Test] Testing unity_get_hierarchy tool...");
+
+                mcpClient.CallToolAsync("unity_get_hierarchy", new Dictionary<string, object>(),
+                    (result) =>
+                    {
+                        UnityEngine.Debug.Log($"[MCP Test] ✓ Tool executed successfully!");
+                        UnityEngine.Debug.Log($"[MCP Test] Result:\n{result}");
+
+                        // Parse and count objects
+                        var lines = result.Split('\n');
+                        var objectCount = lines.Where(l => l.Trim().StartsWith("-")).Count();
+
+                        EditorUtility.DisplayDialog("MCP Test Success",
+                            $"MCP is working!\n\nFound {objectCount} objects in scene.\n\nCheck Console for full hierarchy.",
+                            "OK");
+                    });
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("[MCP Test] No tools available!");
+                EditorUtility.DisplayDialog("MCP Test Failed", "No MCP tools available. Server may not be running.", "OK");
+            }
+        }
+
+        [MenuItem("Tools/GameSmith/Debug MCP State", false, 101)]
+        public static void DebugMCPState()
+        {
+            var mcpClient = ConnectedMCPClient;
+
+            UnityEngine.Debug.Log("===== MCP State Debug =====");
+            UnityEngine.Debug.Log($"MCP Client exists: {mcpClient != null}");
+
+            if (mcpClient != null)
+            {
+                UnityEngine.Debug.Log($"IsConnected: {mcpClient.IsConnected}");
+                UnityEngine.Debug.Log($"Tools Count: {mcpClient.AvailableTools?.Count ?? 0}");
+
+                if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+                {
+                    UnityEngine.Debug.Log("\nFirst 10 available tools:");
+                    foreach (var tool in mcpClient.AvailableTools.Take(10))
+                    {
+                        UnityEngine.Debug.Log($"  • {tool.Name}: {tool.Description}");
+                    }
+
+                    EditorUtility.DisplayDialog("MCP Debug",
+                        $"MCP Client: Active\nConnected: {mcpClient.IsConnected}\nTools: {mcpClient.AvailableTools.Count}\n\nCheck Console for tool list.",
+                        "OK");
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning("No tools loaded!");
+                    EditorUtility.DisplayDialog("MCP Debug",
+                        $"MCP Client: Active\nConnected: {mcpClient.IsConnected}\nTools: 0\n\nNo tools available!",
+                        "OK");
+                }
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("MCP client is null!");
+                EditorUtility.DisplayDialog("MCP Debug", "MCP client not initialized.\n\nPlease open GameSmith window first.", "OK");
+            }
+        }
+
+        #endregion
     }
 }

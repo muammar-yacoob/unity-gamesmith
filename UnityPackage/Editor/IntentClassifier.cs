@@ -151,7 +151,10 @@ namespace SparkGames.UnityGameSmith.Editor
 
             var trimmedInput = userInput.Trim();
 
-            // 1. Direct MCP disabled - Unity Editor bridge not installed
+            // 1. Direct MCP disabled - Unity Editor bridge has threading issues
+            // DirectMCP bypasses AI and calls tools directly, but Unity API requires main thread
+            // For now, send everything through AI path which handles threading properly
+            /*
             foreach (var pattern in DirectPatterns)
             {
                 var match = pattern.Key.Match(trimmedInput);
@@ -163,6 +166,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     return result;
                 }
             }
+            */
 
             // 2. Check if AI reasoning is explicitly required
             foreach (var aiPattern in AIRequiredPatterns)

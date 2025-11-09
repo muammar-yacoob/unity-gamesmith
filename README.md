@@ -3,7 +3,7 @@
 [license-link]: ../../blob/main/LICENSE
 [stars-link]: ../../stargazers
 [issues-link]: ../../issues
-[discord-link]: https://discord.gg/muammaryacoob
+[discord-link]: https://discord.gg/5skXfKRytR
 [coffee-link]: https://www.buymeacoffee.com/muammaryacoob
 [release-link]: ../../releases
 [fork-link]: ../../fork
@@ -17,7 +17,7 @@
 [![Unity Package](https://img.shields.io/badge/Unity%20Package-UPM-222?style=flat-square&logo=unity)][release-link]
 [![MIT](https://img.shields.io/badge/License-MIT-blueviolet?style=flat-square)][license-link]
 [![Discord](https://img.shields.io/badge/Discord-Join-blue?logo=discord&logoColor=white&style=flat-square)][discord-link]
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/muammar-yacoob?label=Sponsor&logo=github-sponsors&logoColor=white&color=hotpink&style=flat-square)][coffee-link]
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/muammar-yacoob?label=Sponsor&logo=github-sponsors&logoColor=white&color=hotpink)](https://github.com/sponsors/muammar-yacoob)
 [![GitHub Stars](https://img.shields.io/github/stars/muammar-yacoob/unity-gamesmith?style=social)][stars-link]
 
 </div>
