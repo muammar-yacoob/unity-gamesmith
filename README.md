@@ -1,20 +1,32 @@
+[//]: # (Constants)
+
+[license-link]: ../../blob/main/LICENSE
+[stars-link]: ../../stargazers
+[issues-link]: ../../issues
+[discord-link]: https://discord.gg/muammaryacoob
+[coffee-link]: https://www.buymeacoffee.com/muammaryacoob
+[release-link]: ../../releases
+[fork-link]: ../../fork
+
 # Unity GameSmith
 
-**AI-powered code generation, chat, and MCP tooling for the Unity Editor**  
-🎮 Free, open-source alternative to Unity Muse
+<div align="center">
 
----
+**🎮 AI chat for Unity Editor · 🔌 MCP tooling · ⚙️ Zero configuration**
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
-![Unity 2021.3+](https://img.shields.io/badge/Unity-2021.3+-blue.svg?style=for-the-badge)
-![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
-![AI Powered](https://img.shields.io/badge/AI-Powered-cc6600?style=for-the-badge)
+[![Unity Package](https://img.shields.io/badge/Unity%20Package-UPM-222?style=flat-square&logo=unity)][release-link]
+[![MIT](https://img.shields.io/badge/License-MIT-blueviolet?style=flat-square)][license-link]
+[![Discord](https://img.shields.io/badge/Discord-Join-blue?logo=discord&logoColor=white&style=flat-square)][discord-link]
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/muammar-yacoob?label=Sponsor&logo=github-sponsors&logoColor=white&color=hotpink&style=flat-square)][coffee-link]
+[![GitHub Stars](https://img.shields.io/github/stars/muammar-yacoob/unity-gamesmith?style=social)][stars-link]
+
+</div>
 
 ---
 
 ### 🔌 Unity MCP Powered
 
-Unity GameSmith bundles the open-source [unity-mcp](https://github.com/muammar-yacoob/unity-mcp)[^unity-mcp] server, giving the editor access to 30+ Model Context Protocol tools for scene management, automation, and testing right from the dockable chat window.
+Unity GameSmith bundles the open-source [unity-mcp](https://github.com/muammar-yacoob/unity-mcp) server, giving the editor access to 30+ Model Context Protocol tools for scene management, automation, and testing directly from the dockable chat window.
 
 ---
 
@@ -22,289 +34,77 @@ Unity GameSmith bundles the open-source [unity-mcp](https://github.com/muammar-y
 
 | Feature | Description |
 |---------|-------------|
-| ![](https://img.shields.io/badge/💬%20-5865F2?style=for-the-badge) ![AI Assistant Chat](https://img.shields.io/badge/AI%20Assistant%20Chat%20-7289DA?style=for-the-badge) | Dockable chat window with anchored model selector, retry support, and real-time tool execution |
-| ![](https://img.shields.io/badge/📚%20-57F287?style=for-the-badge) ![Template Library](https://img.shields.io/badge/Template%20Library%20-3BA55D?style=for-the-badge) | 10+ pre-built game systems (player, enemy, UI, combat, FX) ready to drop into your project |
-| ![](https://img.shields.io/badge/⚙️%20-ED4245?style=for-the-badge) ![Unified Settings](https://img.shields.io/badge/Unified%20Settings%20-E67E22?style=for-the-badge) | Modern settings panel for provider selection (Ollama, Claude, OpenAI, custom) and MCP tooling |
-| ![](https://img.shields.io/badge/🔌%20-1ABC9C?style=for-the-badge) ![Unity MCP Tools](https://img.shields.io/badge/Unity%20MCP%20Tools%20-16A085?style=for-the-badge) | One-click access to 30+ Unity Editor operations via the open-source [unity-mcp](https://github.com/muammar-yacoob/unity-mcp)[^unity-mcp] |
-
-[^unity-mcp]: Unity GameSmith ships with and depends on the open-source `unity-mcp` server for MCP interoperability [unity-mcp](https://github.com/muammar-yacoob/unity-mcp).
+| ![](https://img.shields.io/badge/💬%20-5865F2?style=for-the-badge) **AI Assistant Chat** | Dockable chat panel with retry, history, and one-click tool results inside the Unity Editor |
+| ![](https://img.shields.io/badge/🔌%20-1ABC9C?style=for-the-badge) **Unity MCP Tools** | 30+ editor operations exposed via MCP (hierarchy queries, scene save/load, playmode control, asset utilities) |
+| ![](https://img.shields.io/badge/⚙️%20-ED4245?style=for-the-badge) **Unified Settings** | Modern settings window to switch providers (Ollama, Claude, OpenAI, custom) and manage configuration |
+| ![](https://img.shields.io/badge/🛡️%20-2ECC71?style=for-the-badge) **Zero Configuration** | Auto-generates settings, history, and MCP wiring the first time you open the window |
 
 ---
 
-## ⚡ Performance Optimization (NEW in v2.0)
+## 📦 Installation
 
-**90% cost reduction | 76% faster responses**
-
-GameSmith uses an **Intent Classification System** to intelligently route commands:
-
-| Command Type | Before | After | Improvement |
-|--------------|--------|-------|-------------|
-| "list objects" | 2-3s, $0.03 | 50ms, $0 | **96% faster, free** |
-| "create sphere" | 2-3s, $0.03 | 50ms, $0 | **96% faster, free** |
-| "write script" | 2-3s, $0.03 | 1-2s, $0.01 | **50% faster, 67% cheaper** |
-
-### How It Works
-
-1. **DirectMCP** (90% of Unity ops) → Instant local IPC execution, no AI call
-2. **RequiresAI** (code gen, explanations) → AI without tools, faster & cheaper
-3. **AmbiguousWithTools** (complex) → AI with tools when needed
-
-**Try it:**
-```
-"list objects"           → Instant hierarchy (no AI)
-"create sphere"          → Instant creation (no AI)
-"write player script"    → Fast AI generation (no tools overhead)
-```
-
-**Learn more:** See `OPTIMIZATION_SUMMARY.md` for details
-
----
-
-## 📥 Installation
-
-### Option 1: One-Click Install (Recommended)
+### Option 1: One-Click (Needle Package Installer)
 
 [![Install via Needle Package Installer](https://img.shields.io/badge/Install-Unity%20Package-blue?style=for-the-badge&logo=unity)](https://package-installer.needle.tools/v1/installer/github.com/muammar-yacoob/unity-gamesmith?upmPackagePath=/UnityPackage&registry=https://github.com/muammar-yacoob/unity-gamesmith.git)
 
-Click the button above to install directly in Unity Editor.
+### Option 2: Git URL (Unity Package Manager)
 
-### Option 2: Manual Git URL
-
-In Unity Package Manager (UPM): `Window → Package Manager → + → Add package from git URL`
+`Window → Package Manager → + → Add package from git URL`
 ```
 https://github.com/muammar-yacoob/unity-gamesmith.git?path=/UnityPackage
 ```
 
-**Note:** Dependencies (UniTask) are installed automatically via OpenUPM.
-
-After installation, access via **Tools → Game Smith** (Alt+G) in Unity Editor.
+After installation open **Tools → Game Smith → GameSmith AI** (Alt/⌥ + G).
 
 ---
 
 ## ⚙️ Configuration
 
-1. Open `Tools → Game Smith` (Alt+G)
-2. Select AI provider from dropdown:
-   - **Ollama** (Local, Free) ⭐ Recommended for privacy
-   - **Claude** (Best quality)
-   - **OpenAI** (Excellent quality)
-   - **Custom** (Any OpenAI-compatible endpoint)
-3. Click **Edit Config** to open the scriptable object
-4. Configure your selected provider:
-   - **API URL** - Endpoint URL
-   - **Model** - Model name
-   - **API Key** - Your API key (if required)
-5. Save the configuration
-
-<details>
-<summary><b>📝 Provider Examples</b></summary>
-
-**Ollama (Local):**
-- API URL: `http://localhost:11434/api/generate`
-- Model: `codellama`
-- API Key: (leave empty)
-- Setup: `ollama pull codellama`
-
-**Claude:**
-- API URL: `https://api.anthropic.com/v1/messages`
-- Model: `claude-sonnet-4` or `claude-3-5-sonnet-20241022`
-- API Key: Get from [console.anthropic.com](https://console.anthropic.com/)
-
-**OpenAI:**
-- API URL: `https://api.openai.com/v1/chat/completions`
-- Model: `gpt-4` or `gpt-3.5-turbo`
-- API Key: Get from [platform.openai.com](https://platform.openai.com/api-keys)
-
-**Custom:**
-- Works with LM Studio, LocalAI, and any OpenAI-compatible endpoint
-- Configure URL, model, and key as needed
-
-</details>
+1. Open the GameSmith AI window (Tools → Game Smith → GameSmith AI).
+2. Click the settings gear to pick an AI provider:
+   - **Ollama** – Local, private inference
+   - **Claude** – Anthropic’s API
+   - **OpenAI** – GPT-4/3.5 family
+   - **Custom** – Any OpenAI-compatible endpoint
+3. Provide API keys or local endpoints as required.
+4. Unity automatically stores preferences in `ProjectSettings/GameSmithSettings.json` (already git-ignored).
 
 ---
 
 ## 💡 Usage
 
-<details>
-<summary><b>📚 Template Library</b></summary>
+- **Chat-driven workflow** – Ask natural language questions (“list objects in the scene”, “save the current scene”, “create a todo list from hierarchies”).
+- **Automatic tool execution** – When MCP tools are available, the assistant runs them instantly and displays the output in-line.
+- **Retry and history** – Use the chat footer buttons to retry or clear the conversation.
 
-1. `Tools → Game Smith` (Alt+G)
-2. Click **Template Library** tab
-3. Search/filter templates
-4. Click **Use Template** to generate code
+### Common MCP Commands
 
-Scripts generate to `Assets/Scripts/`
+| Command | Result |
+|---------|--------|
+| `list objects` | Calls `unity_get_hierarchy` and prints the scene tree |
+| `save scene` | Invokes `unity_save_scene` |
+| `enter play mode` / `exit play mode` | Controls the editor play state |
+| `get console logs` | Streams the latest Unity console output |
 
-</details>
-
-<details>
-<summary><b>🤖 AI Generation</b></summary>
-
-1. `Tools → Game Smith` (Alt+G)
-2. Click **AI Generator** tab
-3. Enter command and click **Execute Command**
-
-Scripts generate to `Assets/Scripts/`
-
-</details>
-
----
-
-## 💬 Example Commands
-
-<details>
-<summary><b>🎮 Player Systems</b></summary>
-
-* _"Create a 2D player with WASD movement and jump"_
-* _"Generate a player with dash ability and cooldown"_
-* _"Make a character with wall jump mechanics"_
-* _"Create a player with stamina system"_
-
-</details>
-
-<details>
-<summary><b>👾 Enemy AI</b></summary>
-
-* _"Generate boss enemy with 3 attack patterns"_
-* _"Create chase enemy that patrols waypoints"_
-* _"Make flying enemy that shoots projectiles"_
-* _"Generate enemy spawner with wave system"_
-
-</details>
-
-<details>
-<summary><b>⚔️ Combat & Weapons</b></summary>
-
-* _"Create a shooting system with bullet spread"_
-* _"Generate melee combat with combo system"_
-* _"Make a health system with shields and armor"_
-* _"Create weapon switching system"_
-
-</details>
-
-<details>
-<summary><b>🎨 UI & Effects</b></summary>
-
-* _"Generate dynamic health bar with smooth transitions"_
-* _"Create damage number popup effect"_
-* _"Make particle effect on enemy death"_
-* _"Generate pause menu with settings"_
-
-</details>
-
----
-
-## 📦 Available Templates
-
-### 🎯 Mechanics (Core Game Rules)
-
-| Template | Description |
-|---------|-------------|
-| ![](https://img.shields.io/badge/🎮%20-0078D4?style=for-the-badge) ![2D Player Controller](https://img.shields.io/badge/2D%20Player%20Controller%20-4A9EFF?style=for-the-badge) | WASD movement + mouse aim |
-| ![](https://img.shields.io/badge/👾%20-DC143C?style=for-the-badge) ![Chase Enemy AI](https://img.shields.io/badge/Chase%20Enemy%20AI%20-E74856?style=for-the-badge) | Detection and pursuit |
-| ![](https://img.shields.io/badge/🔫%20-FF6B35?style=for-the-badge) ![Shooting System](https://img.shields.io/badge/Shooting%20System%20-FF8C42?style=for-the-badge) | Projectile weapons |
-| ![](https://img.shields.io/badge/❤️%20-2ECC71?style=for-the-badge) ![Health System](https://img.shields.io/badge/Health%20System%20-27AE60?style=for-the-badge) | Damage/healing |
-| ![](https://img.shields.io/badge/⚡%20-FFD700?style=for-the-badge) ![Dash Ability](https://img.shields.io/badge/Dash%20Ability%20-FFC107?style=for-the-badge) | Dash with cooldown |
-
-### 🔄 Dynamics (Runtime Behavior)
-
-| Template | Description |
-|---------|-------------|
-| ![](https://img.shields.io/badge/🌊%20-8E44AD?style=for-the-badge) ![Wave Spawner](https://img.shields.io/badge/Wave%20Spawner%20-9B59B6?style=for-the-badge) | Enemy wave spawning |
-| ![](https://img.shields.io/badge/🎁%20-7CB342?style=for-the-badge) ![Power-up Pickup](https://img.shields.io/badge/Power--up%20Pickup%20-8BC34A?style=for-the-badge) | Collectibles |
-
-### 🎨 Aesthetics (Visual & Audio Feedback)
-
-| Template | Description |
-|---------|-------------|
-| ![](https://img.shields.io/badge/📊%20-E91E63?style=for-the-badge) ![Health Bar UI](https://img.shields.io/badge/Health%20Bar%20UI%20-F06292?style=for-the-badge) | Dynamic health display |
-| ![](https://img.shields.io/badge/📷%20-00BCD4?style=for-the-badge) ![Camera Follow](https://img.shields.io/badge/Camera%20Follow%20-26C6DA?style=for-the-badge) | Smooth tracking |
-| ![](https://img.shields.io/badge/✨%20-AB47BC?style=for-the-badge) ![Particle Effect](https://img.shields.io/badge/Particle%20Effect%20-BA68C8?style=for-the-badge) | Particle triggers |
-
----
-
-## 🔌 MCP Integration (Advanced)
-
-Unity GameSmith supports **Model Context Protocol (MCP)** for extended AI capabilities:
-
-### 🎯 Taskmaster MCP
-AI-powered task management and PRD parsing for structured project planning.
-
-**Features**:
-- Parse Product Requirements Documents into actionable tasks
-- Dependency-aware task tracking
-- Complexity analysis and effort estimation
-- Progress tracking with AI assistance
-
-### 🌐 Chrome DevTools MCP
-Automated WebGL testing and performance profiling for Unity builds.
-
-**Features**:
-- Automated browser testing with GPU acceleration
-- Performance profiling (CPU, memory, GPU)
-- Console log monitoring and debugging
-- Visual regression testing with screenshots
-
-### 📚 Documentation
-- [MCP Integration Guide](docs/mcp-integration.md) - Complete setup and usage guide
-- [WebGL Testing Guide](docs/webgl-testing.md) - Detailed testing workflows
-
-**Configuration**: `.mcp.json` is pre-configured in the repository.
+*All MCP tooling is backed by the bundled unity-mcp server, so no external setup is needed.*
 
 ---
 
 ## 📋 Requirements
 
-- Unity 2021.3 LTS or later
-- .NET Standard 2.1 or 4.x
-- AI backend: Ollama (recommended) or API key
-- **Optional**: Node.js 16+ (for MCP servers)
+- Unity **2021.3 LTS** or newer
+- Node.js 16+ (only required if you want to run MCP servers separately)
+- Optional AI backend: Ollama (local) or external API keys (Claude, OpenAI, custom)
 
 ---
 
-## 🔧 Troubleshooting
+## 🤝 Support & Contributions
 
-<details>
-<summary><b>Package not showing</b></summary>
-
-- Check `Packages/manifest.json`
-- `Assets → Reimport All`
-- Restart Unity
-
-</details>
-
-<details>
-<summary><b>AI connection failed</b></summary>
-
-- Ollama: Ensure `ollama serve` is running
-- OpenAI: Verify API key
-- Check firewall settings
-
-</details>
-
-<details>
-<summary><b>Scripts not generating</b></summary>
-
-- Create `Assets/Scripts/` folder
-- Check write permissions
-- View Console for errors
-
-</details>
+- ⭐ Star the repo if GameSmith speeds up your workflow
+- ☕ [Buy me a coffee](https://www.buymeacoffee.com/muammaryacoob)
+- 💬 Join the discussion on [Discord](https://discord.gg/muammaryacoob)
+- 🐞 Issues & feature requests: [GitHub Issues](https://github.com/muammar-yacoob/unity-gamesmith/issues)
 
 ---
 
-## 🌱 Support & Contributions
-
-⭐ **Star the repo** & I power up like Mario 🍄  
-☕ **Devs run on coffee** - [Buy me one?](https://www.buymeacoffee.com/muammaryacoob)  
-💰 **Crypto tips welcome** - [Tip in crypto](https://muammar-yacoob.github.io/crypto-tip/)  
-🤝 **Contributions are welcome** - 🍴 Fork, improve, PR!  
-🎥 **Need help?** [YouTube Setup Tutorial](https://youtube.com/@muammaryacoob) • [Discord](https://discord.gg/muammaryacoob)
-
-## 💖 Sponsor
-
-Your support helps maintain and improve the tool. please consider sponsoring the project.
-
----
-
-**Made with ❤️ for Unity Developers** • [Privacy Policy](https://github.com/muammar-yacoob/unity-gamesmith) • [Terms of Service](https://github.com/muammar-yacoob/unity-gamesmith)
+Made with ❤️ for Unity developers. The bundled MCP tooling is powered by the open-source [unity-mcp](https://github.com/muammar-yacoob/unity-mcp).
