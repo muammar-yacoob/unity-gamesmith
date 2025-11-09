@@ -1,141 +1,206 @@
-/* Game Smith - Simple AI Chat Styles */
+/* Game Smith - Modern AI Chat Styles */
 
 .chat-window {
     flex-grow: 1;
     flex-direction: column;
-    background-color: rgb(32, 32, 32);
+    background-color: rgb(30, 30, 30);
     height: 100%;
+    position: relative; /* Make it the positioning context for footer */
 }
 
-/* Header - Fixed height */
+/* Header - Modern unified design */
 .header {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
-    background-color: rgb(45, 45, 45);
-    border-bottom-width: 2px;
-    border-bottom-color: rgb(102, 178, 255);
+    padding: 10px 18px;
+    background-color: rgb(40, 40, 40);
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(102, 178, 255, 0.3);
     flex-shrink: 0;
-    min-height: 50px;
-    max-height: 50px;
+    min-height: 64px;
+    max-height: 64px;
+}
+
+.header-title-container {
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+    align-items: flex-start;
+    margin-right: 16px;
 }
 
 .header-title {
-    font-size: 18px;
+    font-size: 16px;
     -unity-font-style: bold;
-    color: rgb(240, 240, 240);
-    flex-grow: 1;
+    color: rgb(250, 250, 250);
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+    padding: 0;
+}
+
+.mcp-status {
+    font-size: 11px;
+    color: rgb(180, 180, 180);
+    white-space: nowrap;
+    -unity-text-align: middle-left;
+    padding: 0;
+    margin: 0;
+}
+
+.mcp-status-success {
+    color: rgb(150, 230, 150);
+}
+
+.mcp-status-error {
+    color: rgb(230, 120, 120);
 }
 
 .icon-button {
-    width: 32px;
-    height: 32px;
-    margin-left: 8px;
-    background-color: rgb(55, 55, 55);
-    border-radius: 4px;
-    border-width: 0;
-    font-size: 14px;
+    width: 36px;
+    height: 36px;
+    margin-left: 6px;
+    background-color: rgba(60, 60, 60, 0.8);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(80, 80, 80, 0.5);
+    font-size: 18px;
+    transition-duration: 0.2s;
+    flex-shrink: 0;
 }
 
 .icon-button:hover {
-    background-color: rgb(75, 75, 75);
+    background-color: rgba(102, 178, 255, 0.25);
+    border-width: 1px;
+    border-color: rgba(102, 178, 255, 0.6);
+    scale: 1.05;
 }
 
-/* Chat Messages - Takes remaining space (flexible, ~50%) */
+.icon-button:active {
+    background-color: rgba(102, 178, 255, 0.4);
+    scale: 0.95;
+}
+
+/* Chat Messages - Flexible area */
 .chat-messages {
     flex-grow: 1;
     flex-shrink: 1;
-    background-color: rgb(38, 38, 38);
+    background-color: rgb(28, 28, 28);
     min-height: 150px;
     overflow: hidden;
 }
 
+/* Resizable Divider */
+.resize-divider {
+    height: 4px;
+    background-color: rgba(102, 178, 255, 0.1);
+    flex-shrink: 0;
+    cursor: resize-vertical;
+    transition-duration: 0.15s;
+}
+
+.resize-divider:hover {
+    background-color: rgba(102, 178, 255, 0.3);
+    height: 6px;
+}
+
+.resize-divider:active {
+    background-color: rgba(102, 178, 255, 0.5);
+}
+
 .messages-container {
-    padding: 15px;
+    padding: 20px;
 }
 
 .welcome-message {
-    padding: 40px 20px;
+    padding: 50px 30px;
     align-items: center;
+    background-color: rgba(102, 178, 255, 0.03);
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(102, 178, 255, 0.1);
+    margin: 20px 0;
 }
 
 .welcome-title {
-    font-size: 18px;
+    font-size: 20px;
     -unity-font-style: bold;
-    color: rgb(240, 240, 240);
-    margin-bottom: 10px;
+    color: rgb(245, 245, 245);
+    margin-bottom: 12px;
+    letter-spacing: 0.2px;
 }
 
 .welcome-text {
-    font-size: 13px;
-    color: rgb(160, 160, 160);
+    font-size: 14px;
+    color: rgb(180, 180, 180);
     white-space: normal;
     -unity-text-align: middle-center;
+    max-width: 500px;
 }
 
-/* Message Bubbles - Compact, less rounded, better contrast */
+/* Message Bubbles - Modern, friendly design */
 .message-user {
-    background-color: rgb(70, 140, 220);
-    border-radius: 4px;
-    padding: 6px 10px;
-    margin: 4px 15px 4px 100px;
+    background-color: rgb(66, 150, 250);
+    border-radius: 12px 12px 4px 12px;
+    padding: 10px 14px;
+    margin: 6px 20px 6px 80px;
     align-self: flex-end;
+    border-width: 0;
 }
 
 .message-user-text {
     color: rgb(255, 255, 255);
     white-space: normal;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .message-assistant {
-    background-color: rgb(56, 56, 56);
-    border-radius: 4px;
-    padding: 6px 10px;
-    margin: 4px 100px 4px 15px;
+    background-color: rgb(45, 45, 45);
+    border-radius: 12px 12px 12px 4px;
+    padding: 10px 14px;
+    margin: 6px 80px 6px 20px;
     border-width: 1px;
-    border-color: rgb(85, 85, 85);
+    border-color: rgba(102, 178, 255, 0.15);
 }
 
 .message-assistant-text {
-    color: rgb(240, 240, 240);
+    color: rgb(235, 235, 235);
     white-space: normal;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .message-error {
-    background-color: rgb(140, 45, 45);
-    border-radius: 4px;
-    padding: 6px 10px;
-    margin: 4px 100px 4px 15px;
+    background-color: rgba(200, 70, 70, 0.15);
+    border-radius: 12px 12px 12px 4px;
+    padding: 10px 14px;
+    margin: 6px 80px 6px 20px;
     border-width: 1px;
-    border-color: rgb(200, 70, 70);
+    border-color: rgba(220, 90, 90, 0.4);
     cursor: link;
-    transition: background-color 0.2s;
+    transition-duration: 0.2s;
 }
 
 .message-error:hover {
-    background-color: rgb(160, 55, 55);
-    border-color: rgb(220, 90, 90);
+    background-color: rgba(200, 70, 70, 0.2);
+    border-color: rgba(220, 90, 90, 0.6);
 }
 
 .message-error-text {
-    color: rgb(255, 210, 210);
+    color: rgb(255, 200, 200);
     white-space: normal;
-    font-size: 13px;
+    font-size: 14px;
 }
 
-/* Input Area - Sized for 10 lines + dropdown footer */
+/* Input Area - Flexible, fills remaining space */
 .input-area {
     flex-direction: column;
     padding: 0;
-    background-color: rgb(38, 38, 38);
-    border-top-width: 1px;
-    border-top-color: rgb(55, 55, 55);
+    margin: 0;
+    background-color: rgb(30, 30, 30);
     flex-shrink: 0;
-    min-height: 240px;
-    max-height: 240px;
+    flex-grow: 0;
+    min-height: 100px; /* Increased min height for text input */
+    max-height: none;
 }
 
 .input-container {
@@ -144,91 +209,161 @@
     flex-shrink: 1;
     padding: 0;
     margin: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
 }
 
-/* Input Field Container - 10 lines tall (18px * 10 = 180px + padding) */
+/* Input Field Container - Fills entire input area */
 .input-field-container {
-    flex-direction: row;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0; /* Fill entire input-area (footer is now outside) */
+    flex-direction: column;
     align-items: stretch;
+    justify-content: stretch;
     background-color: transparent;
     border-radius: 0;
     border-width: 0;
-    padding: 8px;
+    padding: 0;
     margin: 0;
-    flex-shrink: 0;
-    min-height: 196px;
-    max-height: 196px;
+    overflow: hidden;
 }
 
 .message-input {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    max-height: 100%;
+    background-color: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    color: rgb(230, 230, 230);
+    border-width: 0;
+    font-size: 14px;
     flex-grow: 1;
     flex-shrink: 1;
-    background-color: rgb(45, 45, 45);
-    border-radius: 4px;
-    padding: 8px;
-    color: rgb(220, 220, 220);
-    border-width: 1px;
-    border-color: rgb(60, 60, 60);
-    font-size: 14px;
+    flex-basis: auto;
 }
 
-.message-input > TextElement {
-    white-space: normal;
-}
-
-.message-input:focus { background-color: transparent; border-width: 0; }
-
-/* Send Button - Ultra Minimal */
-.send-button {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    margin: 4px 6px 4px 0;
+/* Unity TextField internal elements */
+.message-input .unity-text-field__input {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
     background-color: transparent;
-    border-radius: 4px;
+    border-width: 0;
+    padding: 8px 12px;
+    margin: 0;
+    color: rgb(230, 230, 230);
+    font-size: 14px;
+    white-space: normal;
+    overflow: auto;
+}
+
+.message-input > .unity-base-text-field__input {
+    height: 100%;
+    min-height: 100%;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.message-input TextElement {
+    white-space: normal;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.message-input:focus {
+    background-color: transparent;
+    border-width: 0;
+}
+
+/* Unity multiline TextField creates a ScrollView internally */
+.message-input .unity-scroll-view {
+    height: 100%;
+    min-height: 100%;
+}
+
+.message-input .unity-scroll-view__content-container {
+    min-height: 100%;
+    flex-grow: 1;
+}
+
+.message-input .unity-scroll-view__content-viewport {
+    height: 100%;
+}
+
+.message-input .unity-base-field__input {
+    height: 100%;
+    min-height: 100%;
+}
+
+/* Send Button - Modern, prominent */
+.send-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    margin: 0 0 0 10px;
+    background-color: rgba(102, 178, 255, 0.15);
+    border-radius: 6px;
     border-width: 0;
     align-items: center;
     justify-content: center;
     padding: 0;
+    transition-duration: 0.15s;
 }
 
 .send-button:hover {
-    background-color: rgb(60, 60, 60);
+    background-color: rgba(102, 178, 255, 0.25);
 }
 
 .send-button:active {
-    background-color: rgb(70, 70, 70);
+    background-color: rgba(102, 178, 255, 0.35);
 }
 
 .send-button:disabled {
     opacity: 0.3;
+    background-color: rgba(60, 60, 60, 0.2);
 }
 
 .send-icon {
-    font-size: 14px;
-    color: rgb(160, 160, 160);
+    font-size: 16px;
+    color: rgb(102, 178, 255);
     -unity-text-align: middle-center;
     padding: 0;
     margin: 0;
 }
 
 .send-button:hover .send-icon {
-    color: rgb(220, 220, 220);
+    color: rgb(120, 200, 255);
 }
 
-/* Input Footer - Model & Status (fixed at bottom) */
+/* Input Footer - Fixed at bottom of chat window */
 .input-footer {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    min-height: 44px;
-    max-height: 44px;
+    padding: 4px 12px;
+    min-height: 40px;
+    max-height: 40px;
+    height: 40px;
     flex-shrink: 0;
-    background-color: rgb(32, 32, 32);
+    flex-grow: 0;
+    background-color: rgb(30, 30, 30);
     border-top-width: 1px;
-    border-top-color: rgb(55, 55, 55);
+    border-top-color: rgba(102, 178, 255, 0.1);
+    margin: 0;
+    overflow: visible;
 }
 
 /* Borderless scroll-view hosting the textarea */
@@ -240,17 +375,20 @@
     padding: 0;
     margin: 0;
     background-color: transparent;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .input-editor-scroll > .unity-scroll-view__content-and-vertical-scroll-container,
 .input-editor-scroll > .unity-scroll-view__content-container,
 .input-editor-scroll > .unity-scroll-view__viewport {
     background-color: transparent;
+    height: 100%;
 }
 
 .input-editor-scroll .unity-vertical-scroller,
 .input-editor-scroll .unity-horizontal-scroller {
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
 .input-footer-right {
@@ -274,20 +412,21 @@
 }
 
 .model-dropdown-container > .unity-base-popup-field {
-    font-size: 12px;
-    min-height: 30px;
-    height: 30px;
-    background-color: rgb(50, 50, 50);
+    font-size: 13px;
+    min-height: 32px;
+    height: 32px;
+    background-color: rgb(45, 45, 45);
     border-width: 1px;
-    border-color: rgb(70, 70, 70);
-    border-radius: 4px;
-    padding: 0 8px;
+    border-color: rgba(102, 178, 255, 0.2);
+    border-radius: 6px;
+    padding: 0 10px;
     margin: 0;
+    transition-duration: 0.15s;
 }
 
 .model-dropdown-container > .unity-base-popup-field:hover {
-    background-color: rgb(55, 55, 55);
-    border-color: rgb(102, 178, 255);
+    background-color: rgb(50, 50, 50);
+    border-color: rgba(102, 178, 255, 0.4);
 }
 
 /* Ensure inner input matches background */
@@ -318,16 +457,79 @@
 }
 
 .provider-status-compact {
-    font-size: 11px;
-    color: rgb(130, 130, 130);
+    font-size: 12px;
+    color: rgb(150, 150, 150);
     margin-left: auto;
     cursor: link;
     flex-shrink: 0;
     white-space: nowrap;
-    padding-left: 12px;
+    padding-left: 16px;
+    transition-duration: 0.15s;
 }
 
 .provider-status-compact:hover {
+    color: rgb(200, 200, 200);
+}
+
+/* Thinking Bubble Styles - Modern, friendly */
+.message-thinking {
+    background-color: rgba(102, 178, 255, 0.06);
+    border-radius: 12px 12px 12px 4px;
+    padding: 0;
+    margin: 6px 80px 6px 20px;
+    border-width: 1px;
+    border-color: rgba(102, 178, 255, 0.2);
+}
+
+.thinking-foldout {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+}
+
+.thinking-foldout > .unity-foldout__toggle {
+    background-color: transparent;
+    border-radius: 12px 12px 0 0;
+    padding: 10px 14px;
+    border-width: 0;
+    margin: 0;
+    min-height: 36px;
+    transition-duration: 0.15s;
+}
+
+.thinking-foldout > .unity-foldout__toggle:hover {
+    background-color: rgba(102, 178, 255, 0.08);
+}
+
+.thinking-foldout > .unity-foldout__toggle > .unity-toggle__checkmark {
+    -unity-background-image-tint-color: rgb(102, 178, 255);
+    opacity: 0.7;
+}
+
+.thinking-foldout > .unity-foldout__toggle > .unity-toggle__text {
+    color: rgb(140, 170, 210);
+    font-size: 13px;
+    -unity-font-style: italic;
+    padding-left: 6px;
+}
+
+.thinking-foldout > .unity-foldout__content {
+    padding: 0;
+    margin: 0;
+    border-top-width: 1px;
+    border-top-color: rgba(102, 178, 255, 0.15);
+}
+
+.thinking-content {
+    padding: 12px 14px;
+    background-color: rgba(102, 178, 255, 0.03);
+    border-radius: 0 0 12px 4px;
+}
+
+.thinking-text {
     color: rgb(170, 170, 170);
+    white-space: normal;
+    font-size: 13px;
+    opacity: 0.95;
 }
 

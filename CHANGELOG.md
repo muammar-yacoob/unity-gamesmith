@@ -175,8 +175,6 @@ Prerequisites:
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-Co-Authored-By: Claude <noreply@anthropic.com>
-
 # [1.0.0](https://github.com/muammar-yacoob/unity-gamesmith/releases/tag/v1.0.0) (2025-10-08)
 
 ### Features

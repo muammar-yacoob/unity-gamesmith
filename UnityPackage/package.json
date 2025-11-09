@@ -37,7 +37,8 @@
     "url": "https://github.com/muammar-yacoob/unity-gamesmith/issues"
   },
   "dependencies": {
-    "com.cysharp.unitask": "2.5.10"
+    "com.cysharp.unitask": "2.5.10",
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
   "type": "tool"
 }

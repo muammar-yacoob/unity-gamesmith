@@ -41,13 +41,20 @@ namespace SparkGames.UnityGameSmith.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<GameSmithSettingsWindow>("GameSmith Settings");
-            window.minSize = new Vector2(450, 400);
+            window.minSize = new Vector2(550, 450);
+            window.maxSize = new Vector2(800, 1000);
             window.Show();
         }
 
         private void OnEnable()
         {
             config = GameSmithConfig.GetOrCreate();
+
+            // Auto-detect Ollama models if Ollama is the active provider
+            if (config != null && config.activeProvider.ToLower().Contains("ollama"))
+            {
+                config.RefreshOllamaModels();
+            }
         }
 
         private void OnDisable()
@@ -70,23 +77,43 @@ namespace SparkGames.UnityGameSmith.Editor
                 return;
             }
 
+            // Set consistent label width for alignment
+            float originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 120;
+
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("GameSmith Configuration", EditorStyles.boldLabel);
-            EditorGUILayout.Space(10);
 
-            // Provider Selection
+            // Title
+            var titleStyle = new GUIStyle(EditorStyles.boldLabel);
+            titleStyle.fontSize = 16;
+            titleStyle.margin = new RectOffset(0, 0, 0, 10);
+            EditorGUILayout.LabelField("GameSmith Configuration", titleStyle);
+
+            EditorGUILayout.Space(5);
+
+            // Provider Selection and subsequent sections
             DrawProviderSection();
 
+            EditorGUILayout.Space(10);
+
             EditorGUILayout.EndScrollView();
+
+            // Restore original label width
+            EditorGUIUtility.labelWidth = originalLabelWidth;
         }
 
         private void DrawProviderSection()
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField("AI Provider", EditorStyles.boldLabel);
-            EditorGUILayout.Space(5);
+            
+            // Section header
+            var headerStyle = new GUIStyle(EditorStyles.boldLabel);
+            headerStyle.fontSize = 13;
+            headerStyle.margin = new RectOffset(0, 0, 0, 8);
+            EditorGUILayout.LabelField("AI Provider", headerStyle);
+            EditorGUILayout.Space(4);
 
             // Provider dropdown with status indicators
             var providerNames = config.GetProviderNames().ToArray();
@@ -104,6 +131,13 @@ namespace SparkGames.UnityGameSmith.Editor
             if (EditorGUI.EndChangeCheck() && newProviderIndex >= 0)
             {
                 config.activeProvider = providerNames[newProviderIndex];
+
+                // Auto-refresh Ollama models when switching to Ollama
+                if (config.activeProvider.ToLower().Contains("ollama"))
+                {
+                    config.RefreshOllamaModels();
+                }
+
                 // Reset to first model when changing provider
                 var providerModels = config.GetModelsList();
                 if (providerModels.Count > 0)
@@ -112,24 +146,68 @@ namespace SparkGames.UnityGameSmith.Editor
                 }
             }
 
-            // Model dropdown
+            // Model dropdown with Ollama refresh button
             var models = config.GetModelsList();
-            if (models.Count > 0)
-            {
-                var modelDisplayNames = models.Select(m => config.GetModelDisplayName(m)).ToArray();
-                int currentModelIndex = models.IndexOf(config.selectedModel);
-                if (currentModelIndex < 0) currentModelIndex = 0;
 
-                EditorGUI.BeginChangeCheck();
-                int newModelIndex = EditorGUILayout.Popup("Model", currentModelIndex, modelDisplayNames);
-                if (EditorGUI.EndChangeCheck() && newModelIndex >= 0)
+            // For Ollama, show refresh button next to model dropdown
+            if (config.activeProvider.ToLower().Contains("ollama"))
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                if (models.Count > 0)
                 {
-                    config.selectedModel = models[newModelIndex];
+                    var modelDisplayNames = models.Select(m => config.GetModelDisplayName(m)).ToArray();
+                    int currentModelIndex = models.IndexOf(config.selectedModel);
+                    if (currentModelIndex < 0) currentModelIndex = 0;
+
+                    EditorGUI.BeginChangeCheck();
+                    int newModelIndex = EditorGUILayout.Popup("Model", currentModelIndex, modelDisplayNames);
+                    if (EditorGUI.EndChangeCheck() && newModelIndex >= 0)
+                    {
+                        config.selectedModel = models[newModelIndex];
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.LabelField("Model", "No models found");
+                }
+
+                // Refresh button for Ollama
+                if (GUILayout.Button("🔄", GUILayout.Width(32), GUILayout.Height(20)))
+                {
+                    config.RefreshOllamaModels();
+                    Repaint(); // Force window refresh to show new models
+                }
+
+                EditorGUILayout.EndHorizontal();
+
+                if (models.Count == 0)
+                {
+                    var helpBoxStyle = new GUIStyle(EditorStyles.helpBox);
+                    helpBoxStyle.wordWrap = true;
+                    EditorGUILayout.HelpBox("No Ollama models detected. Ensure Ollama is running with installed models.\n\nStart: ollama serve\nInstall: ollama pull codellama", MessageType.Warning);
                 }
             }
             else
             {
-                EditorGUILayout.HelpBox("No models available for this provider.", MessageType.Warning);
+                // Non-Ollama providers - regular model dropdown
+                if (models.Count > 0)
+                {
+                    var modelDisplayNames = models.Select(m => config.GetModelDisplayName(m)).ToArray();
+                    int currentModelIndex = models.IndexOf(config.selectedModel);
+                    if (currentModelIndex < 0) currentModelIndex = 0;
+
+                    EditorGUI.BeginChangeCheck();
+                    int newModelIndex = EditorGUILayout.Popup("Model", currentModelIndex, modelDisplayNames);
+                    if (EditorGUI.EndChangeCheck() && newModelIndex >= 0)
+                    {
+                        config.selectedModel = models[newModelIndex];
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("No models available for this provider.", MessageType.Warning);
+                }
             }
 
             EditorGUILayout.Space(5);
@@ -163,7 +241,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
 
                     // Show/Hide toggle button
-                    if (GUILayout.Button(showPassword ? "🙈" : "👁", GUILayout.Width(30), GUILayout.Height(18)))
+                    if (GUILayout.Button(showPassword ? "🙈" : "👁️", GUILayout.Width(32), GUILayout.Height(20)))
                     {
                         showPassword = !showPassword;
                     }
@@ -197,14 +275,16 @@ namespace SparkGames.UnityGameSmith.Editor
                 var apiKeyUrl = config.GetApiKeyUrl();
 
                 EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
 
                 // Left button: Get/Open API Key URL
                 if (!string.IsNullOrEmpty(apiKeyUrl))
                 {
-                    if (GUILayout.Button("🔗 Get API Key", GUILayout.Height(28)))
+                    if (GUILayout.Button("Get API Key", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         Application.OpenURL(apiKeyUrl);
                     }
+                    GUILayout.Space(5);
                 }
 
                 // Right button: Dynamic based on state
@@ -213,7 +293,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (isVerified)
                 {
                     // State 3: Verified → Show "Edit API Key"
-                    if (GUILayout.Button("✏️ Edit API Key", GUILayout.Height(28)))
+                    if (GUILayout.Button("Edit API Key", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         // Reset verification when user wants to edit
                         GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
@@ -225,20 +305,21 @@ namespace SparkGames.UnityGameSmith.Editor
                 else if (hasValidFormat && !string.IsNullOrEmpty(currentKey))
                 {
                     // State 2: Valid format but not verified → Show "Verify API Key"
-                    if (GUILayout.Button(isVerifying ? "⏳ Verifying..." : "✓ Verify API Key", GUILayout.Height(28)))
+                    if (GUILayout.Button(isVerifying ? "Verifying..." : "Verify API Key", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
-                        EditorCoroutineRunner.StartCoroutine(VerifyApiKey());
+                        VerifyApiKeyAsync().Forget();
                     }
                 }
                 else if (!string.IsNullOrEmpty(currentKey))
                 {
                     // State 1a: Invalid format → Show "Check Format"
-                    if (GUILayout.Button("⚠️ Check Format", GUILayout.Height(28)))
+                    if (GUILayout.Button("Check Format", GUILayout.Height(26), GUILayout.MinWidth(120), GUILayout.MaxWidth(200)))
                     {
                         ShowApiKeyFormatHelp();
                     }
                 }
 
+                GUILayout.FlexibleSpace();
                 GUI.enabled = true;
                 EditorGUILayout.EndHorizontal();
             }
@@ -248,10 +329,18 @@ namespace SparkGames.UnityGameSmith.Editor
             }
 
             EditorGUILayout.Space(10);
+            
+            // Divider
+            var dividerRect = GUILayoutUtility.GetRect(1, 1, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(dividerRect, new Color(0.3f, 0.3f, 0.3f, 1f));
+            EditorGUILayout.Space(10);
 
-            // Model Parameters
-            EditorGUILayout.LabelField("Model Parameters", EditorStyles.boldLabel);
-            EditorGUILayout.Space(5);
+            // Model Parameters section
+            var paramHeaderStyle = new GUIStyle(EditorStyles.boldLabel);
+            paramHeaderStyle.fontSize = 13;
+            paramHeaderStyle.margin = new RectOffset(0, 0, 0, 8);
+            EditorGUILayout.LabelField("Model Parameters", paramHeaderStyle);
+            EditorGUILayout.Space(4);
 
             config.temperature = EditorGUILayout.Slider("Temperature", config.temperature, 0f, 2f);
             config.maxTokens = EditorGUILayout.IntSlider("Max Tokens", config.maxTokens, 256, 8192);
@@ -267,8 +356,13 @@ namespace SparkGames.UnityGameSmith.Editor
         private void DrawMCPSection()
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField("Unity MCP Server", EditorStyles.boldLabel);
-            EditorGUILayout.Space(5);
+            
+            // Section header
+            var headerStyle = new GUIStyle(EditorStyles.boldLabel);
+            headerStyle.fontSize = 13;
+            headerStyle.margin = new RectOffset(0, 0, 0, 8);
+            EditorGUILayout.LabelField("Unity MCP Server", headerStyle);
+            EditorGUILayout.Space(4);
 
             string mcpVersion = GetMCPVersion();
             bool isInstalled = !string.IsNullOrEmpty(mcpVersion);
@@ -294,27 +388,36 @@ namespace SparkGames.UnityGameSmith.Editor
 
             GUI.enabled = !isInstallingMCP;
 
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
             if (isInstalled)
             {
-                if (GUILayout.Button(isInstallingMCP ? "⏳ Updating..." : "🔄 Update MCP Server", GUILayout.Height(28)))
+                if (GUILayout.Button(isInstallingMCP ? "Updating..." : "Update MCP Server", GUILayout.Height(26), GUILayout.MinWidth(180), GUILayout.MaxWidth(250)))
                 {
                     InstallOrUpdateMCPAsync().Forget();
                 }
             }
             else
             {
-                if (GUILayout.Button(isInstallingMCP ? "⏳ Installing..." : "⬇️ Install MCP Server", GUILayout.Height(28)))
+                if (GUILayout.Button(isInstallingMCP ? "Installing..." : "Install MCP Server", GUILayout.Height(26), GUILayout.MinWidth(180), GUILayout.MaxWidth(250)))
                 {
                     InstallOrUpdateMCPAsync().Forget();
                 }
             }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
 
             GUI.enabled = true;
 
             // Available Tools Section (collapsible)
             if (isInstalled)
             {
-                EditorGUILayout.Space(5);
+                EditorGUILayout.Space(10);
+                
+                // Divider before tools section
+                var dividerRect = GUILayoutUtility.GetRect(1, 1, GUILayout.ExpandWidth(true));
+                EditorGUI.DrawRect(dividerRect, new Color(0.3f, 0.3f, 0.3f, 1f));
+                EditorGUILayout.Space(8);
 
                 EditorGUI.BeginChangeCheck();
                 showMCPTools = EditorGUILayout.Foldout(showMCPTools, "Available Tools", true);
@@ -326,8 +429,8 @@ namespace SparkGames.UnityGameSmith.Editor
 
                 if (showMCPTools)
                 {
-                    EditorGUI.indentLevel++;
-
+                    EditorGUILayout.Space(6);
+                    
                     if (isLoadingTools)
                     {
                         EditorGUILayout.LabelField("Loading tools...", EditorStyles.miniLabel);
@@ -335,45 +438,61 @@ namespace SparkGames.UnityGameSmith.Editor
                     else if (cachedMCPTools != null && cachedMCPTools.Count > 0)
                     {
                         // Header with count
-                        EditorGUILayout.LabelField($"Found {cachedMCPTools.Count} tool(s):", EditorStyles.miniLabel);
-                        EditorGUILayout.Space(3);
+                        EditorGUILayout.LabelField($"Found {cachedMCPTools.Count} tool(s)", EditorStyles.miniLabel);
+                        EditorGUILayout.Space(8);
 
                         // Group and sort tools by category
                         var groupedTools = GroupToolsByCategory(cachedMCPTools);
 
-                        // Scrollable list view
-                        toolsScrollPosition = EditorGUILayout.BeginScrollView(toolsScrollPosition, 
-                            GUILayout.Height(Mathf.Min(300, cachedMCPTools.Count * 20 + 10)));
+                        // Scrollable list view with max height
+                        toolsScrollPosition = EditorGUILayout.BeginScrollView(
+                            toolsScrollPosition,
+                            GUILayout.MaxHeight(250)
+                        );
 
                         foreach (var group in groupedTools)
                         {
+                            // Category header - simple and clean
+                            var categoryColor = GetCategoryAccentColor(group.Key);
+                            var labelStyle = new GUIStyle(EditorStyles.boldLabel);
+                            labelStyle.fontSize = 11;
+                            labelStyle.normal.textColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+                            
+                            EditorGUILayout.BeginHorizontal();
+                            // Colored indicator bar
+                            var barRect = GUILayoutUtility.GetRect(3, 16, GUILayout.Width(3));
+                            EditorGUI.DrawRect(barRect, categoryColor);
+                            EditorGUILayout.LabelField(GetCategoryLabel(group.Key) + $" ({group.Value.Count})", labelStyle);
+                            EditorGUILayout.EndHorizontal();
+                            
+                            EditorGUILayout.Space(4);
+                            
+                            // Tools in this category - simple list
                             foreach (var tool in group.Value)
                             {
-                                // Color-coded background based on category
-                                var originalBg = GUI.backgroundColor;
-                                GUI.backgroundColor = GetCategoryColor(group.Key);
-                                
-                                EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-                                GUI.backgroundColor = originalBg;
-                                
-                                // Simple tool name only
-                                EditorGUILayout.LabelField(tool.Name, GUILayout.Height(16));
-                                
+                                EditorGUILayout.BeginHorizontal();
+                                GUILayout.Space(8); // Indent
+                                var toolLabelStyle = new GUIStyle(EditorStyles.label);
+                                toolLabelStyle.wordWrap = true;
+                                EditorGUILayout.LabelField(tool.Name, toolLabelStyle);
                                 EditorGUILayout.EndHorizontal();
                             }
+                            
+                            EditorGUILayout.Space(8);
                         }
 
                         EditorGUILayout.EndScrollView();
                         
-                        // Legend
-                        EditorGUILayout.Space(5);
-                        EditorGUILayout.LabelField("Categories:", EditorStyles.miniLabel);
+                        // Legend - simple and clean
+                        EditorGUILayout.Space(10);
+                        EditorGUILayout.LabelField("Legend", EditorStyles.miniLabel);
+                        EditorGUILayout.Space(4);
                         DrawCategoryLegend();
                     }
                     else if (cachedMCPTools != null && cachedMCPTools.Count == 0)
                     {
                         EditorGUILayout.LabelField("No tools available", EditorStyles.miniLabel);
-                        if (GUILayout.Button("Refresh Tools", GUILayout.Height(20)))
+                        if (GUILayout.Button("Refresh Tools", GUILayout.Height(24)))
                         {
                             LoadMCPToolsAsync().Forget();
                         }
@@ -381,13 +500,11 @@ namespace SparkGames.UnityGameSmith.Editor
                     else
                     {
                         EditorGUILayout.LabelField("Click to load tools", EditorStyles.miniLabel);
-                        if (GUILayout.Button("Refresh Tools", GUILayout.Height(20)))
+                        if (GUILayout.Button("Refresh Tools", GUILayout.Height(24)))
                         {
                             LoadMCPToolsAsync().Forget();
                         }
                     }
-
-                    EditorGUI.indentLevel--;
                 }
             }
 
@@ -480,7 +597,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 npmProcess = new Process { StartInfo = startInfo };
 
                 await UniTask.SwitchToMainThread();
-                GameSmithLogger.Log("Installing Unity MCP Server via npm...");
                 mcpInstallStatus = "⏳ Running: npm install -g @spark-apps/unity-mcp";
                 Repaint();
                 await UniTask.SwitchToThreadPool();
@@ -526,7 +642,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 await UniTask.SwitchToMainThread();
                 string newVersion = GetMCPVersion();
                 mcpInstallStatus = $"✅ Installation successful! Version: {newVersion ?? "unknown"}";
-                GameSmithLogger.Log($"Unity MCP Server installed successfully. Version: {newVersion}");
 
                 EditorUtility.DisplayDialog(
                     "Installation Complete",
@@ -592,65 +707,77 @@ namespace SparkGames.UnityGameSmith.Editor
         }
 
         /// <summary>
-        /// Verify API key by making a test request
+        /// Verify API key by making a test request (async)
         /// </summary>
-        private IEnumerator VerifyApiKey()
+        private async UniTaskVoid VerifyApiKeyAsync()
         {
             isVerifying = true;
             verificationMessage = "Verifying API key...";
             Repaint();
 
-            // Create a simple test request
-            var testClient = new AIAgentClient(config);
-            string errorMessage = "";
+            try
+            {
+                var testClient = new AIAgentClient(config);
+                bool completed = false;
+                bool success = false;
+                string errorMessage = "";
 
-            testClient.SendMessage(
-                "Hello",
-                "You are a test assistant. Reply with 'OK' only.",
-                null,
-                response =>
+                // Send test request
+                testClient.SendMessage(
+                    "Hello",
+                    "You are a test assistant. Reply with 'OK' only.",
+                    null,
+                    response =>
+                    {
+                        completed = true;
+                        success = true;
+                    },
+                    error =>
+                    {
+                        completed = true;
+                        success = false;
+                        errorMessage = error;
+                    }
+                );
+
+                // Wait for completion with timeout
+                var cts = new CancellationTokenSource();
+                cts.CancelAfterSlim(System.TimeSpan.FromSeconds(30));
+
+                try
                 {
-                    // Success!
-                    GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, true);
-                    verificationMessage = $"✅ API key verified successfully for {config.activeProvider}!";
-                    GameSmithLogger.Log($"API key verified for {config.activeProvider}");
-                },
-                error =>
+                    await UniTask.WaitUntil(() => completed, cancellationToken: cts.Token);
+
+                    if (success)
+                    {
+                        GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, true);
+                        verificationMessage = $"✅ API key verified";
+                    }
+                    else
+                    {
+                        GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
+                        verificationMessage = $"❌ {errorMessage}";
+                        GameSmithLogger.LogError(errorMessage);
+                    }
+                }
+                catch (System.OperationCanceledException)
                 {
-                    // Failed
-                    errorMessage = error;
+                    verificationMessage = "❌ Timed out. Check your connection.";
                     GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
-                    verificationMessage = $"❌ Verification failed: {error}";
-                    GameSmithLogger.LogWarning($"API key verification failed for {config.activeProvider}: {error}");
-                }
-            );
-
-            // Wait for response (max 30 seconds)
-            float timeout = 30f;
-            float elapsed = 0f;
-
-            while (string.IsNullOrEmpty(verificationMessage.Contains("✅") ? "done" : "") &&
-                   string.IsNullOrEmpty(errorMessage) &&
-                   elapsed < timeout)
-            {
-                yield return null;
-                elapsed += 0.1f;
-
-                // Check if verification completed
-                if (verificationMessage.Contains("✅") || verificationMessage.Contains("❌"))
-                {
-                    break;
+                    GameSmithLogger.LogWarning("API key verification timed out");
                 }
             }
-
-            if (elapsed >= timeout && !verificationMessage.Contains("✅") && !verificationMessage.Contains("❌"))
+            catch (System.Exception ex)
             {
-                verificationMessage = "❌ Verification timed out. Please check your connection and try again.";
+                verificationMessage = $"❌ {ex.Message}";
                 GameSmithSettings.Instance.SetApiKeyVerified(config.activeProvider, false);
+                GameSmithLogger.LogError(ex.Message);
             }
-
-            isVerifying = false;
-            Repaint();
+            finally
+            {
+                isVerifying = false;
+                Repaint();
+            }
         }
 
         /// <summary>
@@ -904,20 +1031,37 @@ namespace SparkGames.UnityGameSmith.Editor
             return ToolCategory.Organization;
         }
 
-        private Color GetCategoryColor(ToolCategory category)
+        private Color GetCategoryAccentColor(ToolCategory category)
         {
             switch (category)
             {
                 case ToolCategory.Creation:
-                    return new Color(0.7f, 1.0f, 0.7f, 0.6f); // Light green
+                    return new Color(0.3f, 0.75f, 0.4f, 1f); // Muted green
                 case ToolCategory.Modification:
-                    return new Color(0.7f, 0.8f, 1.0f, 0.6f); // Light blue
+                    return new Color(0.35f, 0.6f, 0.9f, 1f); // Muted blue
                 case ToolCategory.Organization:
-                    return new Color(1.0f, 0.9f, 0.6f, 0.6f); // Light orange
+                    return new Color(0.85f, 0.65f, 0.25f, 1f); // Muted orange
                 case ToolCategory.Destructive:
-                    return new Color(1.0f, 0.7f, 0.7f, 0.6f); // Light red
+                    return new Color(0.8f, 0.35f, 0.35f, 1f); // Muted red
                 default:
-                    return Color.white;
+                    return new Color(0.6f, 0.6f, 0.6f, 1f);
+            }
+        }
+
+        private string GetCategoryLabel(ToolCategory category)
+        {
+            switch (category)
+            {
+                case ToolCategory.Creation:
+                    return "Creation";
+                case ToolCategory.Modification:
+                    return "Modification";
+                case ToolCategory.Organization:
+                    return "Information";
+                case ToolCategory.Destructive:
+                    return "Destructive";
+                default:
+                    return "Tools";
             }
         }
 
@@ -925,21 +1069,43 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             EditorGUILayout.BeginHorizontal();
             
+            var labelStyle = EditorStyles.miniLabel;
+            
             // Creation
-            var originalBg = GUI.backgroundColor;
-            GUI.backgroundColor = GetCategoryColor(ToolCategory.Creation);
-            EditorGUILayout.LabelField("Create", EditorStyles.miniLabel, GUILayout.Width(50));
+            var createColor = GetCategoryAccentColor(ToolCategory.Creation);
+            var createRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
+            EditorGUI.DrawRect(createRect, createColor);
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Create", labelStyle);
             
-            GUI.backgroundColor = GetCategoryColor(ToolCategory.Modification);
-            EditorGUILayout.LabelField("Modify", EditorStyles.miniLabel, GUILayout.Width(50));
+            GUILayout.Space(10);
             
-            GUI.backgroundColor = GetCategoryColor(ToolCategory.Organization);
-            EditorGUILayout.LabelField("Info", EditorStyles.miniLabel, GUILayout.Width(40));
+            // Modification
+            var modifyColor = GetCategoryAccentColor(ToolCategory.Modification);
+            var modifyRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
+            EditorGUI.DrawRect(modifyRect, modifyColor);
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Modify", labelStyle);
             
-            GUI.backgroundColor = GetCategoryColor(ToolCategory.Destructive);
-            EditorGUILayout.LabelField("Delete", EditorStyles.miniLabel, GUILayout.Width(50));
+            GUILayout.Space(10);
             
-            GUI.backgroundColor = originalBg;
+            // Organization
+            var infoColor = GetCategoryAccentColor(ToolCategory.Organization);
+            var infoRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
+            EditorGUI.DrawRect(infoRect, infoColor);
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Info", labelStyle);
+            
+            GUILayout.Space(10);
+            
+            // Destructive
+            var deleteColor = GetCategoryAccentColor(ToolCategory.Destructive);
+            var deleteRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
+            EditorGUI.DrawRect(deleteRect, deleteColor);
+            GUILayout.Space(4);
+            EditorGUILayout.LabelField("Delete", labelStyle);
+            
+            GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }
     }

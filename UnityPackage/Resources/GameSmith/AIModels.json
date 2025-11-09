@@ -1,13 +1,15 @@
 {
   "providers": [
     {
-      "name": "Claude",
+      "name": "Anthropic",
       "apiUrl": "https://api.anthropic.com/v1/messages",
-      "apiKeyUrl": "https://console.anthropic.com/settings/keys",
+      "apiKeyUrl": "https://console.anthropic.com",
+      "apiVersion": "2023-06-01",
       "models": [
-        { "id": "claude-sonnet-4-5-20250929", "displayName": "Claude Sonnet 4.5 (Latest)", "isEnabled": true },
-        { "id": "claude-opus-4-20250514", "displayName": "Claude Opus 4.1 (Advanced)", "isEnabled": true },
-        { "id": "claude-3-5-sonnet-20241022", "displayName": "Claude 3.5 Sonnet", "isEnabled": true }
+        { "id": "claude-sonnet-4-5-20250929", "displayName": "🧠 Claude Sonnet 4.5 (Coding & reasoning, mid-cost, balanced speed)", "isEnabled": true },
+        { "id": "claude-opus-4-1-20250805", "displayName": "🧠 Claude Opus 4.1 (Deep reasoning, high cost, slower)", "isEnabled": true },
+        { "id": "claude-haiku-4-5-20251001", "displayName": "Claude Haiku 4.5 (Quick tasks, low cost, fastest)", "isEnabled": true },
+        { "id": "claude-3-5-sonnet-20241022", "displayName": "Claude 3.5 Sonnet (Legacy, Oct 2024)", "isEnabled": false }
       ]
     },
     {
@@ -15,35 +17,37 @@
       "apiUrl": "https://api.openai.com/v1/chat/completions",
       "apiKeyUrl": "https://platform.openai.com/api-keys",
       "models": [
-        { "id": "o1", "displayName": "o1 (Reasoning - Latest)", "isEnabled": true },
-        { "id": "o1-mini", "displayName": "o1-mini (Fast Reasoning)", "isEnabled": true },
-        { "id": "gpt-4o", "displayName": "GPT-4o (Multimodal)", "isEnabled": true },
-        { "id": "gpt-4-turbo", "displayName": "GPT-4 Turbo", "isEnabled": true },
-        { "id": "gpt-4", "displayName": "GPT-4", "isEnabled": true }
+        { "id": "gpt-4o", "displayName": "🧠 GPT-4o (Multimodal, coding, good speed, affordable)", "isEnabled": true },
+        { "id": "gpt-4o-mini", "displayName": "GPT-4o Mini (Light tasks, lowest cost, very fast)", "isEnabled": true },
+        { "id": "gpt-4-turbo", "displayName": "GPT-4 Turbo (Legacy, powerful reasoning)", "isEnabled": true },
+        { "id": "o1-preview", "displayName": "🧠 o1 Preview (Advanced reasoning, slow, expensive)", "isEnabled": false },
+        { "id": "o1-mini", "displayName": "o1 Mini (Fast reasoning, coding tasks)", "isEnabled": false }
       ]
     },
     {
-      "name": "Gemini",
+      "name": "Google Gemini",
       "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-      "apiKeyUrl": "https://aistudio.google.com/app/apikey",
+      "apiKeyUrl": "https://aistudio.google.com/app/api-keys",
       "models": [
-        { "id": "gemini-2.5-pro-exp", "displayName": "Gemini 2.5 Pro (Exp)", "isEnabled": true },
-        { "id": "gemini-2.5-flash-exp", "displayName": "Gemini 2.5 Flash (Exp)", "isEnabled": true },
-        { "id": "gemini-1.5-pro", "displayName": "Gemini 1.5 Pro", "isEnabled": true },
-        { "id": "gemini-1.5-flash", "displayName": "Gemini 1.5 Flash", "isEnabled": true }
+        { "id": "gemini-2.5-pro", "displayName": "🧠 Gemini 2.5 Pro (Reasoning + multimodal, higher cost)", "isEnabled": true },
+        { "id": "gemini-2.5-flash", "displayName": "Gemini 2.5 Flash (Fast, cost-efficient)", "isEnabled": true },
+        { "id": "gemini-2.5-flash-lite", "displayName": "Gemini 2.5 Flash-Lite (Ultra-fast, cheapest)", "isEnabled": true }
       ]
     },
     {
-      "name": "Ollama",
+      "name": "xAI Grok",
+      "apiUrl": "https://api.x.ai/v1/chat/completions",
+      "apiKeyUrl": "https://console.x.ai/",
+      "models": [
+        { "id": "grok-beta", "displayName": "🧠 Grok Beta (Latest model, auto-updates)", "isEnabled": true },
+        { "id": "grok-2-1212", "displayName": "Grok 2 (Dec 2024, stable)", "isEnabled": true }
+      ]
+    },
+    {
+      "name": "Ollama (local)",
       "apiUrl": "http://localhost:11434/v1/chat/completions",
       "apiKeyUrl": "",
-      "models": [
-        { "id": "qwen3:8b", "displayName": "Qwen3 8B", "isEnabled": true },
-        { "id": "deepseek-coder-v2:16b", "displayName": "DeepSeek Coder V2 16B", "isEnabled": true }
-      ]
+      "models": []
     }
   ]
 }
-
-
-

@@ -5,6 +5,8 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEditor;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -18,16 +20,32 @@ namespace SparkGames.UnityGameSmith.Editor
         private string lastSystemContext = "";
         private string lastToolName = "";
 
+        // Public property to access the active provider
+        public string ActiveProvider => config?.activeProvider ?? "";
+
         public AIAgentClient(GameSmithConfig config)
         {
             this.config = config;
         }
 
+        // Helper to decode Unicode escape sequences (u003c -> <, u003e -> >, etc.)
+        private string DecodeUnicodeEscapes(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            // Replace common Unicode escapes
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u003c", "<");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u003e", ">");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u0026", "&");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u0027", "'");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\\u0022", "\"");
+
+            return text;
+        }
+
         public void SendMessage(string userMessage, string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
-            GameSmithLogger.Log($"SendMessage called for provider: {config.activeProvider}");
-
             if (!config.IsValid())
             {
                 string validationError = config.GetValidationMessage();
@@ -35,8 +53,6 @@ namespace SparkGames.UnityGameSmith.Editor
                 onError?.Invoke(validationError);
                 return;
             }
-
-            GameSmithLogger.Log($"Using model: {config.GetCurrentModel()} at {config.apiUrl}");
 
             // Add user message to history
             conversationHistory.Add(new Dictionary<string, object>
@@ -53,21 +69,35 @@ namespace SparkGames.UnityGameSmith.Editor
         public void SendToolResult(string toolUseId, string toolResult, string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
-            // Add tool result to history
-            conversationHistory.Add(new Dictionary<string, object>
+            // Add tool result to history based on provider
+            if (config.activeProvider.Contains("OpenAI"))
             {
-                { "role", "user" },
-                { "content", new List<object>
-                    {
-                        new Dictionary<string, object>
+                // OpenAI format: tool message with tool_call_id
+                conversationHistory.Add(new Dictionary<string, object>
+                {
+                    { "role", "tool" },
+                    { "tool_call_id", toolUseId },
+                    { "content", toolResult }
+                });
+            }
+            else
+            {
+                // Claude format: user message with tool_result
+                conversationHistory.Add(new Dictionary<string, object>
+                {
+                    { "role", "user" },
+                    { "content", new List<object>
                         {
-                            { "type", "tool_result" },
-                            { "tool_use_id", toolUseId },
-                            { "content", toolResult }
+                            new Dictionary<string, object>
+                            {
+                                { "type", "tool_result" },
+                                { "tool_use_id", toolUseId },
+                                { "content", toolResult }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
             EditorCoroutineRunner.StartCoroutine(coroutine);
@@ -76,14 +106,10 @@ namespace SparkGames.UnityGameSmith.Editor
         private IEnumerator SendWebRequest(string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
-            bool isOllamaOrOpenAI = config.activeProvider == "Ollama" || config.activeProvider == "OpenAI";
-            bool isGemini = config.activeProvider == "Gemini";
+            bool isOllamaOrOpenAI = config.activeProvider.Contains("Ollama") || config.activeProvider.Contains("OpenAI") || config.activeProvider.Contains("Grok");
+            bool isGemini = config.activeProvider.Contains("Gemini");
 
             // For Ollama on localhost, normalize the URL
-            if (config.activeProvider == "Ollama" && config.apiUrl.Contains("localhost"))
-            {
-                GameSmithLogger.Log("Detected localhost URL for Ollama, will use 127.0.0.1 for better Unity compatibility");
-            }
 
             // Build request based on provider type
             var requestDict = new Dictionary<string, object>();
@@ -233,14 +259,11 @@ namespace SparkGames.UnityGameSmith.Editor
             }
 
             // Add tools if available
-            GameSmithLogger.Log($"Tools available: {tools?.Count ?? 0}");
             if (tools != null && tools.Count > 0)
             {
-                GameSmithLogger.Log($"Adding {tools.Count} tools to request for provider {config.activeProvider}");
                 var toolsArray = new List<object>();
                 foreach (var tool in tools)
                 {
-                    GameSmithLogger.Log($"  Tool: {tool.Name} - {tool.Description}");
                     if (isGemini)
                     {
                         // Gemini format for tools (function declarations)
@@ -288,19 +311,23 @@ namespace SparkGames.UnityGameSmith.Editor
                             { "functionDeclarations", toolsArray }
                         }
                     };
-                    GameSmithLogger.Log($"Gemini tools structure created with {toolsArray.Count} function declarations");
                 }
                 else
                 {
                     requestDict["tools"] = toolsArray;
+
+                    // For Claude, encourage tool use
+                    if (!isOllamaOrOpenAI)
+                    {
+                        requestDict["tool_choice"] = new Dictionary<string, object>
+                        {
+                            { "type", "auto" }
+                        };
+                    }
                 }
             }
-            else
-            {
-                GameSmithLogger.Log("No tools available for this request");
-            }
 
-            var requestBody = MiniJSON.Json.Serialize(requestDict);
+            var requestBody = JsonConvert.SerializeObject(requestDict);
 
             // Build URL (replace {model} placeholder for Gemini)
             string requestUrl = config.apiUrl;
@@ -309,7 +336,6 @@ namespace SparkGames.UnityGameSmith.Editor
             if (requestUrl.Contains("localhost"))
             {
                 requestUrl = requestUrl.Replace("localhost", "127.0.0.1");
-                GameSmithLogger.Log($"Normalized URL from localhost to 127.0.0.1: {requestUrl}");
             }
 
             if (isGemini)
@@ -331,35 +357,34 @@ namespace SparkGames.UnityGameSmith.Editor
                 request.SetRequestHeader("Content-Type", "application/json");
 
                 // Set headers based on provider
-                if (config.activeProvider == "Claude")
+                if (config.activeProvider.Contains("Anthropic"))
                 {
-                    request.SetRequestHeader("anthropic-version", "2023-06-01");
+                    // Use version from config, fallback to 2023-06-01 if not specified
+                    string apiVersion = !string.IsNullOrEmpty(config.apiVersion) ? config.apiVersion : "2023-06-01";
+                    request.SetRequestHeader("anthropic-version", apiVersion);
                     request.SetRequestHeader("x-api-key", config.apiKey);
-                    GameSmithLogger.Log("Using Claude API with anthropic-version header");
                 }
-                else if (config.activeProvider == "OpenAI")
+                else if (config.activeProvider.Contains("OpenAI"))
                 {
                     request.SetRequestHeader("Authorization", $"Bearer {config.apiKey}");
-                    GameSmithLogger.Log("Using OpenAI API with Bearer token");
                 }
-                else if (config.activeProvider == "Gemini")
+                else if (config.activeProvider.Contains("Gemini"))
                 {
-                    GameSmithLogger.Log("Using Gemini API (API key in URL parameter)");
+                    // API key is in URL parameter
                 }
-                else if (config.activeProvider == "Ollama")
+                else if (config.activeProvider.Contains("Grok"))
                 {
-                    GameSmithLogger.Log("Using Ollama API (no authentication required)");
+                    request.SetRequestHeader("Authorization", $"Bearer {config.apiKey}");
+                }
+                else if (config.activeProvider.Contains("Ollama"))
+                {
+                    // No authentication required
                 }
 
                 request.timeout = 120;
 
                 // Add redirect handling
                 request.redirectLimit = 5;
-
-                GameSmithLogger.Log($"Sending web request to: {requestUrl}");
-                GameSmithLogger.Log($"Request method: POST");
-                GameSmithLogger.Log($"Content-Type: application/json");
-                GameSmithLogger.Log($"Timeout: {request.timeout}s");
 
                 // Send request
                 var operation = request.SendWebRequest();
@@ -370,13 +395,12 @@ namespace SparkGames.UnityGameSmith.Editor
                     yield return null;
                 }
 
-                GameSmithLogger.Log($"Request completed. Result: {request.result}, ResponseCode: {request.responseCode}, IsDone: {request.isDone}");
+                // Request completed
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     var responseText = request.downloadHandler.text;
                     GameSmithLogger.LogResponse(config.activeProvider, true, responseText);
-                    GameSmithLogger.Log("Request successful, parsing response...");
 
                     AIResponse response = null;
 
@@ -396,8 +420,6 @@ namespace SparkGames.UnityGameSmith.Editor
 
                     if (response != null)
                     {
-                        GameSmithLogger.Log($"Response parsed successfully. Text length: {response.TextContent?.Length ?? 0}");
-
                         // Add assistant response to history
                         if (isGemini)
                         {
@@ -436,11 +458,36 @@ namespace SparkGames.UnityGameSmith.Editor
                         }
                         else if (isOllamaOrOpenAI)
                         {
-                            conversationHistory.Add(new Dictionary<string, object>
+                            // For OpenAI with tool calls, store the tool call in history
+                            if (response.HasToolUse)
                             {
-                                { "role", "assistant" },
-                                { "content", response.TextContent }
-                            });
+                                var toolCall = new Dictionary<string, object>
+                                {
+                                    { "id", response.ToolUseId },
+                                    { "type", "function" },
+                                    { "function", new Dictionary<string, object>
+                                        {
+                                            { "name", response.ToolName },
+                                            { "arguments", MiniJSON.Json.Serialize(response.ToolInput) }
+                                        }
+                                    }
+                                };
+
+                                conversationHistory.Add(new Dictionary<string, object>
+                                {
+                                    { "role", "assistant" },
+                                    { "content", null },
+                                    { "tool_calls", new List<object> { toolCall } }
+                                });
+                            }
+                            else
+                            {
+                                conversationHistory.Add(new Dictionary<string, object>
+                                {
+                                    { "role", "assistant" },
+                                    { "content", response.TextContent }
+                                });
+                            }
                         }
                         else
                         {
@@ -455,9 +502,9 @@ namespace SparkGames.UnityGameSmith.Editor
                     }
                     else
                     {
-                        string parseError = "Failed to parse AI response. Check log file for details.";
                         string providerName = config?.activeProvider ?? "Unknown";
                         GameSmithLogger.LogError($"Failed to parse response from {providerName}. Response was: {responseText}");
+                        string parseError = $"Failed to parse AI response from {providerName}.";
                         onError?.Invoke(parseError);
                     }
                 }
@@ -481,7 +528,7 @@ namespace SparkGames.UnityGameSmith.Editor
                         errorDetails += "\nDiagnostic: Connection failed - server may not be running or reachable";
 
                         // For Ollama, add specific checks
-                        if (config.activeProvider == "Ollama")
+                        if (config.activeProvider.Contains("Ollama"))
                         {
                             errorDetails += $"\nOllama URL: {config.apiUrl}";
                             errorDetails += "\nPlease verify:";
@@ -509,10 +556,7 @@ namespace SparkGames.UnityGameSmith.Editor
 
                     // Create user-friendly error message
                     string userError = BuildUserFriendlyError(providerName, request.responseCode, request.error, responseBody);
-                    GameSmithLogger.LogError($"Request failed: {userError}");
-
-                    // Also log to Unity console for immediate visibility
-                    UnityEngine.Debug.LogError($"[GameSmith] {providerName} request failed: {userError}");
+                    GameSmithLogger.LogError(userError);
 
                     onError?.Invoke(userError);
                 }
@@ -523,55 +567,50 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
-                if (response == null) return null;
+                var response = JObject.Parse(json);
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (response.ContainsKey("candidates"))
+                var candidates = response["candidates"];
+                if (candidates != null && candidates.HasValues)
                 {
-                    var candidates = response["candidates"] as List<object>;
-                    if (candidates != null && candidates.Count > 0)
+                    var firstCandidate = candidates[0];
+                    if (firstCandidate != null)
                     {
-                        var firstCandidate = candidates[0] as Dictionary<string, object>;
-                        if (firstCandidate != null && firstCandidate.ContainsKey("content"))
+                        var content = firstCandidate["content"];
+                        if (content != null)
                         {
-                            var content = firstCandidate["content"] as Dictionary<string, object>;
-                            if (content != null && content.ContainsKey("parts"))
+                            var parts = content["parts"];
+                            if (parts != null && parts.HasValues)
                             {
-                                var parts = content["parts"] as List<object>;
-                                if (parts != null && parts.Count > 0)
+                                var textBuilder = new StringBuilder();
+                                foreach (var part in parts)
                                 {
-                                    var textBuilder = new StringBuilder();
-                                    foreach (var part in parts)
+                                    // Check for text content
+                                    var text = part["text"];
+                                    if (text != null)
                                     {
-                                        var partDict = part as Dictionary<string, object>;
-                                        if (partDict != null)
+                                        textBuilder.Append(text.ToString());
+                                    }
+                                    // Check for function call (Gemini tool use)
+                                    else
+                                    {
+                                        var functionCall = part["functionCall"];
+                                        if (functionCall != null)
                                         {
-                                            // Check for text content
-                                            if (partDict.ContainsKey("text"))
-                                            {
-                                                textBuilder.Append(partDict["text"].ToString());
-                                            }
-                                            // Check for function call (Gemini tool use)
-                                            else if (partDict.ContainsKey("functionCall"))
-                                            {
-                                                var functionCall = partDict["functionCall"] as Dictionary<string, object>;
-                                                if (functionCall != null)
-                                                {
-                                                    result.HasToolUse = true;
-                                                    result.ToolName = functionCall.ContainsKey("name") ? functionCall["name"].ToString() : "";
-                                                    result.ToolInput = functionCall.ContainsKey("args") ? functionCall["args"] as Dictionary<string, object> : new Dictionary<string, object>();
-                                                    result.ToolUseId = Guid.NewGuid().ToString(); // Gemini doesn't provide ID, generate one
-                                                }
-                                            }
+                                            result.HasToolUse = true;
+                                            result.ToolName = functionCall["name"]?.ToString() ?? "";
+
+                                            var args = functionCall["args"];
+                                            result.ToolInput = args != null ? args.ToObject<Dictionary<string, object>>() : new Dictionary<string, object>();
+                                            result.ToolUseId = Guid.NewGuid().ToString(); // Gemini doesn't provide ID, generate one
                                         }
                                     }
-                                    result.TextContent = textBuilder.ToString();
                                 }
+                                result.TextContent = textBuilder.ToString();
                             }
                         }
                     }
@@ -590,117 +629,167 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                GameSmithLogger.Log("[OpenAI Parser] Starting to parse response");
-                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
-
-                if (response == null)
-                {
-                    GameSmithLogger.LogError("[OpenAI Parser] Failed to deserialize JSON - response is null");
-                    return null;
-                }
-
-                GameSmithLogger.Log($"[OpenAI Parser] Response deserialized, keys: {string.Join(", ", response.Keys)}");
+                var response = JObject.Parse(json);
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (!response.ContainsKey("choices"))
+                var choices = response["choices"];
+                if (choices == null || !choices.HasValues)
                 {
-                    GameSmithLogger.LogError("[OpenAI Parser] Response missing 'choices' key");
                     return null;
                 }
 
-                var choices = response["choices"] as List<object>;
-                if (choices == null || choices.Count == 0)
-                {
-                    GameSmithLogger.LogError("[OpenAI Parser] Choices is null or empty");
-                    return null;
-                }
-
-                GameSmithLogger.Log($"[OpenAI Parser] Found {choices.Count} choice(s)");
-
-                var firstChoice = choices[0] as Dictionary<string, object>;
+                var firstChoice = choices[0];
                 if (firstChoice == null)
                 {
-                    GameSmithLogger.LogError("[OpenAI Parser] First choice is not a dictionary");
                     return null;
                 }
 
-                GameSmithLogger.Log($"[OpenAI Parser] First choice keys: {string.Join(", ", firstChoice.Keys)}");
-
-                if (!firstChoice.ContainsKey("message"))
-                {
-                    GameSmithLogger.LogError("[OpenAI Parser] First choice missing 'message' key");
-                    return null;
-                }
-
-                var message = firstChoice["message"] as Dictionary<string, object>;
+                var message = firstChoice["message"];
                 if (message == null)
                 {
-                    GameSmithLogger.LogError("[OpenAI Parser] Message is not a dictionary");
                     return null;
                 }
 
-                GameSmithLogger.Log($"[OpenAI Parser] Message keys: {string.Join(", ", message.Keys)}");
-
                 // Get text content - handle both string and null content
-                if (message.ContainsKey("content"))
+                var content = message["content"];
+                if (content != null && content.Type != JTokenType.Null)
                 {
-                    var content = message["content"];
-                    if (content != null)
-                    {
-                        result.TextContent = content.ToString();
-                        GameSmithLogger.Log($"[OpenAI Parser] Extracted text content: '{result.TextContent}'");
+                    string fullContent = content.ToString();
+
+                        // Extract thinking content from <think> tags
+                        var thinkPattern = @"<think>(.*?)</think>";
+                        var thinkMatch = System.Text.RegularExpressions.Regex.Match(fullContent, thinkPattern, System.Text.RegularExpressions.RegexOptions.Singleline);
+
+                        if (thinkMatch.Success)
+                        {
+                            var thinkingText = thinkMatch.Groups[1].Value.Trim();
+                            // Only set thinking content if it's not empty
+                            if (!string.IsNullOrWhiteSpace(thinkingText))
+                            {
+                                result.ThinkingContent = thinkingText;
+                            }
+                            // Remove thinking from main content
+                            result.TextContent = System.Text.RegularExpressions.Regex.Replace(fullContent, thinkPattern, "").Trim();
+                        }
+                        else
+                        {
+                            result.TextContent = fullContent;
+                        }
+
+                        // Decode Unicode escapes (common in Ollama responses)
+                        if (!string.IsNullOrEmpty(result.TextContent))
+                        {
+                            result.TextContent = DecodeUnicodeEscapes(result.TextContent);
+                        }
+                        if (!string.IsNullOrEmpty(result.ThinkingContent))
+                        {
+                            result.ThinkingContent = DecodeUnicodeEscapes(result.ThinkingContent);
+                        }
+
+                        // Check if Ollama returned a tool call as JSON string in content
+                        if (!string.IsNullOrEmpty(result.TextContent) && result.TextContent.Trim().StartsWith("{"))
+                        {
+                            try
+                            {
+                                var toolCallJson = JObject.Parse(result.TextContent);
+                                if (toolCallJson["name"] != null)
+                                {
+                                    // This is a tool call from Ollama
+                                    result.HasToolUse = true;
+                                    result.ToolName = toolCallJson["name"].ToString();
+                                    result.ToolUseId = System.Guid.NewGuid().ToString();
+
+                                    var args = toolCallJson["arguments"];
+                                    if (args != null)
+                                    {
+                                        if (args.Type == JTokenType.Object)
+                                        {
+                                            result.ToolInput = args.ToObject<Dictionary<string, object>>();
+                                        }
+                                        else if (args.Type == JTokenType.String)
+                                        {
+                                            result.ToolInput = JObject.Parse(args.ToString()).ToObject<Dictionary<string, object>>();
+                                        }
+                                        else
+                                        {
+                                            result.ToolInput = new Dictionary<string, object>();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        result.ToolInput = new Dictionary<string, object>();
+                                    }
+
+                                    // Clear text content since this was a tool call
+                                    result.TextContent = "";
+                                }
+                            }
+                            catch
+                            {
+                                // Not a valid tool call JSON, keep as text
+                            }
+                        }
                     }
                     else
                     {
                         result.TextContent = "";
-                        GameSmithLogger.Log("[OpenAI Parser] Content is null, using empty string");
                     }
-                }
-                else
-                {
-                    GameSmithLogger.LogWarning("[OpenAI Parser] Message missing 'content' key");
-                    result.TextContent = "";
-                }
 
                 // Check for tool calls (function calls in OpenAI format)
-                if (message.ContainsKey("tool_calls"))
+                var toolCalls = message["tool_calls"];
+                if (toolCalls != null && toolCalls.HasValues)
                 {
-                    GameSmithLogger.Log("[OpenAI Parser] Found tool_calls in message");
-                    var toolCalls = message["tool_calls"] as List<object>;
-                    if (toolCalls != null && toolCalls.Count > 0)
+                    var firstToolCall = toolCalls[0];
+                    if (firstToolCall != null)
                     {
-                        var firstToolCall = toolCalls[0] as Dictionary<string, object>;
-                        if (firstToolCall != null && firstToolCall.ContainsKey("function"))
+                        var function = firstToolCall["function"];
+                        if (function != null)
                         {
-                            var function = firstToolCall["function"] as Dictionary<string, object>;
-                            if (function != null)
-                            {
-                                result.HasToolUse = true;
-                                result.ToolUseId = firstToolCall.ContainsKey("id") ? firstToolCall["id"].ToString() : "";
-                                result.ToolName = function.ContainsKey("name") ? function["name"].ToString() : "";
+                            result.HasToolUse = true;
+                            result.ToolUseId = firstToolCall["id"]?.ToString() ?? "";
+                            result.ToolName = function["name"]?.ToString() ?? "";
 
-                                if (function.ContainsKey("arguments"))
+                            var argsToken = function["arguments"];
+                            if (argsToken != null)
+                            {
+                                var argsString = argsToken.ToString();
+                                try
                                 {
-                                    var argsString = function["arguments"].ToString();
-                                    result.ToolInput = MiniJSON.Json.Deserialize(argsString) as Dictionary<string, object> ?? new Dictionary<string, object>();
+                                    // Arguments might be an empty string "{}" or a JSON string
+                                    if (!string.IsNullOrEmpty(argsString))
+                                    {
+                                        result.ToolInput = JObject.Parse(argsString).ToObject<Dictionary<string, object>>();
+                                    }
+                                    else
+                                    {
+                                        result.ToolInput = new Dictionary<string, object>();
+                                    }
                                 }
-                                GameSmithLogger.Log($"[OpenAI Parser] Parsed tool call: {result.ToolName}");
+                                catch
+                                {
+                                    result.ToolInput = new Dictionary<string, object>();
+                                }
                             }
                         }
                     }
                 }
 
-                GameSmithLogger.Log($"[OpenAI Parser] Successfully parsed response. TextContent length: {result.TextContent?.Length ?? 0}, HasToolUse: {result.HasToolUse}");
+                // Don't require text content if we have a tool call
+                // If there's only thinking content and no actual response or tool use, add a placeholder
+                if (string.IsNullOrWhiteSpace(result.TextContent) && !result.HasToolUse && !string.IsNullOrEmpty(result.ThinkingContent))
+                {
+                    result.TextContent = "[Continuing analysis...]";
+                }
+
                 return result;
             }
             catch (Exception ex)
             {
-                GameSmithLogger.LogError($"[OpenAI Parser] Exception during parsing: {ex.Message}\nStackTrace: {ex.StackTrace}");
-                UnityEngine.Debug.LogError($"[GameSmith] Failed to parse OpenAI response: {ex.Message}\n{ex.StackTrace}");
+                GameSmithLogger.LogError($"Failed to parse response: {ex.Message}");
                 return null;
             }
         }
@@ -709,40 +798,46 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             try
             {
-                var response = MiniJSON.Json.Deserialize(json) as Dictionary<string, object>;
-                if (response == null) return null;
+                var response = JObject.Parse(json);
 
                 var result = new AIResponse
                 {
                     ContentBlocks = new List<object>()
                 };
 
-                if (response.ContainsKey("content"))
+                var content = response["content"];
+                if (content != null && content.HasValues)
                 {
-                    var content = response["content"] as List<object>;
-                    if (content != null)
+                    foreach (var item in content)
                     {
-                        foreach (var item in content)
+                        result.ContentBlocks.Add(item.ToObject<object>());
+
+                        var type = item["type"]?.ToString() ?? "";
+
+                        if (type == "text")
                         {
-                            var block = item as Dictionary<string, object>;
-                            if (block != null)
+                            var text = item["text"];
+                            if (text != null)
                             {
-                                result.ContentBlocks.Add(block);
-
-                                var type = block.ContainsKey("type") ? block["type"].ToString() : "";
-
-                                if (type == "text" && block.ContainsKey("text"))
-                                {
-                                    result.TextContent += block["text"].ToString();
-                                }
-                                else if (type == "tool_use")
-                                {
-                                    result.HasToolUse = true;
-                                    result.ToolUseId = block.ContainsKey("id") ? block["id"].ToString() : "";
-                                    result.ToolName = block.ContainsKey("name") ? block["name"].ToString() : "";
-                                    result.ToolInput = block.ContainsKey("input") ? block["input"] as Dictionary<string, object> : new Dictionary<string, object>();
-                                }
+                                result.TextContent += text.ToString();
                             }
+                        }
+                        else if (type == "thinking")
+                        {
+                            var thinking = item["thinking"];
+                            if (thinking != null)
+                            {
+                                result.ThinkingContent += thinking.ToString();
+                            }
+                        }
+                        else if (type == "tool_use")
+                        {
+                            result.HasToolUse = true;
+                            result.ToolUseId = item["id"]?.ToString() ?? "";
+                            result.ToolName = item["name"]?.ToString() ?? "";
+
+                            var input = item["input"];
+                            result.ToolInput = input != null ? input.ToObject<Dictionary<string, object>>() : new Dictionary<string, object>();
                         }
                     }
                 }
@@ -763,260 +858,87 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private string BuildUserFriendlyError(string provider, long statusCode, string error, string responseBody)
         {
-            var errorMsg = new System.Text.StringBuilder();
-
-            // Get log file path safely
-            string logFilePath = "Logs/GameSmith/";
-            try
-            {
-                logFilePath = GameSmithLogger.GetLogFilePath() ?? "Logs/GameSmith/";
-            }
-            catch
-            {
-                // If logger fails, use default path
-            }
-
-            // Null-safe error checking
-            string errorSafe = error ?? "";
-
-            // Check for common Ollama issues first
-            if (provider == "Ollama")
-            {
-                // HTTP Status 0 typically means connection error
-                if (statusCode == 0 || errorSafe.Contains("Connection refused") || errorSafe.Contains("Failed to connect"))
-                {
-                    errorMsg.AppendLine("❌ Cannot connect to Ollama");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine("Ollama is not running or not accessible.");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine("Please ensure:");
-                    errorMsg.AppendLine("1. Ollama is installed and running");
-                    errorMsg.AppendLine("2. Ollama is listening on http://localhost:11434");
-                    errorMsg.AppendLine("3. Try running: curl http://localhost:11434/api/tags");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                    return errorMsg.ToString();
-                }
-
-                if (statusCode == 404)
-                {
-                    string modelName = "the selected model";
-                    try
-                    {
-                        if (config != null)
-                        {
-                            modelName = config.GetCurrentModel();
-                        }
-                    }
-                    catch
-                    {
-                        // Use default if config fails
-                    }
-
-                    errorMsg.AppendLine("❌ Model not found in Ollama");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine($"The model '{modelName}' is not available.");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine("Please:");
-                    errorMsg.AppendLine("1. Check available models: ollama list");
-                    errorMsg.AppendLine($"2. Pull the model: ollama pull {modelName}");
-                    errorMsg.AppendLine("3. Or select a different model in Settings");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                    return errorMsg.ToString();
-                }
-            }
-
-            // Check for Gemini-specific issues
-            if (provider == "Gemini")
-            {
-                if (statusCode == 400)
-                {
-                    if (errorSafe.Contains("API_KEY") || responseBody.Contains("API_KEY"))
-                    {
-                        errorMsg.AppendLine("❌ Invalid Gemini API Key");
-                        errorMsg.AppendLine();
-                        errorMsg.AppendLine("The API key format is incorrect or missing.");
-                        errorMsg.AppendLine();
-                        errorMsg.AppendLine("Please:");
-                        errorMsg.AppendLine("1. Click Settings button");
-                        errorMsg.AppendLine("2. Get a new API key from: https://aistudio.google.com/app/apikey");
-                        errorMsg.AppendLine("3. Enter the key in the Gemini API Key field");
-                        errorMsg.AppendLine();
-                        errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                        return errorMsg.ToString();
-                    }
-                }
-
-                if (statusCode == 404)
-                {
-                    string modelName = "the selected model";
-                    try
-                    {
-                        if (config != null)
-                        {
-                            modelName = config.GetCurrentModel();
-                        }
-                    }
-                    catch { }
-
-                    errorMsg.AppendLine("❌ Gemini Model Not Found");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine($"The model '{modelName}' is not available or doesn't exist.");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine("Please:");
-                    errorMsg.AppendLine("1. Check the model name is correct");
-                    errorMsg.AppendLine("2. Try using 'gemini-1.5-pro-latest' or 'gemini-1.5-flash-latest'");
-                    errorMsg.AppendLine("3. Select a different model in Settings");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                    return errorMsg.ToString();
-                }
-
-                if (statusCode == 429)
-                {
-                    errorMsg.AppendLine("❌ Gemini API Quota Exceeded");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine("You've reached your API quota or rate limit.");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine("Please:");
-                    errorMsg.AppendLine("1. Wait a moment before trying again");
-                    errorMsg.AppendLine("2. Check your quota at: https://aistudio.google.com/app/apikey");
-                    errorMsg.AppendLine("3. Consider upgrading your API plan if needed");
-                    errorMsg.AppendLine();
-                    errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                    return errorMsg.ToString();
-                }
-            }
-
-            // Handle authentication errors
-            if (statusCode == 401 || statusCode == 403)
-            {
-                errorMsg.AppendLine($"❌ Authentication Failed ({provider})");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("Your API key appears to be invalid or missing.");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("Please:");
-                errorMsg.AppendLine("1. Click Settings button");
-                errorMsg.AppendLine($"2. Verify your {provider} API key");
-                errorMsg.AppendLine("3. Get a new key if needed");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                return errorMsg.ToString();
-            }
-
-            // Handle network errors
-            if (errorSafe.Contains("Couldn't resolve host") || errorSafe.Contains("Could not resolve host"))
-            {
-                string apiUrl = "the configured API URL";
-                try
-                {
-                    if (config != null && !string.IsNullOrEmpty(config.apiUrl))
-                    {
-                        apiUrl = config.apiUrl;
-                    }
-                }
-                catch
-                {
-                    // Use default if config fails
-                }
-
-                errorMsg.AppendLine("❌ Network Error - Cannot reach server");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("Cannot connect to the API endpoint.");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("Please check:");
-                errorMsg.AppendLine("1. Your internet connection");
-                errorMsg.AppendLine($"2. API URL in settings: {apiUrl}");
-                errorMsg.AppendLine("3. Firewall/proxy settings");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                return errorMsg.ToString();
-            }
-
-            // Handle timeout errors
-            if (errorSafe.Contains("timeout") || errorSafe.Contains("Timeout"))
-            {
-                errorMsg.AppendLine("❌ Request Timeout");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("The request took too long to complete.");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("This could mean:");
-                errorMsg.AppendLine("1. The server is slow or overloaded");
-                errorMsg.AppendLine("2. Your internet connection is slow");
-                errorMsg.AppendLine("3. The model is taking too long to respond");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("Try again or use a faster model.");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                return errorMsg.ToString();
-            }
-
-            // Handle rate limiting
-            if (statusCode == 429)
-            {
-                errorMsg.AppendLine($"❌ Rate Limit Exceeded ({provider})");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("You've made too many requests.");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine("Please wait a moment and try again.");
-                errorMsg.AppendLine();
-                errorMsg.AppendLine($"📝 Check log file for details: {logFilePath}");
-                return errorMsg.ToString();
-            }
-
-            // Generic error with details
-            errorMsg.AppendLine($"❌ Request Failed ({provider ?? "Unknown"})");
-            errorMsg.AppendLine();
-            errorMsg.AppendLine($"HTTP Status: {statusCode}");
-            errorMsg.AppendLine($"Error: {errorSafe}");
-
-            // Try to parse error from response body
+            // Try to extract server message from response body first
             if (!string.IsNullOrEmpty(responseBody))
             {
                 try
                 {
-                    var errorJson = MiniJSON.Json.Deserialize(responseBody) as Dictionary<string, object>;
-                    if (errorJson != null)
+                    var errorJson = JObject.Parse(responseBody);
+                    var errorObj = errorJson["error"];
+
+                    if (errorObj != null)
                     {
-                        if (errorJson.ContainsKey("error"))
+                        // Handle error as object with message field
+                        var message = errorObj["message"];
+                        if (message != null)
                         {
-                            var errorObj = errorJson["error"];
-                            if (errorObj is Dictionary<string, object> errDict)
-                            {
-                                if (errDict.ContainsKey("message"))
-                                {
-                                    errorMsg.AppendLine();
-                                    errorMsg.AppendLine($"Server message: {errDict["message"]}");
-                                }
-                            }
-                            else if (errorObj is string errStr)
-                            {
-                                errorMsg.AppendLine();
-                                errorMsg.AppendLine($"Server message: {errStr}");
-                            }
+                            return message.ToString();
+                        }
+
+                        // Handle error as direct string
+                        if (errorObj.Type == JTokenType.String)
+                        {
+                            return errorObj.ToString();
                         }
                     }
                 }
                 catch
                 {
-                    // Couldn't parse error, that's okay
+                    // Failed to parse, continue to fallback
                 }
             }
 
-            errorMsg.AppendLine();
-            errorMsg.AppendLine($"📝 Full details in log file: {logFilePath}");
+            // Fallback to simple error messages
+            string errorSafe = error ?? "Unknown error";
 
-            return errorMsg.ToString();
+            // Connection errors
+            if (statusCode == 0 || errorSafe.Contains("Connection refused") || errorSafe.Contains("Failed to connect"))
+            {
+                return $"Cannot connect to {provider}. Make sure the service is running.";
+            }
+
+            // Authentication errors
+            if (statusCode == 401 || statusCode == 403)
+            {
+                return "Invalid or missing API key.";
+            }
+
+            // Not found errors
+            if (statusCode == 404)
+            {
+                return $"Model not found. Check your model selection in Settings.";
+            }
+
+            // Rate limiting
+            if (statusCode == 429)
+            {
+                return "Rate limit exceeded. Please wait and try again.";
+            }
+
+            // Timeout
+            if (errorSafe.Contains("timeout") || errorSafe.Contains("Timeout"))
+            {
+                return "Request timed out. Try again or use a faster model.";
+            }
+
+            // Network errors
+            if (errorSafe.Contains("Couldn't resolve host") || errorSafe.Contains("Could not resolve host"))
+            {
+                return "Cannot reach server. Check your internet connection.";
+            }
+
+            // Generic error
+            return errorSafe;
         }
     }
 
     /// <summary>
-    /// Represents an AI response with potential tool uses
+    /// Represents an AI response with potential tool uses and thinking
     /// </summary>
     public class AIResponse
     {
         public string TextContent = "";
+        public string ThinkingContent = "";
         public List<object> ContentBlocks = new List<object>();
         public bool HasToolUse = false;
         public string ToolUseId = "";
