@@ -12,6 +12,12 @@
 
 ---
 
+### 🔌 Unity MCP Powered
+
+Unity GameSmith bundles the open-source [unity-mcp](https://github.com/muammar-yacoob/unity-mcp)[^unity-mcp] server, giving the editor access to 30+ Model Context Protocol tools for scene management, automation, and testing right from the dockable chat window.
+
+---
+
 ## 🚀 Features
 
 | Feature | Description |
