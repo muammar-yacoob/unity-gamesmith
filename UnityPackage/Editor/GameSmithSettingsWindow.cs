@@ -27,6 +27,7 @@ namespace SparkGames.UnityGameSmith.Editor
         private System.Collections.Generic.List<MCPTool> cachedMCPTools = null;
         private bool isLoadingTools = false;
         private Vector2 toolsScrollPosition = Vector2.zero;
+        private int selectedToolIndex = -1;
 
         [MenuItem("Tools/GameSmith/Configure Settings", false, 2)]
         public static void ShowWindow()
@@ -448,10 +449,23 @@ namespace SparkGames.UnityGameSmith.Editor
                             GUILayout.MaxHeight(300)
                         );
 
-                        // Display each tool name in a simple list
-                        foreach (var tool in sortedTools)
+                        for (int i = 0; i < sortedTools.Count; i++)
                         {
+                            var tool = sortedTools[i];
+
                             Rect rowRect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+                            if (selectedToolIndex == i)
+                            {
+                                EditorGUI.DrawRect(rowRect, new Color(0.25f, 0.45f, 0.75f, 0.25f));
+                            }
+
+                            if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+                            {
+                                selectedToolIndex = i;
+                                GUI.FocusControl(null);
+                                Repaint();
+                            }
+
                             var color = GetToolColor(tool.Name);
 
                             float squareSize = 10f;
@@ -464,6 +478,16 @@ namespace SparkGames.UnityGameSmith.Editor
                         }
 
                         EditorGUILayout.EndScrollView();
+
+                         if (selectedToolIndex >= 0 && selectedToolIndex < sortedTools.Count)
+                         {
+                             var example = GetExampleCommand(sortedTools[selectedToolIndex].Name);
+                             if (!string.IsNullOrEmpty(example))
+                             {
+                                 EditorGUILayout.Space(6);
+                                 EditorGUILayout.HelpBox(example, MessageType.Info);
+                             }
+                         }
                     }
                     else if (cachedMCPTools != null && cachedMCPTools.Count == 0)
                     {
@@ -945,6 +969,51 @@ namespace SparkGames.UnityGameSmith.Editor
                 return new Color(0.95f, 0.8f, 0.2f, 1f); // yellow
 
             return new Color(0.35f, 0.6f, 0.9f, 1f); // blue (organization/info)
+        }
+
+        private string GetExampleCommand(string toolName)
+        {
+            var name = toolName.ToLowerInvariant();
+
+            if (name.Contains("get_hierarchy"))
+                return "Example: list objects";
+
+            if (name.Contains("save_scene"))
+                return "Example: save scene";
+
+            if (name.Contains("load_scene"))
+                return "Example: load scene MainMenu";
+
+            if (name.Contains("enter_play_mode"))
+                return "Example: enter play mode";
+
+            if (name.Contains("exit_play_mode"))
+                return "Example: exit play mode";
+
+            if (name.Contains("refresh_assets"))
+                return "Example: refresh assets";
+
+            if (name.Contains("get_console_logs"))
+                return "Example: show console logs";
+
+            if (name.Contains("create") && name.Contains("object"))
+                return "Example: create sphere";
+
+            if (name.Contains("delete") && name.Contains("object"))
+                return "Example: delete Cube";
+
+            if (name.Contains("set_timescale"))
+                return "Example: set timescale 0.5";
+
+            if (name.Contains("transform"))
+                return "Example: move Player to 0,5,10";
+
+            if (name.Contains("validate"))
+                return "Example: validate script PlayerController";
+
+            // Fallback: generate a basic phrase from the tool name
+            var words = toolName.Replace("unity_", "").Replace("_", " ");
+            return $"Tool command: {words}";
         }
     }
 }
