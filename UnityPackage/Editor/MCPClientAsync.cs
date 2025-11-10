@@ -696,7 +696,7 @@ namespace SparkGames.UnityGameSmith.Editor
                                         return toolResult["message"].ToString();
                                     }
                                 }
-                                catch (Exception ex)
+                                catch
                                 {
                                     // Not JSON, return as-is
                                 }
