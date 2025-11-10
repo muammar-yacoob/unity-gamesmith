@@ -618,10 +618,12 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private void SendMessage()
         {
-            var message = messageInput.value;
-            if (string.IsNullOrWhiteSpace(message)) return;
+            try
+            {
+                var message = messageInput.value;
+                if (string.IsNullOrWhiteSpace(message)) return;
 
-            // Check for retry/continue commands
+                // Check for retry/continue commands
             var messageLower = message.Trim().ToLower();
             if (IsRetryCommand(messageLower))
             {
@@ -731,36 +733,45 @@ namespace SparkGames.UnityGameSmith.Editor
             client.SendMessage(message, systemContext, tools,
                 onSuccess: (response) => HandleAIResponse(response),
                 onError: (error) => HandleError(error));
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith] SendMessage error: {ex.Message}\n{ex.StackTrace}");
+                HideProcessingIndicator();
+                HandleError($"Failed to send message: {ex.Message}");
+            }
         }
 
         private void HandleAIResponse(AIResponse response)
         {
-            // Remove processing indicator
-            HideProcessingIndicator();
-
-            // Track token usage
-            if (response != null && response.TotalTokens > 0)
+            try
             {
-                sessionInputTokens += response.InputTokens;
-                sessionOutputTokens += response.OutputTokens;
-                UpdateTokenDisplay();
-            }
+                // Remove processing indicator
+                HideProcessingIndicator();
 
-            // Display thinking content in a separate bubble if present
-            if (!string.IsNullOrEmpty(response.ThinkingContent) && !string.IsNullOrWhiteSpace(response.ThinkingContent))
-            {
-                AddThinkingBubble(response.ThinkingContent);
-            }
+                // Track token usage
+                if (response != null && response.TotalTokens > 0)
+                {
+                    sessionInputTokens += response.InputTokens;
+                    sessionOutputTokens += response.OutputTokens;
+                    UpdateTokenDisplay();
+                }
 
-            // Display text content if any (but not if it's a tool use)
-            if (!string.IsNullOrEmpty(response.TextContent) && !response.HasToolUse)
-            {
-                AddMessageBubble(response.TextContent, false);
-                history.AddMessage(ChatMessage.Role.Assistant, response.TextContent);
-            }
+                // Display thinking content in a separate bubble if present
+                if (!string.IsNullOrEmpty(response.ThinkingContent) && !string.IsNullOrWhiteSpace(response.ThinkingContent))
+                {
+                    AddThinkingBubble(response.ThinkingContent);
+                }
 
-            // Handle tool use - support multiple tool uses in one response
-            if (response.HasToolUse)
+                // Display text content if any (but not if it's a tool use)
+                if (!string.IsNullOrEmpty(response.TextContent) && !response.HasToolUse)
+                {
+                    AddMessageBubble(response.TextContent, false);
+                    history.AddMessage(ChatMessage.Role.Assistant, response.TextContent);
+                }
+
+                // Handle tool use - support multiple tool uses in one response
+                if (response.HasToolUse)
             {
                 // Execute tool(s) via MCP
                 if (mcpClient != null && (mcpClient.IsConnected || (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)))
@@ -828,6 +839,12 @@ namespace SparkGames.UnityGameSmith.Editor
                     sendButton.SetEnabled(true);
                 }
                 messageInput.Focus();
+            }
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith] HandleAIResponse error: {ex.Message}\n{ex.StackTrace}");
+                HandleError($"Internal error: {ex.Message}");
             }
         }
 
@@ -1054,6 +1071,32 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
+        private void ScrollToBottom()
+        {
+            if (chatScroll == null) return;
+
+            // Use delayCall to ensure layout is computed
+            EditorApplication.delayCall += () =>
+            {
+                try
+                {
+                    if (chatScroll != null && chatScroll.contentContainer != null)
+                    {
+                        var contentHeight = chatScroll.contentContainer.layout.height;
+                        if (contentHeight > 0)
+                        {
+                            chatScroll.scrollOffset = new Vector2(0, contentHeight);
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    // Silently ignore scroll errors to prevent blocking the UI
+                    UnityEngine.Debug.LogWarning($"[GameSmith] Scroll failed: {ex.Message}");
+                }
+            };
+        }
+
         private string BuildSystemContext(List<MCPTool> tools)
         {
             string basePrompt = (tools != null && tools.Count > 0)
@@ -1065,29 +1108,30 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private void AddMessageBubble(string text, bool isUser)
         {
-            if (messagesContainer == null)
+            try
             {
-                UnityEngine.Debug.LogWarning("[GameSmith] Cannot add message bubble - messagesContainer is null");
-                return;
-            }
-
-            var bubble = new VisualElement();
-            bubble.AddToClassList(isUser ? "message-user" : "message-assistant");
-
-            var label = new Label(text);
-            label.AddToClassList(isUser ? "message-user-text" : "message-assistant-text");
-
-            bubble.Add(label);
-            messagesContainer.Add(bubble);
-
-            // Scroll to bottom - use double delayCall to ensure layout is complete
-            EditorApplication.delayCall += () =>
-            {
-                EditorApplication.delayCall += () =>
+                if (messagesContainer == null)
                 {
-                    chatScroll?.ScrollTo(bubble);
-                };
-            };
+                    UnityEngine.Debug.LogWarning("[GameSmith] Cannot add message bubble - messagesContainer is null");
+                    return;
+                }
+
+                var bubble = new VisualElement();
+                bubble.AddToClassList(isUser ? "message-user" : "message-assistant");
+
+                var label = new Label(text ?? "");
+                label.AddToClassList(isUser ? "message-user-text" : "message-assistant-text");
+
+                bubble.Add(label);
+                messagesContainer.Add(bubble);
+
+                // Scroll to bottom after layout is complete
+                ScrollToBottom();
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError($"[GameSmith] AddMessageBubble error: {ex.Message}");
+            }
         }
 
         private void AddThinkingBubble(string thinkingContent)
@@ -1122,14 +1166,8 @@ namespace SparkGames.UnityGameSmith.Editor
 
             messagesContainer.Add(bubble);
 
-            // Scroll to bottom - use double delayCall to ensure layout is complete
-            EditorApplication.delayCall += () =>
-            {
-                EditorApplication.delayCall += () =>
-                {
-                    chatScroll?.ScrollTo(bubble);
-                };
-            };
+            // Scroll to bottom after layout is complete
+            ScrollToBottom();
         }
 
         private void AddErrorBubble(string text)
@@ -1150,14 +1188,8 @@ namespace SparkGames.UnityGameSmith.Editor
             bubble.Add(label);
             messagesContainer.Add(bubble);
 
-            // Scroll to bottom - use double delayCall to ensure layout is complete
-            EditorApplication.delayCall += () =>
-            {
-                EditorApplication.delayCall += () =>
-                {
-                    chatScroll?.ScrollTo(bubble);
-                };
-            };
+            // Scroll to bottom after layout is complete
+            ScrollToBottom();
         }
 
         private void ClearChat()
