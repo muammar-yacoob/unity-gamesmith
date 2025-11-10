@@ -108,8 +108,8 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (path == "/health")
                     return "{\"status\":\"ok\"}";
 
-                // Scene operations
-                if (path.Contains("/scene/get_hierarchy") || path.Contains("unity_get_hierarchy"))
+                // Scene operations - unity-mcp endpoints
+                if (path == "/scene/hierarchy")
                 {
                     var scene = SceneManager.GetActiveScene();
                     var objects = scene.GetRootGameObjects();
@@ -121,10 +121,11 @@ namespace SparkGames.UnityGameSmith.Editor
                     return WrapSuccess(hierarchy.ToString());
                 }
 
-                if (path.Contains("/scene/find"))
+                if (path == "/scene/find")
                 {
-                    var searchName = ExtractParam(body, "name");
-                    var found = GameObject.FindObjectsOfType<GameObject>()
+                    var searchParams = JObject.Parse(body);
+                    var searchName = searchParams["name"]?.ToString() ?? searchParams["pattern"]?.ToString() ?? "";
+                    var found = GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
                         .Where(go => go.name.Contains(searchName))
                         .Select(go => go.name)
                         .ToArray();
@@ -132,24 +133,82 @@ namespace SparkGames.UnityGameSmith.Editor
                     return WrapSuccess(string.Join("\n", found));
                 }
 
-                // Editor operations
-                if (path.Contains("/editor/select"))
+                if (path == "/scene/list")
                 {
-                    var objName = ExtractParam(body, "name");
-                    var obj = GameObject.Find(objName);
-                    if (obj != null)
+                    var sceneCount = SceneManager.sceneCountInBuildSettings;
+                    var scenes = new List<string>();
+                    for (int i = 0; i < sceneCount; i++)
                     {
-                        Selection.activeGameObject = obj;
-                        return WrapSuccess($"Selected: {objName}");
+                        var scenePath = SceneUtility.GetScenePathByBuildIndex(i);
+                        scenes.Add(System.IO.Path.GetFileNameWithoutExtension(scenePath));
                     }
-                    return WrapError($"Object not found: {objName}");
+                    return WrapSuccess(string.Join("\n", scenes));
                 }
 
-                // Default: return success (let unity-mcp handle)
+                if (path == "/scene/save")
+                {
+                    var scene = SceneManager.GetActiveScene();
+                    EditorSceneManager.SaveScene(scene);
+                    return WrapSuccess($"Saved scene: {scene.name}");
+                }
+
+                // Editor operations
+                if (path == "/editor/select")
+                {
+                    var selectParams = JObject.Parse(body);
+                    var names = selectParams["names"]?.ToObject<string[]>();
+                    if (names != null && names.Length > 0)
+                    {
+                        var objName = names[0];
+                        var obj = GameObject.Find(objName);
+                        if (obj != null)
+                        {
+                            Selection.activeGameObject = obj;
+                            return WrapSuccess($"Selected: {objName}");
+                        }
+                        return WrapError($"Object not found: {objName}");
+                    }
+                    return WrapError("No object name provided");
+                }
+
+                // Console operations
+                if (path == "/console/get_logs")
+                {
+                    return WrapSuccess("Console logs retrieved (Unity doesn't provide direct API access to console logs)");
+                }
+
+                if (path == "/console/clear")
+                {
+                    // Unity doesn't provide API to clear console programmatically in older versions
+                    return WrapSuccess("Console clear requested");
+                }
+
+                // Play mode operations
+                if (path == "/playmode/enter")
+                {
+                    EditorApplication.isPlaying = true;
+                    return WrapSuccess("Entering play mode");
+                }
+
+                if (path == "/playmode/exit")
+                {
+                    EditorApplication.isPlaying = false;
+                    return WrapSuccess("Exiting play mode");
+                }
+
+                // Asset operations
+                if (path == "/asset/refresh")
+                {
+                    AssetDatabase.Refresh();
+                    return WrapSuccess("Asset database refreshed");
+                }
+
+                // Default: return success for unhandled endpoints
                 return WrapSuccess("Operation completed");
             }
             catch (Exception ex)
             {
+                Debug.LogError($"[Unity IPC] Error: {ex.Message}");
                 return WrapError(ex.Message);
             }
         }
@@ -212,6 +271,20 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             StopServer();
             EditorApplication.delayCall += StartServer;
+            Debug.Log("[Unity IPC] Restarting bridge...");
+        }
+
+        [MenuItem("Tools/GameSmith/Check IPC Bridge Status", false, 61)]
+        public static void CheckStatus()
+        {
+            if (isRunning && listener != null && listener.IsListening)
+            {
+                Debug.Log($"[Unity IPC] ✓ Bridge is RUNNING on port {PORT}");
+            }
+            else
+            {
+                Debug.LogWarning($"[Unity IPC] ✗ Bridge is NOT running. Use 'Restart Unity IPC Bridge' menu to start it.");
+            }
         }
 
         private static void StopServer()

@@ -919,19 +919,13 @@ namespace SparkGames.UnityGameSmith.Editor
                     connected = success;
                 });
 
-                // Wait for connection (max 10 seconds)
+                // Wait for connection to complete (max 10 seconds)
                 float timeout = 10f;
                 float elapsed = 0f;
                 while (!connected && elapsed < timeout)
                 {
                     await UniTask.Delay(100);
                     elapsed += 0.1f;
-
-                    if (tempClient.IsConnected)
-                    {
-                        connected = true;
-                        break;
-                    }
                 }
 
                 if (connected && tempClient.IsConnected)

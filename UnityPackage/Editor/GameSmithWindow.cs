@@ -1096,39 +1096,62 @@ If the result indicates success, acknowledge it briefly. If there's an error or 
 
             if (mcpClient == null)
             {
-                UnityEngine.Debug.LogError("[MCP Test] MCP client is null - window may not be open");
-                EditorUtility.DisplayDialog("MCP Test", "MCP client not found. Please open GameSmith window first.", "OK");
+                UnityEngine.Debug.LogError("[MCP Test] GameSmith window not open");
+                EditorUtility.DisplayDialog("MCP Test", "Open GameSmith window first (Tools → GameSmith → Open Window)", "OK");
                 return;
             }
 
-            UnityEngine.Debug.Log("[MCP Test] ===== MCP Connection Test =====");
-            UnityEngine.Debug.Log($"[MCP Test] IsConnected: {mcpClient.IsConnected}");
-            UnityEngine.Debug.Log($"[MCP Test] Tools Count: {mcpClient.AvailableTools?.Count ?? 0}");
-
-            if (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)
+            if (mcpClient.AvailableTools == null || mcpClient.AvailableTools.Count == 0)
             {
-                UnityEngine.Debug.Log($"[MCP Test] Testing unity_get_hierarchy tool...");
+                UnityEngine.Debug.LogError("[MCP Test] No tools available");
+                EditorUtility.DisplayDialog("MCP Test Failed", "No MCP tools loaded. Check Console for errors.", "OK");
+                return;
+            }
 
-                mcpClient.CallToolAsync("unity_get_hierarchy", new Dictionary<string, object>(),
-                    (result) =>
+            // Get actual Unity scene object count
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var rootObjects = scene.GetRootGameObjects();
+            int actualCount = 0;
+            foreach (var root in rootObjects)
+            {
+                actualCount += CountChildren(root.transform);
+            }
+
+            UnityEngine.Debug.Log($"[MCP Test] Unity scene has {actualCount} objects");
+            UnityEngine.Debug.Log($"[MCP Test] Calling unity_get_hierarchy via MCP...");
+
+            mcpClient.CallToolAsync("unity_get_hierarchy", new Dictionary<string, object>(),
+                (result) =>
+                {
+                    // Parse MCP result and count objects
+                    var lines = result.Split('\n');
+                    var mcpCount = lines.Where(l => l.Trim().StartsWith("-")).Count();
+
+                    UnityEngine.Debug.Log($"[MCP Test] MCP returned {mcpCount} objects");
+
+                    if (mcpCount == actualCount)
                     {
-                        UnityEngine.Debug.Log($"[MCP Test] ✓ Tool executed successfully!");
-                        UnityEngine.Debug.Log($"[MCP Test] Result:\n{result}");
-
-                        // Parse and count objects
-                        var lines = result.Split('\n');
-                        var objectCount = lines.Where(l => l.Trim().StartsWith("-")).Count();
-
+                        UnityEngine.Debug.Log($"[MCP Test] ✓ SUCCESS - Counts match!");
                         EditorUtility.DisplayDialog("MCP Test Success",
-                            $"MCP is working!\n\nFound {objectCount} objects in scene.\n\nCheck Console for full hierarchy.",
+                            $"✓ MCP Pipeline Working!\n\nUnity Scene: {actualCount} objects\nMCP Result: {mcpCount} objects\n\nAll systems operational.",
                             "OK");
-                    });
-            }
-            else
-            {
-                UnityEngine.Debug.LogError("[MCP Test] No tools available!");
-                EditorUtility.DisplayDialog("MCP Test Failed", "No MCP tools available. Server may not be running.", "OK");
-            }
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogWarning($"[MCP Test] ⚠ Count mismatch - Unity: {actualCount}, MCP: {mcpCount}");
+                        EditorUtility.DisplayDialog("MCP Test Warning",
+                            $"MCP is connected but counts don't match:\n\nUnity Scene: {actualCount} objects\nMCP Result: {mcpCount} objects\n\nCheck Console for details.",
+                            "OK");
+                    }
+                });
+        }
+
+        private static int CountChildren(Transform t)
+        {
+            int count = 1; // Count this object
+            foreach (Transform child in t)
+                count += CountChildren(child);
+            return count;
         }
 
         [MenuItem("Tools/GameSmith/Debug MCP State", false, 101)]

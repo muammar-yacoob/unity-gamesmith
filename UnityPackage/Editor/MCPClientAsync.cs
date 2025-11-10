@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using Newtonsoft.Json.Linq;
 
 namespace SparkGames.UnityGameSmith.Editor
 {
@@ -667,27 +668,39 @@ namespace SparkGames.UnityGameSmith.Editor
                             if (firstContent != null && firstContent.ContainsKey("text"))
                             {
                                 string textContent = firstContent["text"].ToString();
-                                
-                                // Check if the text content is JSON with an error
+
+                                // The text field contains a JSON-encoded string, decode it first
                                 try
                                 {
-                                    var toolResult = MiniJSON.Json.Deserialize(textContent) as Dictionary<string, object>;
-                                    if (toolResult != null && toolResult.ContainsKey("error"))
+                                    // First: deserialize the string to remove JSON string encoding
+                                    string decodedJson = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(textContent);
+
+                                    // Second: parse the actual JSON object
+                                    var toolResult = JObject.Parse(decodedJson);
+
+                                    // Check for errors
+                                    if (toolResult["error"] != null)
                                     {
                                         return $"Tool Error: {toolResult["error"]}";
                                     }
-                                    if (toolResult != null && toolResult.ContainsKey("success") && 
-                                        toolResult["success"].ToString().ToLower() == "false" && 
-                                        toolResult.ContainsKey("error"))
+                                    if (toolResult["success"] != null &&
+                                        toolResult["success"].ToString().ToLower() == "false" &&
+                                        toolResult["error"] != null)
                                     {
                                         return $"Tool Error: {toolResult["error"]}";
+                                    }
+
+                                    // Extract message field if present (unity-mcp format)
+                                    if (toolResult["message"] != null)
+                                    {
+                                        return toolResult["message"].ToString();
                                     }
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
                                     // Not JSON, return as-is
                                 }
-                                
+
                                 return textContent;
                             }
                         }
