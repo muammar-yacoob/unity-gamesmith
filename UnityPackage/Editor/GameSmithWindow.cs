@@ -121,6 +121,9 @@ namespace SparkGames.UnityGameSmith.Editor
         // Store last user message for retry functionality
         private string lastUserMessage = "";
 
+        // Processing indicator bubble
+        private VisualElement processingBubble = null;
+
         [MenuItem("Tools/GameSmith/GameSmith AI &g", false, 1)]
         public static void ShowWindow()
         {
@@ -143,6 +146,9 @@ namespace SparkGames.UnityGameSmith.Editor
         {
             // Set singleton instance
             Instance = this;
+
+            // Clear system prompt cache to always load latest
+            SystemPrompts.ClearCache();
 
             // Load config and history
             config = GameSmithConfig.GetOrCreate();
@@ -455,6 +461,12 @@ namespace SparkGames.UnityGameSmith.Editor
             }
 
             // Setup button callbacks
+            var rulesButton = root.Q<Button>("rules-button");
+            if (rulesButton != null)
+            {
+                rulesButton.clicked += () => GameSmithRulesWindow.ShowWindow();
+            }
+
             var settingsButton = root.Q<Button>("settings-button");
             if (settingsButton != null)
             {
@@ -471,7 +483,7 @@ namespace SparkGames.UnityGameSmith.Editor
             if (header != null)
             {
                 var viewLogsButton = new Button(() => GameSmithLogger.OpenLogFolder());
-                viewLogsButton.text = "📝";
+                viewLogsButton.text = "📊";
                 viewLogsButton.tooltip = "View Logs";
                 viewLogsButton.AddToClassList("icon-button");
                 header.Add(viewLogsButton);
@@ -698,6 +710,9 @@ namespace SparkGames.UnityGameSmith.Editor
             // Build system context using externalized prompts
             string systemContext = BuildSystemContext(tools);
 
+            // Show processing indicator
+            ShowProcessingIndicator();
+
             // Send to AI
             client.SendMessage(message, systemContext, tools,
                 onSuccess: (response) => HandleAIResponse(response),
@@ -706,6 +721,9 @@ namespace SparkGames.UnityGameSmith.Editor
 
         private void HandleAIResponse(AIResponse response)
         {
+            // Remove processing indicator
+            HideProcessingIndicator();
+
             // Display thinking content in a separate bubble if present
             if (!string.IsNullOrEmpty(response.ThinkingContent) && !string.IsNullOrWhiteSpace(response.ThinkingContent))
             {
@@ -719,42 +737,60 @@ namespace SparkGames.UnityGameSmith.Editor
                 history.AddMessage(ChatMessage.Role.Assistant, response.TextContent);
             }
 
-            // Handle tool use
+            // Handle tool use - support multiple tool uses in one response
             if (response.HasToolUse)
             {
-                // Execute tool via MCP
+                // Execute tool(s) via MCP
                 if (mcpClient != null && (mcpClient.IsConnected || (mcpClient.AvailableTools != null && mcpClient.AvailableTools.Count > 0)))
                 {
-                    mcpClient.CallToolAsync(response.ToolName, response.ToolInput, (toolResult) =>
+                    // Check if we have multiple tool uses
+                    var toolUses = response.ToolUses != null && response.ToolUses.Count > 0
+                        ? response.ToolUses
+                        : new List<ToolUse> { new ToolUse { Id = response.ToolUseId, Name = response.ToolName, Input = response.ToolInput } };
+
+                    if (toolUses.Count == 1)
                     {
-                        // For Ollama, OpenAI, and Grok, display result and re-enable input
-                        if (client.ActiveProvider.Contains("Ollama") || client.ActiveProvider.Contains("OpenAI") || client.ActiveProvider.Contains("Grok"))
+                        // Single tool use - use existing logic
+                        var toolUse = toolUses[0];
+                        mcpClient.CallToolAsync(toolUse.Name, toolUse.Input, (toolResult) =>
                         {
-                            // Parse and format the tool result for display
-                            string formattedResult = FormatToolResult(response.ToolName, toolResult);
-                            AddMessageBubble(formattedResult, false);
-                            history.AddMessage(ChatMessage.Role.Assistant, formattedResult);
-
-                            // Re-enable input for next message
-                            messageInput.SetEnabled(true);
-                            if (sendButton != null)
+                            // For Ollama, OpenAI, and Grok, display result and re-enable input
+                            if (client.ActiveProvider.Contains("Ollama") || client.ActiveProvider.Contains("OpenAI") || client.ActiveProvider.Contains("Grok"))
                             {
-                                sendButton.SetEnabled(true);
-                            }
-                            messageInput.Focus();
-                        }
-                        else
-                        {
-                            // For Anthropic/Gemini, continue conversation with tool result
-                            var continuationTools = mcpClient.AvailableTools;
-                            var continuationContext = BuildSystemContext(continuationTools);
+                                // Parse and format the tool result for display
+                                string formattedResult = FormatToolResult(toolUse.Name, toolResult);
+                                AddMessageBubble(formattedResult, false);
+                                history.AddMessage(ChatMessage.Role.Assistant, formattedResult);
 
-                            // Send tool result back to AI to continue conversation
-                            client.SendToolResult(response.ToolUseId, toolResult, continuationContext, continuationTools,
-                                onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
-                                onError: (error) => HandleError(error));
-                        }
-                    });
+                                // Re-enable input for next message
+                                messageInput.SetEnabled(true);
+                                if (sendButton != null)
+                                {
+                                    sendButton.SetEnabled(true);
+                                }
+                                messageInput.Focus();
+                            }
+                            else
+                            {
+                                // For Anthropic/Gemini, continue conversation with tool result
+                                var continuationTools = mcpClient.AvailableTools;
+                                var continuationContext = BuildSystemContext(continuationTools);
+
+                                // Show processing indicator
+                                ShowProcessingIndicator();
+
+                                // Send tool result back to AI to continue conversation
+                                client.SendToolResult(toolUse.Id, toolResult, continuationContext, continuationTools,
+                                    onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
+                                    onError: (error) => HandleError(error));
+                            }
+                        });
+                    }
+                    else
+                    {
+                        // Multiple tool uses - execute all and send results together
+                        ExecuteMultipleTools(toolUses);
+                    }
                 }
                 else
                 {
@@ -886,8 +922,65 @@ namespace SparkGames.UnityGameSmith.Editor
             return cleanedResult;
         }
 
+        private void ExecuteMultipleTools(List<ToolUse> toolUses)
+        {
+            // Track tool execution results
+            var toolResults = new Dictionary<string, string>();
+            int completedCount = 0;
+            int totalCount = toolUses.Count;
+
+            // Execute each tool
+            foreach (var toolUse in toolUses)
+            {
+                mcpClient.CallToolAsync(toolUse.Name, toolUse.Input, (toolResult) =>
+                {
+                    // Store result
+                    toolResults[toolUse.Id] = toolResult;
+                    completedCount++;
+
+                    // Check if all tools completed
+                    if (completedCount == totalCount)
+                    {
+                        // All tools executed, send results back to AI
+                        SendMultipleToolResults(toolResults);
+                    }
+                });
+            }
+        }
+
+        private void SendMultipleToolResults(Dictionary<string, string> toolResults)
+        {
+            // Build content blocks with all tool results
+            var contentBlocks = new List<object>();
+
+            foreach (var kvp in toolResults)
+            {
+                contentBlocks.Add(new Dictionary<string, object>
+                {
+                    { "type", "tool_result" },
+                    { "tool_use_id", kvp.Key },
+                    { "content", kvp.Value }
+                });
+            }
+
+            // Get continuation context
+            var continuationTools = mcpClient.AvailableTools;
+            var continuationContext = BuildSystemContext(continuationTools);
+
+            // Show processing indicator
+            ShowProcessingIndicator();
+
+            // Send all tool results back to AI to continue conversation
+            client.SendMessage(null, continuationContext, contentBlocks, continuationTools,
+                onSuccess: (nextResponse) => HandleAIResponse(nextResponse),
+                onError: (error) => HandleError(error));
+        }
+
         private void HandleError(string error)
         {
+            // Remove processing indicator
+            HideProcessingIndicator();
+
             AddErrorBubble($"Error: {error}");
 
             // Re-enable input
@@ -897,6 +990,33 @@ namespace SparkGames.UnityGameSmith.Editor
                 sendButton.SetEnabled(true);
             }
             messageInput.Focus();
+        }
+
+        private void ShowProcessingIndicator()
+        {
+            if (messagesContainer == null) return;
+
+            processingBubble = new VisualElement();
+            processingBubble.AddToClassList("message-assistant");
+
+            var label = new Label("⏳ Processing...");
+            label.AddToClassList("message-assistant-text");
+            label.style.opacity = 0.7f;
+
+            processingBubble.Add(label);
+            messagesContainer.Add(processingBubble);
+
+            // Scroll to bottom
+            chatScroll?.ScrollTo(processingBubble);
+        }
+
+        private void HideProcessingIndicator()
+        {
+            if (processingBubble != null && messagesContainer != null)
+            {
+                messagesContainer.Remove(processingBubble);
+                processingBubble = null;
+            }
         }
 
         private string BuildSystemContext(List<MCPTool> tools)

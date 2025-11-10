@@ -237,8 +237,8 @@ namespace SparkGames.UnityGameSmith.Editor
                 // Start error reader task
                 _ = ReadStderrAsync();
 
-                // Wait a bit for process to initialize
-                await UniTask.Delay(1000);
+                // Wait briefly for process to initialize
+                await UniTask.Delay(100);
 
                 bool hasExited = false;
                 try
@@ -606,15 +606,16 @@ namespace SparkGames.UnityGameSmith.Editor
                     toolName,
                     argsJson
                 );
-                UnityEngine.Debug.Log($"[GameSmith MCP] Sending: {json}");
+                // Log sending only in verbose mode (comment out for production)
+                // UnityEngine.Debug.Log($"[GameSmith MCP] Sending: {json}");
                 stdinWriter.WriteLine(json);
                 stdinWriter.Flush();
 
-                // Read response with timeout
+                // Read response with timeout (short for local websocket)
                 string response = null;
                 try
                 {
-                    using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+                    using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
                     {
                         response = await ReadLineAsync(stdoutReader, cts.Token);
                     }
@@ -639,7 +640,8 @@ namespace SparkGames.UnityGameSmith.Editor
                     return "No response";
                 }
 
-                UnityEngine.Debug.Log($"[GameSmith MCP] Received: {response}");
+                // Log received only in verbose mode (comment out for production)
+                // UnityEngine.Debug.Log($"[GameSmith MCP] Received: {response}");
                 await UniTask.SwitchToMainThread();
 
                 var responseObj = MiniJSON.Json.Deserialize(response) as Dictionary<string, object>;
@@ -669,28 +671,26 @@ namespace SparkGames.UnityGameSmith.Editor
                             {
                                 string textContent = firstContent["text"].ToString();
 
-                                // The text field contains a JSON-encoded string, decode it first
+                                // Try parsing as JSON to check for errors
                                 try
                                 {
-                                    // First: deserialize the string to remove JSON string encoding
+                                    // Try double-encoded JSON first
                                     string decodedJson = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(textContent);
-
-                                    // Second: parse the actual JSON object
                                     var toolResult = JObject.Parse(decodedJson);
 
                                     // Check for errors
                                     if (toolResult["error"] != null)
                                     {
-                                        return $"Tool Error: {toolResult["error"]}";
+                                        return $"ERROR: {toolResult["error"]}";
                                     }
                                     if (toolResult["success"] != null &&
                                         toolResult["success"].ToString().ToLower() == "false" &&
                                         toolResult["error"] != null)
                                     {
-                                        return $"Tool Error: {toolResult["error"]}";
+                                        return $"ERROR: {toolResult["error"]}";
                                     }
 
-                                    // Extract message field if present (unity-mcp format)
+                                    // Extract message field if present
                                     if (toolResult["message"] != null)
                                     {
                                         return toolResult["message"].ToString();
@@ -698,7 +698,33 @@ namespace SparkGames.UnityGameSmith.Editor
                                 }
                                 catch
                                 {
-                                    // Not JSON, return as-is
+                                    // Try parsing as regular JSON (not double-encoded)
+                                    try
+                                    {
+                                        var toolResult = JObject.Parse(textContent);
+
+                                        // Check for errors in regular JSON
+                                        if (toolResult["error"] != null)
+                                        {
+                                            return $"ERROR: {toolResult["error"]}";
+                                        }
+                                        if (toolResult["success"] != null &&
+                                            toolResult["success"].ToString().ToLower() == "false" &&
+                                            toolResult["error"] != null)
+                                        {
+                                            return $"ERROR: {toolResult["error"]}";
+                                        }
+
+                                        // Extract message field if present
+                                        if (toolResult["message"] != null)
+                                        {
+                                            return toolResult["message"].ToString();
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        // Not JSON, return as-is
+                                    }
                                 }
 
                                 return textContent;

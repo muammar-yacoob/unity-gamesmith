@@ -98,24 +98,31 @@ CRITICAL RULES:
 2. When asked about scene objects, hierarchy, or Unity data: USE THE TOOLS IMMEDIATELY
 3. Do not provide manual code or explanations - execute the appropriate tool
 4. Tools have been verified and are ready to use
+5. **ALWAYS provide REQUIRED parameters** - Never call tools with empty arguments {}!
 
 ⚠️ IMPORTANT: When operations require multiple steps, you MUST call ALL tools in your SINGLE response!
-Do NOT call just the first tool and wait - call BOTH tools together in one response.
+Do NOT call just the first tool and wait - call ALL tools together in one response.
 
-COMMON OPERATIONS (call ALL tools in ONE response):
-- DELETE object: Call BOTH unity_select_objects(pattern) AND unity_delete_objects() in same response
-- MOVE object: Call BOTH unity_select_objects(pattern) AND unity_transform_objects(position) in same response
-- ROTATE object: Call BOTH unity_select_objects(pattern) AND unity_transform_objects(rotation) in same response
-- SCALE object: Call BOTH unity_select_objects(pattern) AND unity_transform_objects(scale) in same response
+COMMON OPERATIONS:
+- MOVE object: transform_objects({""name"": ""Cube"", ""position"": [5, 0, 0]})
+- ROTATE object: transform_objects({""name"": ""Cube"", ""rotation"": [0, 45, 0]})
+- SCALE object: transform_objects({""name"": ""Cube"", ""scale"": [2, 2, 2]})
+- DELETE object: select_objects({""name"": ""Cube""}) THEN delete_objects({})
 
-WRONG: Using unity_find_in_scene for operations - it only LISTS objects, doesn't select them!
-WRONG: Calling only unity_select_objects and stopping - you must also call the action tool!
-RIGHT: Call unity_select_objects AND the action tool TOGETHER in the same response
+⚠️ COMMON MISTAKES TO AVOID:
+❌ WRONG: transform_objects({}) - Missing required ""name"" parameter!
+✅ RIGHT: transform_objects({""name"": ""Cube"", ""position"": [5, 0, 0]})
+
+❌ WRONG: select_objects({}) - Missing required ""name"" parameter!
+✅ RIGHT: select_objects({""name"": ""Cube""})
+
+❌ WRONG: execute_menu_item({}) - Missing required ""menuPath"" parameter!
+✅ RIGHT: execute_menu_item({""menuPath"": ""GameObject/3D Object/Cube""})
 
 Examples:
-- ""delete the sphere"" → Use TWO tool_use blocks: unity_select_objects(pattern=""Sphere"") + unity_delete_objects()
-- ""list objects"" → Use ONE tool: unity_get_hierarchy()
-- ""move cube to 5,0,0"" → Use TWO tool_use blocks: unity_select_objects(pattern=""Cube"") + unity_transform_objects(position=[5,0,0])";
+- ""delete the sphere"" → select_objects({""name"": ""Sphere""}) + delete_objects({})
+- ""list objects"" → get_hierarchy({})
+- ""move cube to 5,0,0"" → transform_objects({""name"": ""Cube"", ""position"": [5, 0, 0]})";
         }
 
         private static string GetFallbackWithoutToolsPrompt()

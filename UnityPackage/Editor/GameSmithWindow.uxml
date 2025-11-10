@@ -7,6 +7,7 @@
                 <ui:Label text="⚒️ Game Smith AI" class="header-title" />
                 <ui:Label name="mcp-status" text="⚒️ MCP: Starting..." class="mcp-status" />
             </ui:VisualElement>
+            <ui:Button name="rules-button" text="📋" class="icon-button" tooltip="Edit AI Rules" />
             <ui:Button name="settings-button" text="⚙️" class="icon-button" tooltip="Settings" />
             <ui:Button name="clear-button" text="🗑️" class="icon-button" tooltip="Clear Chat" />
         </ui:VisualElement>
