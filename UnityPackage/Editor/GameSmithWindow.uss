@@ -262,7 +262,6 @@
     color: rgb(230, 230, 230);
     font-size: 14px;
     white-space: normal;
-    overflow: hidden;
 }
 
 .message-input > .unity-base-text-field__input {

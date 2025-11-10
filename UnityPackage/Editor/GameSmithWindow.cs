@@ -1080,13 +1080,13 @@ namespace SparkGames.UnityGameSmith.Editor
             bubble.Add(label);
             messagesContainer.Add(bubble);
 
-            // Scroll to bottom
+            // Scroll to bottom - use double delayCall to ensure layout is complete
             EditorApplication.delayCall += () =>
             {
-                if (chatScroll != null && chatScroll.contentContainer != null)
+                EditorApplication.delayCall += () =>
                 {
-                    chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
-                }
+                    chatScroll?.ScrollTo(bubble);
+                };
             };
         }
 
@@ -1122,13 +1122,13 @@ namespace SparkGames.UnityGameSmith.Editor
 
             messagesContainer.Add(bubble);
 
-            // Scroll to bottom
+            // Scroll to bottom - use double delayCall to ensure layout is complete
             EditorApplication.delayCall += () =>
             {
-                if (chatScroll != null && chatScroll.contentContainer != null)
+                EditorApplication.delayCall += () =>
                 {
-                    chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
-                }
+                    chatScroll?.ScrollTo(bubble);
+                };
             };
         }
 
@@ -1150,9 +1150,13 @@ namespace SparkGames.UnityGameSmith.Editor
             bubble.Add(label);
             messagesContainer.Add(bubble);
 
+            // Scroll to bottom - use double delayCall to ensure layout is complete
             EditorApplication.delayCall += () =>
             {
-                chatScroll.scrollOffset = new Vector2(0, chatScroll.contentContainer.layout.height);
+                EditorApplication.delayCall += () =>
+                {
+                    chatScroll?.ScrollTo(bubble);
+                };
             };
         }
 
