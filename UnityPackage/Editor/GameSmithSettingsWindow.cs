@@ -451,7 +451,16 @@ namespace SparkGames.UnityGameSmith.Editor
                         // Display each tool name in a simple list
                         foreach (var tool in sortedTools)
                         {
-                            EditorGUILayout.LabelField("• " + tool.Name, EditorStyles.label);
+                            Rect rowRect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+                            var color = GetToolColor(tool.Name);
+
+                            float squareSize = 10f;
+                            float squareY = rowRect.y + (rowRect.height - squareSize) * 0.5f;
+                            Rect colorRect = new Rect(rowRect.x, squareY, squareSize, squareSize);
+                            EditorGUI.DrawRect(colorRect, color);
+
+                            Rect labelRect = new Rect(colorRect.xMax + 6f, rowRect.y, rowRect.width - colorRect.width - 6f, rowRect.height);
+                            EditorGUI.LabelField(labelRect, tool.Name, EditorStyles.label);
                         }
 
                         EditorGUILayout.EndScrollView();
@@ -922,5 +931,20 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
+        private Color GetToolColor(string toolName)
+        {
+            var name = toolName.ToLowerInvariant();
+
+            if (name.Contains("delete") || name.Contains("remove") || name.Contains("destroy") || name.Contains("clear"))
+                return new Color(0.75f, 0.25f, 0.25f, 1f); // red
+
+            if (name.Contains("create") || name.Contains("add") || name.Contains("new") || name.Contains("spawn"))
+                return new Color(0.3f, 0.75f, 0.4f, 1f); // green
+
+            if (name.Contains("update") || name.Contains("modify") || name.Contains("set") || name.Contains("move") || name.Contains("rotate") || name.Contains("scale") || name.Contains("change"))
+                return new Color(0.95f, 0.8f, 0.2f, 1f); // yellow
+
+            return new Color(0.35f, 0.6f, 0.9f, 1f); // blue (organization/info)
+        }
     }
 }
