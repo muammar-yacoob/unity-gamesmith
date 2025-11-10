@@ -66,6 +66,33 @@ namespace SparkGames.UnityGameSmith.Editor
             EditorCoroutineRunner.StartCoroutine(coroutine);
         }
 
+        public void SendMessage(string userMessage, string systemContext, List<object> contentBlocks, List<MCPTool> tools,
+            Action<AIResponse> onSuccess, Action<string> onError)
+        {
+            // Add user message with custom content blocks
+            if (contentBlocks != null && contentBlocks.Count > 0)
+            {
+                // Content blocks provided (for multiple tool results)
+                conversationHistory.Add(new Dictionary<string, object>
+                {
+                    { "role", "user" },
+                    { "content", contentBlocks }
+                });
+            }
+            else if (!string.IsNullOrEmpty(userMessage))
+            {
+                // Simple text message
+                conversationHistory.Add(new Dictionary<string, object>
+                {
+                    { "role", "user" },
+                    { "content", userMessage }
+                });
+            }
+
+            var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
+            EditorCoroutineRunner.StartCoroutine(coroutine);
+        }
+
         public void SendToolResult(string toolUseId, string toolResult, string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
@@ -810,8 +837,9 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     foreach (var item in content)
                     {
-                        // Keep JToken as-is for correct re-serialization
-                        result.ContentBlocks.Add(item);
+                        // Convert JToken to plain Dictionary for proper serialization
+                        var plainObject = Newtonsoft.Json.JsonConvert.DeserializeObject(item.ToString());
+                        result.ContentBlocks.Add(plainObject);
 
                         var type = item["type"]?.ToString() ?? "";
 
@@ -834,11 +862,26 @@ namespace SparkGames.UnityGameSmith.Editor
                         else if (type == "tool_use")
                         {
                             result.HasToolUse = true;
-                            result.ToolUseId = item["id"]?.ToString() ?? "";
-                            result.ToolName = item["name"]?.ToString() ?? "";
-
+                            var toolUseId = item["id"]?.ToString() ?? "";
+                            var toolName = item["name"]?.ToString() ?? "";
                             var input = item["input"];
-                            result.ToolInput = input != null ? input.ToObject<Dictionary<string, object>>() : new Dictionary<string, object>();
+                            var toolInput = input != null ? input.ToObject<Dictionary<string, object>>() : new Dictionary<string, object>();
+
+                            // Store in new multi-tool list
+                            result.ToolUses.Add(new ToolUse
+                            {
+                                Id = toolUseId,
+                                Name = toolName,
+                                Input = toolInput
+                            });
+
+                            // Also keep backward compatibility with single tool fields (use first tool)
+                            if (result.ToolUses.Count == 1)
+                            {
+                                result.ToolUseId = toolUseId;
+                                result.ToolName = toolName;
+                                result.ToolInput = toolInput;
+                            }
                         }
                     }
                 }
@@ -945,5 +988,15 @@ namespace SparkGames.UnityGameSmith.Editor
         public string ToolUseId = "";
         public string ToolName = "";
         public Dictionary<string, object> ToolInput = new Dictionary<string, object>();
+
+        // Support for multiple tool uses in a single response
+        public List<ToolUse> ToolUses = new List<ToolUse>();
+    }
+
+    public class ToolUse
+    {
+        public string Id;
+        public string Name;
+        public Dictionary<string, object> Input;
     }
 }
