@@ -67,17 +67,22 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 float deltaY = evt.mousePosition.y - startMouseY;
                 float newHeight = startHeight - deltaY; // Inverted because dragging divider up increases input area
-                
-                // Clamp to reasonable bounds (reduced minimum for smaller default)
-                newHeight = Mathf.Clamp(newHeight, 60f, 800f);
-                
+
+                // Calculate max height based on window size to keep footer visible
+                // Reserve space for header (~64px), footer (~40px), chat messages (min 150px), and divider (4px)
+                float windowHeight = targetElement.parent?.resolvedStyle.height ?? 600f;
+                float maxAllowedHeight = windowHeight - 64f - 40f - 150f - 4f; // Leave room for other elements
+
+                // Clamp to reasonable bounds
+                newHeight = Mathf.Clamp(newHeight, 60f, Mathf.Min(maxAllowedHeight, 500f));
+
                 targetElement.style.height = newHeight;
                 targetElement.style.flexGrow = 0;
                 targetElement.style.flexShrink = 0;
-                
+
                 // Trigger resize callback
                 OnResize?.Invoke();
-                
+
                 evt.StopPropagation();
             }
         }
@@ -106,7 +111,12 @@ namespace SparkGames.UnityGameSmith.Editor
 
         // Static access to the connected MCP client for other windows
         public static MCPClientAsync ConnectedMCPClient => Instance?.mcpClient;
-        
+
+        // Static access to session token counts
+        public static int SessionInputTokens => Instance?.sessionInputTokens ?? 0;
+        public static int SessionOutputTokens => Instance?.sessionOutputTokens ?? 0;
+        public static int SessionTotalTokens => SessionInputTokens + SessionOutputTokens;
+
         // Singleton instance for static access
         private static GameSmithWindow Instance;
 
@@ -123,6 +133,10 @@ namespace SparkGames.UnityGameSmith.Editor
 
         // Processing indicator bubble
         private VisualElement processingBubble = null;
+
+        // Token usage tracking for session
+        private int sessionInputTokens = 0;
+        private int sessionOutputTokens = 0;
 
         [MenuItem("Tools/GameSmith/GameSmith AI &g", false, 1)]
         public static void ShowWindow()
@@ -724,6 +738,14 @@ namespace SparkGames.UnityGameSmith.Editor
             // Remove processing indicator
             HideProcessingIndicator();
 
+            // Track token usage
+            if (response != null && response.TotalTokens > 0)
+            {
+                sessionInputTokens += response.InputTokens;
+                sessionOutputTokens += response.OutputTokens;
+                UpdateTokenDisplay();
+            }
+
             // Display thinking content in a separate bubble if present
             if (!string.IsNullOrEmpty(response.ThinkingContent) && !string.IsNullOrWhiteSpace(response.ThinkingContent))
             {
@@ -1019,6 +1041,19 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
+        private void UpdateTokenDisplay()
+        {
+            var mcpStatus = rootVisualElement.Q<Label>("mcp-status");
+            if (mcpStatus != null)
+            {
+                int total = sessionInputTokens + sessionOutputTokens;
+                if (total > 0)
+                {
+                    mcpStatus.text = $"⚒️ MCP: Ready | 🔢 Tokens: {total:N0} (↑{sessionInputTokens:N0} ↓{sessionOutputTokens:N0})";
+                }
+            }
+        }
+
         private string BuildSystemContext(List<MCPTool> tools)
         {
             string basePrompt = (tools != null && tools.Count > 0)
@@ -1127,6 +1162,17 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 history.ClearHistory();
                 client?.ClearHistory();
+
+                // Reset token counters
+                sessionInputTokens = 0;
+                sessionOutputTokens = 0;
+
+                // Update MCP status back to default
+                var mcpStatus = rootVisualElement.Q<Label>("mcp-status");
+                if (mcpStatus != null)
+                {
+                    mcpStatus.text = "⚒️ MCP: Ready";
+                }
 
                 // Remove all message bubbles (keep welcome message)
                 var messagesToRemove = messagesContainer.Query<VisualElement>()

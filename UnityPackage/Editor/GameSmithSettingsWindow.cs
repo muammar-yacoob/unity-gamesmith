@@ -335,7 +335,56 @@ namespace SparkGames.UnityGameSmith.Editor
             EditorGUILayout.Space(4);
 
             config.temperature = EditorGUILayout.Slider("Temperature", config.temperature, 0f, 2f);
-            config.maxTokens = EditorGUILayout.IntSlider("Max Tokens", config.maxTokens, 256, 8192);
+
+            // Auto-enable unlimited tokens for Ollama
+            bool isOllama = config.activeProvider.Contains("Ollama");
+            if (isOllama && !config.unlimitedTokens)
+            {
+                config.unlimitedTokens = true;
+            }
+
+            // Unlimited tokens toggle (disabled for Ollama)
+            EditorGUI.BeginDisabledGroup(isOllama);
+            config.unlimitedTokens = EditorGUILayout.Toggle("Unlimited Tokens", config.unlimitedTokens);
+            EditorGUI.EndDisabledGroup();
+
+            // Only show max tokens slider if not unlimited
+            if (!config.unlimitedTokens)
+            {
+                config.maxTokens = EditorGUILayout.IntSlider("Max Tokens", config.maxTokens, 256, 8192);
+            }
+
+            if (config.unlimitedTokens)
+            {
+                string tokenInfo = "";
+                if (isOllama)
+                {
+                    tokenInfo = "Ollama uses unlimited tokens by default.";
+                }
+                else
+                {
+                    tokenInfo = "Token limit disabled. Works best with local models.";
+                }
+
+                // Add current session token usage
+                int totalTokens = GameSmithWindow.SessionTotalTokens;
+                if (totalTokens > 0)
+                {
+                    tokenInfo += $"\n\n📊 Session Usage: {totalTokens:N0} tokens (↑{GameSmithWindow.SessionInputTokens:N0} ↓{GameSmithWindow.SessionOutputTokens:N0})";
+                }
+
+                EditorGUILayout.HelpBox(tokenInfo, MessageType.Info);
+            }
+            else
+            {
+                // Show token usage even when limited
+                int totalTokens = GameSmithWindow.SessionTotalTokens;
+                if (totalTokens > 0)
+                {
+                    string usageInfo = $"📊 Session Usage: {totalTokens:N0} tokens (↑{GameSmithWindow.SessionInputTokens:N0} ↓{GameSmithWindow.SessionOutputTokens:N0})";
+                    EditorGUILayout.HelpBox(usageInfo, MessageType.Info);
+                }
+            }
 
             EditorGUILayout.EndVertical();
 

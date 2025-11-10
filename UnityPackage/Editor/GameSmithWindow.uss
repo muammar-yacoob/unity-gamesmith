@@ -199,8 +199,9 @@
     background-color: rgb(30, 30, 30);
     flex-shrink: 0;
     flex-grow: 0;
-    min-height: 100px; /* Increased min height for text input */
-    max-height: none;
+    min-height: 60px;
+    max-height: 500px;
+    height: 60px;
 }
 
 .input-container {
@@ -261,7 +262,7 @@
     color: rgb(230, 230, 230);
     font-size: 14px;
     white-space: normal;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .message-input > .unity-base-text-field__input {
@@ -269,6 +270,7 @@
     min-height: 100%;
     flex-grow: 1;
     flex-shrink: 1;
+    white-space: normal;
 }
 
 .message-input TextElement {
@@ -296,6 +298,7 @@
 .message-input .unity-scroll-view__content-container {
     min-height: 100%;
     flex-grow: 1;
+    white-space: normal;
 }
 
 .message-input .unity-scroll-view__content-viewport {
@@ -305,6 +308,7 @@
 .message-input .unity-base-field__input {
     height: 100%;
     min-height: 100%;
+    white-space: normal;
 }
 
 /* Send Button - Modern, prominent */

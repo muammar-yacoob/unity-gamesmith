@@ -91,6 +91,16 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
+        public bool unlimitedTokens
+        {
+            get => GameSmithSettings.Instance.unlimitedTokens;
+            set
+            {
+                GameSmithSettings.Instance.unlimitedTokens = value;
+                GameSmithSettings.Instance.Save();
+            }
+        }
+
         // Convenience properties
         public string apiUrl => GetActiveProviderData()?.apiUrl ?? "";
         public string apiKey => GameSmithSettings.Instance.GetApiKey(activeProvider);

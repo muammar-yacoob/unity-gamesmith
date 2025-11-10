@@ -100,7 +100,7 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
-        private static async UniTask<string> ExecuteUnityAPI(string path, string body)
+        private static UniTask<string> ExecuteUnityAPI(string path, string body)
         {
             try
             {
@@ -108,91 +108,113 @@ namespace SparkGames.UnityGameSmith.Editor
 
                 // Route to minimal Unity API wrappers
                 // Supports both /unity/* and legacy unity-mcp endpoints
+                string result;
                 switch (path)
                 {
                     // Hierarchy endpoints
                     case "/unity/hierarchy":
                     case "/scene/hierarchy":
-                        return GetHierarchy();
+                        result = GetHierarchy();
+                        break;
 
                     // Scene find endpoint
                     case "/scene/find":
-                        return FindAllGameObjects(data);
+                        result = FindAllGameObjects(data);
+                        break;
 
                     // Selection endpoints
                     case "/unity/selection/get":
-                        return GetSelection();
+                        result = GetSelection();
+                        break;
 
                     case "/unity/selection/set":
                     case "/editor/select":
-                        return SetSelection(data);
+                        result = SetSelection(data);
+                        break;
 
                     // GameObject endpoints
                     case "/unity/gameobject/find":
-                        return FindGameObject(data);
+                        result = FindGameObject(data);
+                        break;
 
                     case "/unity/gameobject/find-all":
-                        return FindAllGameObjects(data);
+                        result = FindAllGameObjects(data);
+                        break;
 
                     case "/unity/gameobject/create-primitive":
                     case "/gameobject/create":
-                        return CreatePrimitive(data);
+                        result = CreatePrimitive(data);
+                        break;
 
                     case "/unity/gameobject/destroy":
                     case "/editor/delete":
-                        return DestroySelectedObjects();
+                        result = DestroySelectedObjects();
+                        break;
 
                     // Transform endpoints
                     case "/unity/transform/get":
                     case "/editor/transform":
-                        return GetTransform(data);
+                        result = GetTransform(data);
+                        break;
 
                     case "/unity/transform/set-position":
                     case "/editor/move":
-                        return SetPosition(data);
+                        result = SetPosition(data);
+                        break;
 
                     case "/unity/transform/set-rotation":
                     case "/editor/rotate":
-                        return SetRotation(data);
+                        result = SetRotation(data);
+                        break;
 
                     case "/unity/transform/set-scale":
                     case "/editor/scale":
-                        return SetScale(data);
+                        result = SetScale(data);
+                        break;
 
                     // Scene endpoints
                     case "/unity/scene/save":
                     case "/scene/save":
-                        return SaveScene();
+                        result = SaveScene();
+                        break;
 
                     case "/unity/scene/mark-dirty":
                     case "/scene/dirty":
-                        return MarkSceneDirty();
+                        result = MarkSceneDirty();
+                        break;
 
                     // Menu execution
                     case "/unity/menu/execute":
                     case "/editor/menu":
                     case "/advanced/execute_menu":
-                        return ExecuteMenuItem(data);
+                        result = ExecuteMenuItem(data);
+                        break;
 
                     // Material/Renderer operations
                     case "/unity/material/set-color":
                     case "/renderer/color":
-                        return SetMaterialColor(data);
+                        result = SetMaterialColor(data);
+                        break;
 
                     // Advanced/unsupported operations - return helpful errors
                     case "/advanced/create_script":
-                        return Error("Script creation not supported. Use direct Unity APIs instead. For colors: use unity_set_material_color");
+                        result = Error("Script creation not supported. Use direct Unity APIs instead. For colors: use unity_set_material_color");
+                        break;
 
                     case "/project/get_assets":
-                        return Error("Asset listing not implemented. Use Unity Project window to manage assets");
+                        result = Error("Asset listing not implemented. Use Unity Project window to manage assets");
+                        break;
 
                     default:
-                        return Error($"Unknown endpoint: {path}");
+                        result = Error($"Unknown endpoint: {path}");
+                        break;
                 }
+
+                return UniTask.FromResult(result);
             }
             catch (Exception ex)
             {
-                return Error($"API execution failed: {ex.Message}");
+                return UniTask.FromResult(Error($"API execution failed: {ex.Message}"));
             }
         }
 

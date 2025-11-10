@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEditor;
@@ -62,8 +63,11 @@ namespace SparkGames.UnityGameSmith.Editor
             });
 
             lastSystemContext = systemContext;
-            var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
-            EditorCoroutineRunner.StartCoroutine(coroutine);
+            // Run on thread pool to not block Unity Editor
+            Task.Run(async () =>
+            {
+                await SendWebRequestAsync(systemContext, tools, onSuccess, onError);
+            });
         }
 
         public void SendMessage(string userMessage, string systemContext, List<object> contentBlocks, List<MCPTool> tools,
@@ -89,8 +93,11 @@ namespace SparkGames.UnityGameSmith.Editor
                 });
             }
 
-            var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
-            EditorCoroutineRunner.StartCoroutine(coroutine);
+            // Run on thread pool to not block Unity Editor
+            Task.Run(async () =>
+            {
+                await SendWebRequestAsync(systemContext, tools, onSuccess, onError);
+            });
         }
 
         public void SendToolResult(string toolUseId, string toolResult, string systemContext, List<MCPTool> tools,
@@ -126,11 +133,14 @@ namespace SparkGames.UnityGameSmith.Editor
                 });
             }
 
-            var coroutine = SendWebRequest(systemContext, tools, onSuccess, onError);
-            EditorCoroutineRunner.StartCoroutine(coroutine);
+            // Run on thread pool to not block Unity Editor
+            Task.Run(async () =>
+            {
+                await SendWebRequestAsync(systemContext, tools, onSuccess, onError);
+            });
         }
 
-        private IEnumerator SendWebRequest(string systemContext, List<MCPTool> tools,
+        private async Task SendWebRequestAsync(string systemContext, List<MCPTool> tools,
             Action<AIResponse> onSuccess, Action<string> onError)
         {
             bool isOllamaOrOpenAI = config.activeProvider.Contains("Ollama") || config.activeProvider.Contains("OpenAI") || config.activeProvider.Contains("Grok");
@@ -239,11 +249,18 @@ namespace SparkGames.UnityGameSmith.Editor
                 }
 
                 requestDict["contents"] = contents;
-                requestDict["generationConfig"] = new Dictionary<string, object>
+                var genConfig = new Dictionary<string, object>
                 {
-                    { "temperature", config.temperature },
-                    { "maxOutputTokens", config.maxTokens }
+                    { "temperature", config.temperature }
                 };
+
+                // Only add token limit if not unlimited
+                if (!config.unlimitedTokens)
+                {
+                    genConfig["maxOutputTokens"] = config.maxTokens;
+                }
+
+                requestDict["generationConfig"] = genConfig;
 
                 // Add tool config for Gemini to enable function calling
                 if (tools != null && tools.Count > 0)
@@ -262,7 +279,14 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 // OpenAI/Ollama format
                 requestDict["model"] = config.GetCurrentModel();
-                requestDict["max_tokens"] = config.maxTokens;
+
+                // For Ollama or when unlimited tokens is enabled, don't set max_tokens
+                bool isOllama = config.activeProvider.Contains("Ollama");
+                if (!isOllama && !config.unlimitedTokens)
+                {
+                    requestDict["max_tokens"] = config.maxTokens;
+                }
+
                 requestDict["temperature"] = config.temperature;
 
                 // Add system message to conversation for OpenAI format
@@ -279,7 +303,10 @@ namespace SparkGames.UnityGameSmith.Editor
             {
                 // Claude format
                 requestDict["model"] = config.GetCurrentModel();
-                requestDict["max_tokens"] = config.maxTokens;
+
+                // Claude requires max_tokens, but set high value if unlimited
+                requestDict["max_tokens"] = config.unlimitedTokens ? 8192 : config.maxTokens;
+
                 requestDict["temperature"] = config.temperature;
                 requestDict["system"] = systemContext;
                 requestDict["messages"] = conversationHistory;
@@ -414,15 +441,20 @@ namespace SparkGames.UnityGameSmith.Editor
                 request.redirectLimit = 5;
 
                 // Send request
+                // Send request asynchronously (off main thread)
                 var operation = request.SendWebRequest();
 
-                // Wait for request to complete
-                while (!request.isDone)
+                // Wait for completion without blocking main thread
+                while (!operation.isDone)
                 {
-                    yield return null;
+                    await Task.Delay(50);
                 }
 
-                // Request completed
+                // Request completed - dispatch callbacks to main thread
+                void RunOnMainThread(System.Action action)
+                {
+                    EditorApplication.delayCall += () => action();
+                }
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
@@ -447,8 +479,11 @@ namespace SparkGames.UnityGameSmith.Editor
 
                     if (response != null)
                     {
-                        // Add assistant response to history
-                        if (isGemini)
+                        // Dispatch success callback to main thread
+                        RunOnMainThread(() =>
+                        {
+                            // Add assistant response to history
+                            if (isGemini)
                         {
                             // For Gemini with tool use, store the function call
                             if (response.HasToolUse)
@@ -525,14 +560,15 @@ namespace SparkGames.UnityGameSmith.Editor
                             });
                         }
 
-                        onSuccess?.Invoke(response);
+                            onSuccess?.Invoke(response);
+                        });
                     }
                     else
                     {
                         string providerName = config?.activeProvider ?? "Unknown";
                         GameSmithLogger.LogError($"Failed to parse response from {providerName}. Response was: {responseText}");
                         string parseError = $"Failed to parse AI response from {providerName}.";
-                        onError?.Invoke(parseError);
+                        RunOnMainThread(() => onError?.Invoke(parseError));
                     }
                 }
                 else
@@ -585,7 +621,7 @@ namespace SparkGames.UnityGameSmith.Editor
                     string userError = BuildUserFriendlyError(providerName, request.responseCode, request.error, responseBody);
                     GameSmithLogger.LogError(userError);
 
-                    onError?.Invoke(userError);
+                    RunOnMainThread(() => onError?.Invoke(userError));
                 }
             }
         }
@@ -641,6 +677,14 @@ namespace SparkGames.UnityGameSmith.Editor
                             }
                         }
                     }
+                }
+
+                // Parse token usage from Gemini
+                var usageMetadata = response["usageMetadata"];
+                if (usageMetadata != null)
+                {
+                    result.InputTokens = usageMetadata["promptTokenCount"]?.Value<int>() ?? 0;
+                    result.OutputTokens = usageMetadata["candidatesTokenCount"]?.Value<int>() ?? 0;
                 }
 
                 return result;
@@ -812,6 +856,14 @@ namespace SparkGames.UnityGameSmith.Editor
                     result.TextContent = "[Continuing analysis...]";
                 }
 
+                // Parse token usage from OpenAI/Ollama
+                var usage = response["usage"];
+                if (usage != null)
+                {
+                    result.InputTokens = usage["prompt_tokens"]?.Value<int>() ?? 0;
+                    result.OutputTokens = usage["completion_tokens"]?.Value<int>() ?? 0;
+                }
+
                 return result;
             }
             catch (Exception ex)
@@ -884,6 +936,14 @@ namespace SparkGames.UnityGameSmith.Editor
                             }
                         }
                     }
+                }
+
+                // Parse token usage from Claude
+                var usage = response["usage"];
+                if (usage != null)
+                {
+                    result.InputTokens = usage["input_tokens"]?.Value<int>() ?? 0;
+                    result.OutputTokens = usage["output_tokens"]?.Value<int>() ?? 0;
                 }
 
                 return result;
@@ -991,6 +1051,11 @@ namespace SparkGames.UnityGameSmith.Editor
 
         // Support for multiple tool uses in a single response
         public List<ToolUse> ToolUses = new List<ToolUse>();
+
+        // Token usage tracking
+        public int InputTokens = 0;
+        public int OutputTokens = 0;
+        public int TotalTokens => InputTokens + OutputTokens;
     }
 
     public class ToolUse

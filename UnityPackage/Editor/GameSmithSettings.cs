@@ -16,6 +16,7 @@ namespace SparkGames.UnityGameSmith.Editor
         public string selectedModel = "claude-3-5-sonnet-20241022";  // Latest Sonnet 3.5
         public float temperature = 0.7f;
         public int maxTokens = 512;
+        public bool unlimitedTokens = false; // Don't enforce token limits
         public string rulesAssetPath = "";
 
         [Serializable]
