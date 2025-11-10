@@ -1058,9 +1058,26 @@ namespace SparkGames.UnityGameSmith.Editor
             mcpClient.CallToolAsync("unity_get_hierarchy", new Dictionary<string, object>(),
                 (result) =>
                 {
-                    // Parse MCP result and count objects
-                    var lines = result.Split('\n');
-                    var mcpCount = lines.Where(l => l.Trim().StartsWith("-")).Count();
+                    UnityEngine.Debug.Log($"[MCP Test] Raw result: {result}");
+
+                    // Parse MCP result - new format returns JSON with hierarchy array
+                    int mcpCount = 0;
+                    try
+                    {
+                        var resultObj = MiniJSON.Json.Deserialize(result) as Dictionary<string, object>;
+                        if (resultObj != null && resultObj.ContainsKey("hierarchy"))
+                        {
+                            var hierarchy = resultObj["hierarchy"] as List<object>;
+                            if (hierarchy != null)
+                            {
+                                mcpCount = hierarchy.Count;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        UnityEngine.Debug.LogError($"[MCP Test] Failed to parse result: {ex.Message}");
+                    }
 
                     UnityEngine.Debug.Log($"[MCP Test] MCP returned {mcpCount} objects");
 
