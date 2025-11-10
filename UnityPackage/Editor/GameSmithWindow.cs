@@ -331,28 +331,8 @@ namespace SparkGames.UnityGameSmith.Editor
 
                 if (success && toolCount > 0)
                 {
-                    var mcpUrl = "https://github.com/muammar-yacoob/unity-mcp";
-                    UnityEngine.Debug.Log($"[GameSmith] ✓ MCP ready with {toolCount} tools. Visit {mcpUrl}");
-
-                    // Check if Unity MCP Bridge is installed
-                    if (!UnityMCPInstaller.IsInstalled())
-                    {
-                        UnityEngine.Debug.LogWarning("[GameSmith] Unity MCP Bridge not installed. Tools will fail to execute.");
-                        AddMessageBubble($"⚠️ MCP server ready ({toolCount} tools) but Unity Bridge not installed.\nClick 'Install Unity MCP Bridge' below.", false);
-
-                        if (EditorUtility.DisplayDialog("Unity MCP Bridge Required",
-                            "Node.js MCP server is running with 33 tools, but the Unity Editor bridge component is not installed.\n\n" +
-                            "Without it, tools will fail with: 'Unity Editor MCP server is not running'\n\n" +
-                            "Install now?",
-                            "Install", "Later"))
-                        {
-                            UnityMCPInstaller.InstallBridge();
-                        }
-                    }
-                    else
-                    {
-                        AddMessageBubble($"✓ MCP ready ({toolCount} tools)", false);
-                    }
+                    UnityEngine.Debug.Log($"[GameSmith] ✓ MCP ready with {toolCount} tools");
+                    AddMessageBubble($"✓ MCP ready ({toolCount} tools)", false);
 
                     if (mcpStatus != null)
                     {

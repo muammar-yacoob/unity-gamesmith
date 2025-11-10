@@ -810,7 +810,8 @@ namespace SparkGames.UnityGameSmith.Editor
                 {
                     foreach (var item in content)
                     {
-                        result.ContentBlocks.Add(item.ToObject<object>());
+                        // Convert JToken to Dictionary to preserve structure for re-serialization
+                        result.ContentBlocks.Add(item.ToObject<Dictionary<string, object>>());
 
                         var type = item["type"]?.ToString() ?? "";
 
