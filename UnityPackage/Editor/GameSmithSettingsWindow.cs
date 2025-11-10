@@ -28,15 +28,6 @@ namespace SparkGames.UnityGameSmith.Editor
         private bool isLoadingTools = false;
         private Vector2 toolsScrollPosition = Vector2.zero;
 
-        // Tool categories for color coding
-        private enum ToolCategory
-        {
-            Creation,    // Green - create, add, generate
-            Modification, // Blue - update, modify, set, move, rotate, scale
-            Organization, // Orange - list, get, find, search, load
-            Destructive  // Red - delete, remove, destroy, clear
-        }
-
         [MenuItem("Tools/GameSmith/Configure Settings", false, 2)]
         public static void ShowWindow()
         {
@@ -370,7 +361,14 @@ namespace SparkGames.UnityGameSmith.Editor
             if (isInstalled)
             {
                 EditorGUILayout.LabelField("Status", "✓ Installed");
-                EditorGUILayout.LabelField("Version", mcpVersion);
+
+                // Show version and tool count on same line
+                string versionInfo = mcpVersion;
+                if (cachedMCPTools != null && cachedMCPTools.Count > 0)
+                {
+                    versionInfo += $" ({cachedMCPTools.Count} tools)";
+                }
+                EditorGUILayout.LabelField("Version", versionInfo);
             }
             else
             {
@@ -430,7 +428,7 @@ namespace SparkGames.UnityGameSmith.Editor
                 if (showMCPTools)
                 {
                     EditorGUILayout.Space(6);
-                    
+
                     if (isLoadingTools)
                     {
                         EditorGUILayout.LabelField("Loading tools...", EditorStyles.miniLabel);
@@ -441,53 +439,22 @@ namespace SparkGames.UnityGameSmith.Editor
                         EditorGUILayout.LabelField($"Found {cachedMCPTools.Count} tool(s)", EditorStyles.miniLabel);
                         EditorGUILayout.Space(8);
 
-                        // Group and sort tools by category
-                        var groupedTools = GroupToolsByCategory(cachedMCPTools);
+                        // Sort tools alphabetically
+                        var sortedTools = cachedMCPTools.OrderBy(t => t.Name).ToList();
 
-                        // Scrollable list view with max height
+                        // Simple scrollable list view
                         toolsScrollPosition = EditorGUILayout.BeginScrollView(
                             toolsScrollPosition,
-                            GUILayout.MaxHeight(250)
+                            GUILayout.MaxHeight(300)
                         );
 
-                        foreach (var group in groupedTools)
+                        // Display each tool name in a simple list
+                        foreach (var tool in sortedTools)
                         {
-                            // Category header - simple and clean
-                            var categoryColor = GetCategoryAccentColor(group.Key);
-                            var labelStyle = new GUIStyle(EditorStyles.boldLabel);
-                            labelStyle.fontSize = 11;
-                            labelStyle.normal.textColor = new Color(0.85f, 0.85f, 0.85f, 1f);
-                            
-                            EditorGUILayout.BeginHorizontal();
-                            // Colored indicator bar
-                            var barRect = GUILayoutUtility.GetRect(3, 16, GUILayout.Width(3));
-                            EditorGUI.DrawRect(barRect, categoryColor);
-                            EditorGUILayout.LabelField(GetCategoryLabel(group.Key) + $" ({group.Value.Count})", labelStyle);
-                            EditorGUILayout.EndHorizontal();
-                            
-                            EditorGUILayout.Space(4);
-                            
-                            // Tools in this category - simple list
-                            foreach (var tool in group.Value)
-                            {
-                                EditorGUILayout.BeginHorizontal();
-                                GUILayout.Space(8); // Indent
-                                var toolLabelStyle = new GUIStyle(EditorStyles.label);
-                                toolLabelStyle.wordWrap = true;
-                                EditorGUILayout.LabelField(tool.Name, toolLabelStyle);
-                                EditorGUILayout.EndHorizontal();
-                            }
-                            
-                            EditorGUILayout.Space(8);
+                            EditorGUILayout.LabelField("• " + tool.Name, EditorStyles.label);
                         }
 
                         EditorGUILayout.EndScrollView();
-                        
-                        // Legend - simple and clean
-                        EditorGUILayout.Space(10);
-                        EditorGUILayout.LabelField("Legend", EditorStyles.miniLabel);
-                        EditorGUILayout.Space(4);
-                        DrawCategoryLegend();
                     }
                     else if (cachedMCPTools != null && cachedMCPTools.Count == 0)
                     {
@@ -955,152 +922,5 @@ namespace SparkGames.UnityGameSmith.Editor
             }
         }
 
-        private System.Collections.Generic.Dictionary<ToolCategory, System.Collections.Generic.List<MCPTool>> GroupToolsByCategory(System.Collections.Generic.List<MCPTool> tools)
-        {
-            var grouped = new System.Collections.Generic.Dictionary<ToolCategory, System.Collections.Generic.List<MCPTool>>();
-            
-            // Initialize groups
-            foreach (ToolCategory category in System.Enum.GetValues(typeof(ToolCategory)))
-            {
-                grouped[category] = new System.Collections.Generic.List<MCPTool>();
-            }
-
-            // Categorize tools based on name patterns
-            foreach (var tool in tools)
-            {
-                var category = CategorizeToolByName(tool.Name);
-                grouped[category].Add(tool);
-            }
-
-            // Sort tools within each category alphabetically
-            foreach (var group in grouped.Values)
-            {
-                group.Sort((a, b) => string.Compare(a.Name, b.Name, System.StringComparison.OrdinalIgnoreCase));
-            }
-
-            // Return only non-empty groups in order
-            var result = new System.Collections.Generic.Dictionary<ToolCategory, System.Collections.Generic.List<MCPTool>>();
-            var orderedCategories = new[] { ToolCategory.Creation, ToolCategory.Modification, ToolCategory.Organization, ToolCategory.Destructive };
-            
-            foreach (var category in orderedCategories)
-            {
-                if (grouped[category].Count > 0)
-                {
-                    result[category] = grouped[category];
-                }
-            }
-
-            return result;
-        }
-
-        private ToolCategory CategorizeToolByName(string toolName)
-        {
-            var name = toolName.ToLowerInvariant();
-
-            // Destructive actions (red)
-            if (name.Contains("delete") || name.Contains("remove") || name.Contains("destroy") || 
-                name.Contains("clear") || name.Contains("clean"))
-            {
-                return ToolCategory.Destructive;
-            }
-
-            // Creation actions (green)
-            if (name.Contains("create") || name.Contains("add") || name.Contains("generate") || 
-                name.Contains("spawn") || name.Contains("instantiate") || name.Contains("new") ||
-                name.Contains("build") || name.Contains("make"))
-            {
-                return ToolCategory.Creation;
-            }
-
-            // Modification actions (blue)
-            if (name.Contains("update") || name.Contains("modify") || name.Contains("set") || 
-                name.Contains("move") || name.Contains("rotate") || name.Contains("scale") ||
-                name.Contains("transform") || name.Contains("change") || name.Contains("edit") ||
-                name.Contains("apply") || name.Contains("configure"))
-            {
-                return ToolCategory.Modification;
-            }
-
-            // Default to organization (orange) - list, get, find, search, load, etc.
-            return ToolCategory.Organization;
-        }
-
-        private Color GetCategoryAccentColor(ToolCategory category)
-        {
-            switch (category)
-            {
-                case ToolCategory.Creation:
-                    return new Color(0.3f, 0.75f, 0.4f, 1f); // Muted green
-                case ToolCategory.Modification:
-                    return new Color(0.35f, 0.6f, 0.9f, 1f); // Muted blue
-                case ToolCategory.Organization:
-                    return new Color(0.85f, 0.65f, 0.25f, 1f); // Muted orange
-                case ToolCategory.Destructive:
-                    return new Color(0.8f, 0.35f, 0.35f, 1f); // Muted red
-                default:
-                    return new Color(0.6f, 0.6f, 0.6f, 1f);
-            }
-        }
-
-        private string GetCategoryLabel(ToolCategory category)
-        {
-            switch (category)
-            {
-                case ToolCategory.Creation:
-                    return "Creation";
-                case ToolCategory.Modification:
-                    return "Modification";
-                case ToolCategory.Organization:
-                    return "Information";
-                case ToolCategory.Destructive:
-                    return "Destructive";
-                default:
-                    return "Tools";
-            }
-        }
-
-        private void DrawCategoryLegend()
-        {
-            EditorGUILayout.BeginHorizontal();
-            
-            var labelStyle = EditorStyles.miniLabel;
-            
-            // Creation
-            var createColor = GetCategoryAccentColor(ToolCategory.Creation);
-            var createRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
-            EditorGUI.DrawRect(createRect, createColor);
-            GUILayout.Space(4);
-            EditorGUILayout.LabelField("Create", labelStyle);
-            
-            GUILayout.Space(10);
-            
-            // Modification
-            var modifyColor = GetCategoryAccentColor(ToolCategory.Modification);
-            var modifyRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
-            EditorGUI.DrawRect(modifyRect, modifyColor);
-            GUILayout.Space(4);
-            EditorGUILayout.LabelField("Modify", labelStyle);
-            
-            GUILayout.Space(10);
-            
-            // Organization
-            var infoColor = GetCategoryAccentColor(ToolCategory.Organization);
-            var infoRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
-            EditorGUI.DrawRect(infoRect, infoColor);
-            GUILayout.Space(4);
-            EditorGUILayout.LabelField("Info", labelStyle);
-            
-            GUILayout.Space(10);
-            
-            // Destructive
-            var deleteColor = GetCategoryAccentColor(ToolCategory.Destructive);
-            var deleteRect = GUILayoutUtility.GetRect(8, 8, GUILayout.Width(8), GUILayout.Height(8));
-            EditorGUI.DrawRect(deleteRect, deleteColor);
-            GUILayout.Space(4);
-            EditorGUILayout.LabelField("Delete", labelStyle);
-            
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-        }
     }
 }
